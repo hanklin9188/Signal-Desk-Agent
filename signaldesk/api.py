@@ -152,7 +152,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             {"shadow_evaluation_started_at": datetime.now(UTC).isoformat()}
         )
     database.hide_browser_background_cards()
-    database.reclassify_messenger_browser_cards()
+    repaired_messenger_cards = database.reclassify_messenger_browser_cards()
     database.collapse_duplicate_notification_replays()
     repaired_line_threads = database.normalize_line_notification_identities()
     merged_messenger_threads = database.merge_duplicate_messenger_threads()
@@ -175,6 +175,9 @@ def create_app(config: Settings | None = None, database: Database | None = None)
     pipeline = Pipeline(database, config, gateway, bus, preferences)
     for thread_id in repaired_line_threads:
         pipeline.analyze_thread(thread_id)
+    if repaired_messenger_cards:
+        for thread_id in database.thread_ids_for_source("messenger_notification"):
+            pipeline.analyze_thread(thread_id)
     database.sync_card_event_timestamps(
         database.thread_ids_for_source("line_notification")
     )
@@ -271,6 +274,14 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                     if analysis.status == "completed":
                         for thread_id in database.thread_ids_for_media(media.asset_id):
                             await asyncio.to_thread(pipeline.analyze_thread, thread_id)
+            # Qwen runs after the deterministic card is already visible. This keeps
+            # notification ingestion and app startup responsive even when the model
+            # is cold-loading, while still replacing the baseline after validation.
+            if config.model_backend in {"endpoint", "transformers"}:
+                for thread_id in database.pending_model_thread_ids(limit=1):
+                    await asyncio.to_thread(
+                        lambda value=thread_id: pipeline.analyze_thread(value, use_model=True)
+                    )
             # Restore connected OAuth sessions immediately after launch, then poll
             # every 60 seconds. This prevents a healthy account from looking
             # disconnected during the first minute of every desktop session.

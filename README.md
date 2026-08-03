@@ -141,13 +141,17 @@ SIGNALDESK_DEMO=1 .venv/bin/signaldesk
 
 Current local verification:
 
-- 56 automated tests passing.
+- 60 automated tests passing.
 - 300 synthetic locked scenarios / 1,800 checks passing.
 - RTX 4080 SUPER image smoke: Qwen3.5-4B BF16/NF4/INT8 and PaddleOCR-VL-1.6 BF16 all loaded
   locally and found the fictional visible deadline; see [raw metrics](benchmarks/results/README.md).
 - Zero unauthorized actions and zero auto-send paths.
 - Native WinUI build: 0 compile errors.
 - MSIX installed and exercised on Windows 11.
+
+The optional Windows GPU runtime is reproducible with
+`scripts/setup-windows-model-runtime.ps1`. It pins Qwen3.5-4B and PaddleOCR-VL-1.6 revisions,
+keeps inference local, and performs model work after the deterministic card is already visible.
 
 CI repeats schema parsing, lint, tests, a benchmark smoke gate, and the Windows native build.
 

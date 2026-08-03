@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from signaldesk.model_gateway import ModelResult
 from signaldesk.models import UnifiedEvent
+from signaldesk.pipeline import Pipeline
 
 ZONE = ZoneInfo("Asia/Taipei")
 NOW = datetime(2026, 8, 2, 18, 0, tzinfo=ZONE)
@@ -237,3 +240,40 @@ def test_hourly_interruption_budget_routes_excess_to_digest(pipeline, database):
     assert all(card["decision"]["decision"] == "surface_now" for card in first_four)
     assert fifth["decision"]["decision"] == "include_in_digest"
     assert "interruption_budget" in fifth["why_shown"]
+
+
+def test_transformers_analysis_is_deferred_until_card_is_visible(database, test_config):
+    class RecordingGateway:
+        backend_name = "qwen-transformers"
+
+        def __init__(self):
+            self.calls = 0
+
+        def analyze(self, thread, signals, visual_analyses=None):
+            self.calls += 1
+            return ModelResult(
+                triage=None,
+                backend=self.backend_name,
+                error="simulated_model_unavailable",
+            )
+
+    gateway = RecordingGateway()
+    deferred = Pipeline(
+        database,
+        replace(test_config, model_backend="transformers"),
+        gateway,
+    )
+
+    result = deferred.process(event(event_id="deferred-model"))
+
+    assert gateway.calls == 0
+    assert result.thread_id in database.pending_model_thread_ids(limit=10)
+    assert database.card_detail(result.card_id)["model_backend"] == "rule+model-pending"
+
+    deferred.analyze_thread(result.thread_id, use_model=True)
+
+    assert gateway.calls == 1
+    assert result.thread_id not in database.pending_model_thread_ids(limit=10)
+    assert database.card_detail(result.card_id)["model_backend"].startswith(
+        "qwen-transformers"
+    )

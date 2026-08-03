@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 
@@ -34,6 +35,9 @@ public sealed class CardCounts
 
 public class CardItem : INotifyPropertyChanged
 {
+    private static readonly Regex MediaNoticePattern = new(
+        @"(傳送|傳了|寄了|sent).{0,8}(相片|照片|圖片|貼圖|photo|image|sticker)|(?:相片|照片|圖片|貼圖).{0,8}(已傳送|sent)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public string CardId { get; set; } = "";
@@ -68,12 +72,28 @@ public class CardItem : INotifyPropertyChanged
             _thumbnailSource = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ThumbnailVisibility));
+            OnPropertyChanged(nameof(UnavailableMediaVisibility));
         }
     }
 
     public Visibility ThumbnailVisibility => ThumbnailSource is not null
         ? Visibility.Visible
         : Visibility.Collapsed;
+    public bool MentionsUnavailableMedia =>
+        MediaPreview is null &&
+        ContentCompleteness == "notification_preview" &&
+        Source is "line_notification" or "messenger_notification" or "windows_notification" &&
+        MediaNoticePattern.IsMatch($"{Title} {Summary}");
+    public Visibility UnavailableMediaVisibility =>
+        ThumbnailSource is null && MentionsUnavailableMedia
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    public string UnavailableMediaLabel => Source switch
+    {
+        "line_notification" => "LINE 通知未提供圖片",
+        "messenger_notification" => "Messenger 通知未提供圖片",
+        _ => "通知未提供圖片"
+    };
     public void SetThumbnail(ImageSource? source) => ThumbnailSource = source;
 
     public string SenderLabel => Sender ?? Title ?? "未知來源";

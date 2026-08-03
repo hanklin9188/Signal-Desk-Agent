@@ -129,6 +129,22 @@
                                     <Image Source="{x:Bind ThumbnailSource, Mode=OneWay}"
                                            Stretch="UniformToFill" AutomationProperties.Name="訊息圖片縮圖" />
                                 </Border>
+                                <Border Grid.Column="2" Width="64" Height="52" Margin="4,0,8,0"
+                                        CornerRadius="10"
+                                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        Visibility="{x:Bind UnavailableMediaVisibility, Mode=OneWay}">
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                                        <FontIcon Glyph="&#xEB9F;" FontSize="15"
+                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="無預覽" FontSize="8"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    </StackPanel>
+                                    <ToolTipService.ToolTip>
+                                        <ToolTip Content="{x:Bind UnavailableMediaLabel}" />
+                                    </ToolTipService.ToolTip>
+                                </Border>
                                 <StackPanel Grid.Column="3" HorizontalAlignment="Right" Spacing="7">
                                     <TextBlock Text="{x:Bind TimeLabel}" FontSize="10"
                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}" />

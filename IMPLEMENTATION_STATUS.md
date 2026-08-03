@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last verified: 2026-08-03 · Desktop build: `0.1.0.41`
+Last verified: 2026-08-03 · Desktop build: `0.1.0.42`
 
 ## Honest completion estimate
 
@@ -11,8 +11,8 @@ These percentages measure different scopes and must not be added together:
 | Desktop App and core messaging | 80% | 86% | Inbox/Glance thumbnails, connectors, grouping, actions and image detail are implemented |
 | Original complete technical plan | 65% | 75% | OCR/evidence/audit/release tooling exists; real observation and provider QA remain |
 | Public v1.0 release | 55% | 62% | Signing is gated and automated; certificate, human audit and field validation remain |
-| Qwen and dataset/training | 20% | 40% | Runtime/quant benchmark and 300-item queue exist; human labels decide whether training is needed |
-| Multimodal image capability | — | 68% | Thumbnail, OCR contract/runtime, evidence validation and audit queue exist; quality gate remains |
+| Qwen and dataset/training | 20% | 52% | Pinned Windows GPU runtime and deferred inference are deployed; human labels decide whether training is needed |
+| Multimodal image capability | — | 74% | Thumbnail/OCR/evidence/runtime and unavailable-image states exist; real-source and human quality gates remain |
 
 The percentages are planning estimates, not test coverage. A feature is never marked complete solely
 because it has a design document.
@@ -33,12 +33,14 @@ because it has a design document.
 | Attention policy | Complete | Focus, quiet hours, VIP/mute, uncertainty penalty, preference score, interruption budget, Shadow Mode |
 | Actions | Complete | Open source, snooze, done, local reminder, editable draft; no auto-send route |
 | Privacy controls | Complete | Retention worker, safe export, preference reset, confirmed private-data deletion |
-| Validation | Passing | 56 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; local and GitHub Windows native builds pass for 0.1.0.41 |
-| Media presentation | Implemented, packaged startup verified | Safe decode + thumbnail endpoint, Inbox and Glance direct previews, detail full image; real-source thumbnail audit remains |
-| OCR evidence | Implemented, model audit pending | PaddleOCR-VL-1.6 runtime, hash-bound blocks/regions, authenticated analysis API, deterministic evidence rejection |
+| Validation | Passing | 60 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; local Windows native build passes for 0.1.0.42 |
+| Media presentation | Implemented, packaged verification in progress | Safe decode + thumbnail endpoint, Inbox and Glance previews, detail full image, and an explicit unavailable state when a Windows toast contains no image bytes |
+| OCR evidence | Deployed, model audit pending | Pinned PaddleOCR-VL-1.6 Windows CUDA runtime, hash-bound blocks/regions, authenticated analysis API, deterministic evidence rejection |
 | Multimodal audit | Queue ready, 0/300 human-reviewed | 300 fictional local images with SHA-256 manifest and review/lock tool; no review is falsely claimed |
 | Shadow/release | Tooling ready, time gates pending | Content-free 7–14 day report, readiness verifier, production signing and recoverable rollback scripts |
 | RTX 4080 SUPER smoke | Passing | Qwen BF16 8.671 GiB/5.655 s; NF4 3.290 GiB/5.371 s; INT8 5.054 GiB/17.416 s; Paddle BF16 1.809 GiB/7.067 s |
+| Live model scheduling | Implemented | Rule card is persisted immediately; Qwen runs one pending thread per 30-second worker cycle and validated output replaces the baseline without blocking notification ingestion |
+| Agent model contract | Passing on RTX 4080 SUPER | Fictional end-to-end smoke produces valid summary/category/reply/action/deadline JSON with real source-event evidence IDs; unsafe output still falls back |
 
 ## Deliberate product boundaries
 
@@ -68,7 +70,7 @@ because it has a design document.
 
 ### Qwen and learning
 
-- Pin a known-good model revision and runtime stack on Windows.
+- Keep the pinned Windows model runtime reproducible across clean-machine upgrades.
 - Complete the 20-step and full-dataset comparison; the one-image hardware/quant smoke now passes.
 - Build the annotation workflow and human-label at least 300 private/anonymized events locally.
 - Train only if the zero-shot audit misses predefined gates; QLoRA/SFT is conditional, not assumed.

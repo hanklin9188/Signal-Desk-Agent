@@ -32,6 +32,13 @@ MESSENGER_SENDER_RE = re.compile(
     r"^(.{1,100}?)(?:\s+(?:傳送了|傳了一|sent\b)|\s*[:：])",
     re.IGNORECASE,
 )
+MESSENGER_PREVIEW_RE = re.compile(
+    r"(?:\d+\s*則同一對話訊息|"
+    r"傳送了?\s*\d*\s*張?(?:相片|照片|圖片|貼圖)|"
+    r"傳了一張(?:相片|照片|圖片|貼圖)|"
+    r"sent\s+(?:you\s+)?(?:an?\s+|\d+\s+)?(?:photo|image|sticker|message)s?)",
+    re.IGNORECASE,
+)
 LINE_GROUP_TITLE_RE = re.compile(
     r"^(?P<sender>.+?)\s*[\[［【](?P<context>.+?)[\]］】]\s*$"
 )
@@ -63,6 +70,11 @@ def messenger_sender_from_preview(value: str) -> str | None:
     first_line = clean_text(value).splitlines()[0] if clean_text(value) else ""
     match = MESSENGER_SENDER_RE.match(first_line)
     return clean_label(match.group(1)) if match else None
+
+
+def is_messenger_notification_preview(value: str) -> bool:
+    """Recognize narrow Messenger browser/PWA notification wording."""
+    return bool(MESSENGER_PREVIEW_RE.search(clean_text(value)))
 
 
 def line_identity_from_title(value: str) -> tuple[str, str, str]:
@@ -168,10 +180,12 @@ def normalize_windows(payload: WindowsNotificationPayload) -> UnifiedEvent:
     app_name = payload.app_name.strip().casefold()
     origin = (payload.origin or "").lower()
     notification_title = clean_label(payload.title or "")
+    content = clean_text(payload.body or "")
     browser_app = any(browser in app for browser in ("chrome", "edge", "firefox"))
     messenger_browser_title = (
         browser_app and notification_title.casefold() in MESSENGER_GENERIC_TITLES
     )
+    messenger_browser_preview = browser_app and is_messenger_notification_preview(content)
     is_line_app = (
         app_name == "line"
         or app_id == "line"
@@ -185,18 +199,18 @@ def normalize_windows(payload: WindowsNotificationPayload) -> UnifiedEvent:
         or "messenger" in origin
         or "facebook" in origin
         or messenger_browser_title
+        or messenger_browser_preview
     ):
         source = Source.MESSENGER
     else:
         source = Source.WINDOWS
 
-    content = clean_text(payload.body or "")
     metadata = dict(payload.metadata)
     if payload.origin:
         metadata["origin"] = payload.origin
     if source == Source.MESSENGER and browser_app:
         metadata["source_resolution_uncertain"] = not bool(
-            payload.origin or messenger_browser_title
+            payload.origin or messenger_browser_title or messenger_browser_preview
         )
     metadata["native_app_name"] = payload.app_name
     metadata["native_app_id"] = payload.app_id
@@ -211,9 +225,7 @@ def normalize_windows(payload: WindowsNotificationPayload) -> UnifiedEvent:
     )
     event_seed = f"{payload.app_id}|{payload.notification_id}|{checksum}"
     event_id = "win_" + hashlib.sha256(event_seed.encode()).hexdigest()[:24]
-    preview_sender = (
-        messenger_sender_from_preview(content) if messenger_browser_title else None
-    )
+    preview_sender = messenger_sender_from_preview(content) if messenger_browser_title else None
     sender = preview_sender or clean_label(payload.sender or payload.title or payload.app_name)
     title = sender if messenger_browser_title and preview_sender else notification_title
     if source == Source.LINE:
@@ -221,15 +233,11 @@ def normalize_windows(payload: WindowsNotificationPayload) -> UnifiedEvent:
             notification_title or sender
         )
     elif source == Source.MESSENGER:
-        conversation_id = (
-            sender
-            if messenger_browser_title
-            else clean_label(payload.title or payload.sender or "")
-        ) or None
+        conversation_id = sender or None
     else:
         conversation_id = None
     launch_uri = payload.launch_uri
-    if messenger_browser_title and not launch_uri:
+    if source == Source.MESSENGER and not launch_uri:
         launch_uri = "https://www.messenger.com/"
     return UnifiedEvent(
         event_id=event_id,

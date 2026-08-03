@@ -53,6 +53,7 @@ def compile_prompt(
         "source": thread.source,
         "completeness": thread.content_completeness,
         "sender": thread.sender,
+        "source_event_ids": thread.event_ids,
         "messages": text,
         "media": [
             {
@@ -100,7 +101,7 @@ def compile_prompt(
                 "text": "...",
                 "owner": None,
                 "supporting_span": "verbatim message or OCR text",
-                "source_event_ids": ["..."],
+                "source_event_ids": ["copy one or more IDs from INPUT.source_event_ids"],
                 "deadline_ref": None,
                 "status": "open",
                 "evidence_asset_id": "required only for OCR evidence",
@@ -319,7 +320,10 @@ class TransformersGateway:
             ).to(self._model.device)
             output = self._model.generate(
                 **model_input,
-                max_new_tokens=256 if any(message.media for message in thread.messages) else 128,
+                # The strict triage contract contains evidence arrays even for a short
+                # message. A 128-token cap truncated otherwise valid JSON in real Qwen
+                # runs, so keep enough bounded output budget to close the object.
+                max_new_tokens=768 if any(message.media for message in thread.messages) else 512,
                 do_sample=False,
             )
             input_length = model_input["input_ids"].shape[-1]

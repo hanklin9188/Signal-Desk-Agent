@@ -1,7 +1,7 @@
 # Multimodal Image Design
 
 Status: thumbnail, OCR/evidence, local model and audit tooling implemented in development build
-`0.1.0.41`; real human review, field observation and production signing remain release gates.
+`0.1.0.42`; real human review, field observation and production signing remain release gates.
 
 ## 1. Product outcome
 
@@ -159,6 +159,11 @@ Inbox and Glance show a small thumbnail only when `availability=available`. Deta
 - a visible limitation banner when only metadata exists;
 - retry analysis and remove-local-copy controls.
 
+If a LINE or Messenger Windows toast only says that an image/sticker was sent, Windows exposes no
+media bytes to SignalDesk. The desktop card therefore renders an explicit `無預覽` state instead of
+fabricating a thumbnail. Gmail MIME attachments and Messenger archive files that contain supported
+image bytes follow the normal thumbnail and OCR path.
+
 Image-only messages stay separated by conversation/sender exactly like text messages. They never
 collapse into a generic LINE, Messenger, browser or Windows card.
 
@@ -221,6 +226,15 @@ SIGNALDESK_VISION_BACKEND=paddleocr-vl .venv/bin/signaldesk
 .venv/bin/signaldesk-shadow --database data/signaldesk.db report --days 14 \
   --output runs/shadow-report.json
 ```
+
+Windows GPU runtime installation (PowerShell 5.1 or newer):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\setup-windows-model-runtime.ps1
+```
+
+The installed desktop launcher detects this private runtime, starts Qwen/PaddleOCR locally, and
+falls back to the packaged deterministic service if the optional environment is damaged.
 
 ## 12. Definition of done
 

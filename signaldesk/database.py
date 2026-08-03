@@ -21,6 +21,7 @@ from .models import (
 )
 from .normalizer import (
     MESSENGER_GENERIC_TITLES,
+    is_messenger_notification_preview,
     line_identity_from_title,
     messenger_sender_from_preview,
 )
@@ -1647,10 +1648,14 @@ class Database:
                 title = str(event.get("title") or "").strip()
                 if not any(browser in native_app for browser in ("chrome", "edge", "firefox")):
                     continue
-                if title.casefold() not in MESSENGER_GENERIC_TITLES:
+                content = str(event.get("content") or "")
+                generic_title = title.casefold() in MESSENGER_GENERIC_TITLES
+                if not generic_title and not is_messenger_notification_preview(content):
                     continue
 
-                sender = messenger_sender_from_preview(str(event.get("content") or "")) or title
+                sender = (
+                    messenger_sender_from_preview(content) if generic_title else title
+                ) or title
                 event.update(
                     {
                         "source": "messenger_notification",
@@ -1988,6 +1993,19 @@ class Database:
             rows = connection.execute(
                 "SELECT thread_id FROM threads WHERE source=? ORDER BY thread_id",
                 (source,),
+            ).fetchall()
+        return [row["thread_id"] for row in rows]
+
+    def pending_model_thread_ids(self, *, limit: int = 1) -> list[str]:
+        """Return bounded deferred-model work without storing message content in a queue."""
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT thread_id FROM triage_results
+                WHERE model_backend LIKE '%model-pending%'
+                ORDER BY updated_at ASC LIMIT ?
+                """,
+                (max(1, limit),),
             ).fetchall()
         return [row["thread_id"] for row in rows]
 

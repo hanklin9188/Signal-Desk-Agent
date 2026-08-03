@@ -16,14 +16,10 @@
             </Grid.RowDefinitions>
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                <StackPanel Spacing="2">
-                    <TextBlock Text="GLANCE · LIVE" Style="{StaticResource SignalSectionLabelStyle}"
-                               Foreground="{StaticResource SignalAccentBrush}" />
-                    <TextBlock Text="剛剛發生的事" FontFamily="Segoe UI Variable Display"
-                               FontSize="25" FontWeight="SemiBold" />
-                    <TextBlock Text="每個來源、每位對話者分開整理"
-                               FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
+                <TextBlock Text="GLANCE.LIVE" FontFamily="Segoe UI Variable Display"
+                           FontSize="18" FontWeight="SemiBold"
+                           Foreground="{StaticResource SignalAccentBrush}"
+                           VerticalAlignment="Center" />
                 <Button Grid.Column="1" Style="{StaticResource SignalIconButtonStyle}"
                         HorizontalAlignment="Right" VerticalAlignment="Top"
                         Click="Close_Click" ToolTipService.ToolTip="關閉">
@@ -91,6 +87,22 @@
                                             <Image Source="{x:Bind ThumbnailSource, Mode=OneWay}"
                                                    Stretch="UniformToFill"
                                                    AutomationProperties.Name="訊息圖片縮圖" />
+                                        </Border>
+                                        <Border Width="68" Height="52" CornerRadius="10"
+                                                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                BorderThickness="1"
+                                                Visibility="{x:Bind UnavailableMediaVisibility, Mode=OneWay}">
+                                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                        Spacing="2">
+                                                <FontIcon Glyph="&#xEB9F;" FontSize="15"
+                                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                <TextBlock Text="無預覽" FontSize="8"
+                                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                            </StackPanel>
+                                            <ToolTipService.ToolTip>
+                                                <ToolTip Content="{x:Bind UnavailableMediaLabel}" />
+                                            </ToolTipService.ToolTip>
                                         </Border>
                                         <TextBlock Grid.Column="1" Text="{x:Bind Summary}"
                                                    FontSize="12" LineHeight="18" MaxLines="2"

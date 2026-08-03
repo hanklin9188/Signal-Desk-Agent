@@ -12,8 +12,9 @@ from signaldesk.api import create_app
 from signaldesk.connectors.chat_archive import load_chat_archives
 from signaldesk.connectors.gmail import GmailConnector
 from signaldesk.media_store import MediaError, MediaStore
-from signaldesk.model_gateway import _multimodal_user_content
+from signaldesk.model_gateway import _multimodal_user_content, compile_prompt
 from signaldesk.models import GroupedThread, UnifiedEvent
+from signaldesk.rules import RuleSignals
 
 PNG_1X1 = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
@@ -58,6 +59,30 @@ def test_model_content_uses_endpoint_and_transformers_image_contracts(tmp_path):
     assert isinstance(transformers, list)
     assert transformers[1]["type"] == "image"
     assert transformers[1]["url"].startswith("data:image/png;base64,")
+
+
+def test_model_prompt_supplies_allowed_source_event_ids(tmp_path):
+    thread = GroupedThread(
+        thread_id="thread-contract",
+        source="gmail",
+        sender="sender@example.test",
+        event_ids=["event-contract"],
+        content_completeness="full",
+        messages=[
+            {
+                "event_id": "event-contract",
+                "received_at": datetime(2026, 8, 3, 9, 0, tzinfo=UTC),
+                "content": "Please review the fictional report.",
+                "media": [],
+            }
+        ],
+        updated_at=datetime(2026, 8, 3, 9, 0, tzinfo=UTC),
+    )
+
+    prompt = compile_prompt(thread, RuleSignals())
+
+    assert '"source_event_ids":["event-contract"]' in prompt
+    assert "copy one or more IDs from INPUT.source_event_ids" in prompt
 
 
 def test_gmail_connector_imports_supported_inline_image(tmp_path):

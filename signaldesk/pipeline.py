@@ -8,7 +8,7 @@ from .config import Settings
 from .database import Database
 from .events import EventBus
 from .grouping import ThreadGrouper
-from .model_gateway import Gateway
+from .model_gateway import Gateway, ModelResult
 from .models import IngestResult, NotificationCard, UnifiedEvent
 from .normalizer import idempotency_key, normalize_event, payload_checksum
 from .policy import InterruptionPolicy, display_mode
@@ -35,6 +35,7 @@ class Pipeline:
         self.validator = TriageValidator()
         self.policy = InterruptionPolicy(config)
         self.preferences = preference_ranker or PreferenceRanker(database)
+        self.defer_model = config.model_backend in {"endpoint", "transformers"}
 
     def process(
         self,
@@ -113,6 +114,7 @@ class Pipeline:
                 event_id=event.event_id,
                 trace_id=trace_id,
                 archive_import=archive_import,
+                use_model=not self.defer_model,
             )
         except Exception as error:
             self.database.trace_complete(
@@ -124,7 +126,13 @@ class Pipeline:
             )
             raise
 
-    def analyze_thread(self, thread_id: str, *, archive_import: bool = False) -> IngestResult:
+    def analyze_thread(
+        self,
+        thread_id: str,
+        *,
+        archive_import: bool = False,
+        use_model: bool | None = None,
+    ) -> IngestResult:
         """Analyze an already persisted thread once after a bulk archive import."""
         thread = self.database.grouped_thread(thread_id, limit=50)
         if thread is None or not thread.event_ids:
@@ -143,6 +151,7 @@ class Pipeline:
                 event_id=event_id,
                 trace_id=trace_id,
                 archive_import=archive_import,
+                use_model=not self.defer_model if use_model is None else use_model,
             )
         except Exception as error:
             self.database.trace_complete(
@@ -161,6 +170,7 @@ class Pipeline:
         event_id: str,
         trace_id: str,
         archive_import: bool,
+        use_model: bool,
     ) -> IngestResult:
         # Analysis is deliberately bounded to the latest messages. All archive events remain
         # in SQLite and card detail, while stale questions do not become current tasks.
@@ -184,7 +194,11 @@ class Pipeline:
             baseline.uncertainty_flags.append("truncated_content")
         self.bus.publish("triage_started", {"thread_id": thread_id})
         visual_analyses = self.database.visual_analyses_for_thread(thread_id)
-        model_result = self.gateway.analyze(thread, signals, visual_analyses)
+        model_result = (
+            self.gateway.analyze(thread, signals, visual_analyses)
+            if use_model
+            else ModelResult(triage=None, backend="rule+model-pending")
+        )
         candidate = model_result.triage or baseline
         has_available_media = any(
             str(media.availability) == "available"
