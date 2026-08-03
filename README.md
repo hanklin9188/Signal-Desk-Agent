@@ -60,7 +60,7 @@ Gmail, LINE, Messenger, and Windows notifications have distinct reusable source 
 
 | Source | Current integration | Completeness |
 |---|---|---|
-| Gmail | Official OAuth, initial sync, 60-second incremental sync, multiple accounts | Full message/thread content under granted scope |
+| Gmail | Official OAuth, initial sync, 60-second incremental sync, multiple accounts, transient transport retry and per-message failure isolation | Full message/thread content under granted scope |
 | LINE personal | Official text archive import + Windows notification listener | Notification preview for new inbound messages |
 | Messenger personal | Accounts Center JSON/ZIP import + Windows/browser notification listener | Notification preview for new inbound messages |
 | LINE Official Account | Signed webhook connector | Full webhook payload for the configured official account |
@@ -146,7 +146,7 @@ SIGNALDESK_DEMO=1 .venv/bin/signaldesk
 
 Current local verification:
 
-- 68 automated tests passing.
+- 70 automated tests passing.
 - 300 synthetic locked scenarios / 1,800 checks passing.
 - RTX 4080 SUPER image smoke: Qwen3.5-4B BF16/NF4/INT8 and PaddleOCR-VL-1.6 BF16 all loaded
   locally and found the fictional visible deadline; see [raw metrics](benchmarks/results/README.md).

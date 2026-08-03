@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last verified: 2026-08-03 · Desktop build: `0.1.0.46`
+Last verified: 2026-08-03 · Desktop build: `0.1.0.47`
 
 ## Honest completion estimate
 
@@ -23,7 +23,7 @@ because it has a design document.
 |---|---|---|
 | Native desktop shell | Complete | WinUI 3, Mica/Acrylic, system tray, Orb, Glance, responsive Inbox, source badges, native file pickers |
 | Focus mode | Complete | Clickable outside the title-bar drag region; persists through the settings API and raises interruption thresholds |
-| Gmail connector | Complete for text; image acquisition in verification | Official OAuth, multi-account support, initial + 60-second incremental sync, readonly default, optional confirmed draft scope, safe image MIME acquisition |
+| Gmail connector | Complete for text; image acquisition in verification | Official OAuth, multi-account support, initial + 60-second incremental sync, readonly default, optional confirmed draft scope, safe image MIME acquisition, transient Google transport retry and deleted-message race isolation |
 | Windows notification connector | Complete | Packaged `UserNotificationListener`, permission state, allowlist, polling reconciliation, stable replay suppression |
 | LINE grouping | Complete for visible previews | Per visible user/conversation cards, group-title parsing, stable timestamps, duplicate-toast cleanup |
 | Messenger grouping | Complete for visible previews | Browser/app classification, visible sender extraction, background-status filtering, duplicate-thread repair |
@@ -33,7 +33,7 @@ because it has a design document.
 | Attention policy | Complete | Focus, quiet hours, VIP/mute, uncertainty penalty, preference score, interruption budget, Shadow Mode |
 | Actions | Complete | Open source, snooze, done, local reminder, editable draft; no auto-send route |
 | Privacy controls | Complete | Retention worker, safe export, preference reset, confirmed private-data deletion |
-| Validation | Passing | 68 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; local validation passes for 0.1.0.46 |
+| Validation | Passing | 70 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; local validation passes for 0.1.0.47 |
 | Media presentation | Implemented, packaged verification in progress | Safe decode + thumbnail endpoint, Inbox and Glance previews, detail full image, and an explicit unavailable state when a Windows toast contains no image bytes |
 | OCR evidence | Deployed, model audit pending | Pinned PaddleOCR-VL-1.6 Windows CUDA runtime, hash-bound blocks/regions, authenticated analysis API, deterministic evidence rejection |
 | Multimodal audit | Queue ready, 0/300 human-reviewed | 300 fictional local images with SHA-256 manifest and review/lock tool; no review is falsely claimed |

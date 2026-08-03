@@ -1,7 +1,7 @@
 # Multimodal Image Design
 
 Status: thumbnail, OCR/evidence, local model and audit tooling implemented in development build
-`0.1.0.46`; real human review, field observation and production signing remain release gates.
+`0.1.0.47`; real human review, field observation and production signing remain release gates.
 
 ## 1. Product outcome
 

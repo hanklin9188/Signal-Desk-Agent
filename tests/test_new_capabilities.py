@@ -156,6 +156,67 @@ def test_gmail_source_link_targets_the_authenticated_account(tmp_path):
     )
 
 
+def test_gmail_incremental_sync_skips_message_deleted_after_history(tmp_path, monkeypatch):
+    class Request:
+        @staticmethod
+        def execute(**kwargs):
+            assert kwargs["num_retries"] == 2
+            return {
+                "historyId": "12",
+                "history": [
+                    {
+                        "messagesAdded": [
+                            {"message": {"id": "available"}},
+                            {"message": {"id": "deleted"}},
+                        ]
+                    }
+                ],
+            }
+
+    class History:
+        @staticmethod
+        def list(**_values):
+            return Request()
+
+    class Users:
+        @staticmethod
+        def history():
+            return History()
+
+    class Service:
+        @staticmethod
+        def users():
+            return Users()
+
+    class DeletedMessageError(Exception):
+        resp = type("Response", (), {"status": 404})()
+
+    connector = GmailConnector("nycu", tmp_path / "credentials.json")
+    connector._service = Service()
+
+    def message_event(message_id):
+        if message_id == "deleted":
+            raise DeletedMessageError("message disappeared")
+        return message_id
+
+    monkeypatch.setattr(connector, "_message_event", message_event)
+
+    batch = connector.incremental_sync("10")
+
+    assert batch.events == ["available"]
+    assert batch.cursor == "12"
+    assert batch.full_sync_required is False
+
+
+def test_gmail_ssl_error_is_safe_and_actionable():
+    error = OSError("[SSL: WRONG_VERSION_NUMBER] wrong version number")
+
+    detail = GmailConnector._safe_error(error)
+
+    assert detail == "Gmail secure connection failed temporarily; SignalDesk will retry."
+    assert "_ssl.c" not in detail
+
+
 def test_digest_and_model_residency_settings_validate(test_config, database):
     with TestClient(create_app(test_config, database)) as client:
         client.get("/")

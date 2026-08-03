@@ -58,6 +58,33 @@ class GmailConnector(Connector):
             raise RuntimeError("install SignalDesk with the 'gmail' extra") from error
         return keyring, Credentials, InstalledAppFlow, build
 
+    @staticmethod
+    def _execute(request: Any) -> Any:
+        """Retry transient Google transport failures without retrying a whole sync batch."""
+        try:
+            return request.execute(num_retries=2)
+        except TypeError:
+            # Lightweight test doubles and older compatible clients may not expose the
+            # keyword even though the production google-api-python-client request does.
+            return request.execute()
+
+    @staticmethod
+    def _http_status(error: Exception) -> int | None:
+        value = getattr(error, "status_code", None) or getattr(
+            getattr(error, "resp", None), "status", None
+        )
+        try:
+            return int(value) if value is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _safe_error(error: Exception) -> str:
+        value = str(error)
+        if "WRONG_VERSION_NUMBER" in value or "SSL" in value.upper():
+            return "Gmail secure connection failed temporarily; SignalDesk will retry."
+        return f"{type(error).__name__}: {value}"
+
     def authenticate(self, *, interactive: bool = True) -> bool:
         try:
             keyring, credentials_type, flow_type, build = self._imports()
@@ -85,27 +112,26 @@ class GmailConnector(Connector):
                     return False
                 keyring.set_password(self.keyring_service, self.account_id, credentials.to_json())
             self._service = build("gmail", "v1", credentials=credentials, cache_discovery=False)
-            profile = self._service.users().getProfile(userId="me").execute()
+            profile = self._execute(self._service.users().getProfile(userId="me"))
             self.authenticated_email = str(profile.get("emailAddress", "")).strip() or None
             self._error = None
             return True
         except Exception as error:
             self._service = None
             self.authenticated_email = None
-            self._error = f"{type(error).__name__}: {error}"
+            self._error = self._safe_error(error)
             return False
 
     def initial_sync(self) -> SyncBatch:
         service = self._require_service()
-        profile = service.users().getProfile(userId="me").execute()
+        profile = self._execute(service.users().getProfile(userId="me"))
         self.authenticated_email = str(profile.get("emailAddress", "")).strip() or None
-        response = (
-            service.users()
-            .messages()
-            .list(userId="me", labelIds=["INBOX"], maxResults=50)
-            .execute()
+        response = self._execute(
+            service.users().messages().list(userId="me", labelIds=["INBOX"], maxResults=50)
         )
-        events = [self._message_event(message["id"]) for message in response.get("messages", [])]
+        events = self._available_message_events(
+            {message["id"] for message in response.get("messages", [])}
+        )
         return SyncBatch(events=events, cursor=str(profile.get("historyId")))
 
     def incremental_sync(self, cursor: str | None) -> SyncBatch:
@@ -113,17 +139,13 @@ class GmailConnector(Connector):
             return self.initial_sync()
         service = self._require_service()
         try:
-            response = (
+            response = self._execute(
                 service.users()
                 .history()
                 .list(userId="me", startHistoryId=cursor, historyTypes=["messageAdded"])
-                .execute()
             )
         except Exception as error:
-            if (
-                getattr(error, "status_code", None) == 404
-                or getattr(getattr(error, "resp", None), "status", None) == 404
-            ):
+            if self._http_status(error) == 404:
                 return SyncBatch(events=[], cursor=None, full_sync_required=True)
             raise
         ids = {
@@ -132,9 +154,22 @@ class GmailConnector(Connector):
             for item in history.get("messagesAdded", [])
         }
         return SyncBatch(
-            events=[self._message_event(message_id) for message_id in ids],
+            events=self._available_message_events(ids),
             cursor=str(response.get("historyId", cursor)),
         )
+
+    def _available_message_events(self, message_ids: set[str]) -> list[UnifiedEvent]:
+        events = []
+        for message_id in message_ids:
+            try:
+                events.append(self._message_event(message_id))
+            except Exception as error:
+                # Gmail history can reference a message that is deleted or moved before
+                # its payload is fetched. That race must not fail every later sync.
+                if self._http_status(error) == 404:
+                    continue
+                raise
+        return events
 
     def health(self) -> ConnectorHealth:
         status = "error" if self._error else ("healthy" if self._service else "not_configured")
@@ -182,8 +217,8 @@ class GmailConnector(Connector):
         draft_body: dict[str, Any] = {"message": {"raw": raw}}
         if thread_id:
             draft_body["message"]["threadId"] = thread_id
-        return (
-            self._require_service().users().drafts().create(userId="me", body=draft_body).execute()
+        return self._execute(
+            self._require_service().users().drafts().create(userId="me", body=draft_body)
         )
 
     def _require_service(self) -> Any:
@@ -192,12 +227,11 @@ class GmailConnector(Connector):
         return self._service
 
     def _message_event(self, message_id: str) -> UnifiedEvent:
-        message = (
+        message = self._execute(
             self._require_service()
             .users()
             .messages()
             .get(userId="me", id=message_id, format="full")
-            .execute()
         )
         headers = {
             item["name"].lower(): str(make_header(decode_header(item["value"])))
@@ -279,7 +313,7 @@ class GmailConnector(Connector):
                     try:
                         encoded = body.get("data")
                         if not encoded:
-                            attachment = (
+                            attachment = self._execute(
                                 self._require_service()
                                 .users()
                                 .messages()
@@ -289,7 +323,6 @@ class GmailConnector(Connector):
                                     messageId=message_id,
                                     id=body["attachmentId"],
                                 )
-                                .execute()
                             )
                             encoded = attachment.get("data")
                         if not encoded:
