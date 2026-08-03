@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -17,6 +18,14 @@ from signaldesk.rules import RuleEngine
 
 def main() -> None:
     """Exercise the complete local-model JSON contract using fictional data only."""
+    os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    os.environ.setdefault("TRANSFORMERS_VERBOSITY", "error")
+    import torch
+    from transformers.utils import logging as transformers_logging
+
+    transformers_logging.disable_progress_bar()
+    transformers_logging.set_verbosity_error()
+
     with tempfile.TemporaryDirectory(prefix="signaldesk-model-smoke-") as directory:
         root = Path(directory)
         config = replace(
@@ -67,13 +76,31 @@ def main() -> None:
             config.model_id,
             media_store=MediaStore(root / "media"),
             revision=config.model_revision,
+            quantization=config.model_quantization,
         )
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats()
         result = gateway.analyze(thread, signals)
+        peak_vram_gib = (
+            round(torch.cuda.max_memory_allocated() / 1024**3, 3)
+            if torch.cuda.is_available()
+            else None
+        )
+        gateway.release()
+        released_vram_gib = (
+            round(torch.cuda.memory_allocated() / 1024**3, 3)
+            if torch.cuda.is_available()
+            else None
+        )
         report = {
             "success": result.triage is not None,
             "backend": result.backend,
             "error": result.error,
             "triage": result.triage.model_dump(mode="json") if result.triage else None,
+            "quantization": config.model_quantization,
+            "peak_vram_gib": peak_vram_gib,
+            "allocated_vram_after_release_gib": released_vram_gib,
             "private_data": False,
         }
         print(json.dumps(report, ensure_ascii=False))

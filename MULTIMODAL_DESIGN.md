@@ -1,7 +1,7 @@
 # Multimodal Image Design
 
 Status: thumbnail, OCR/evidence, local model and audit tooling implemented in development build
-`0.1.0.42`; real human review, field observation and production signing remain release gates.
+`0.1.0.44`; real human review, field observation and production signing remain release gates.
 
 ## 1. Product outcome
 
@@ -15,9 +15,12 @@ Displaying, reading and understanding are separate capabilities:
 | Capability | Responsibility | Requires a model |
 |---|---|---|
 | Display | Safe local storage, thumbnail, detail viewer | No |
-| Exact text extraction | OCR text and layout regions | Yes, OCR |
-| Semantic understanding | Summary, category, action/deadline candidates | Yes, VLM |
+| Exact text extraction | PaddleOCR-VL text and layout regions from real bytes | Yes, OCR |
+| Semantic understanding | Qwen summary, category, reply/action/deadline candidates | Yes, VLM |
 | Decision | Evidence validation and attention policy | Deterministic code |
+
+Neither model is a connector. They cannot log in, recover a dismissed notification, or reconstruct
+pixels from the phrase “sent a photo”. Acquisition must happen before display, OCR or Qwen.
 
 ## 2. Model decision
 
@@ -27,8 +30,9 @@ Displaying, reading and understanding are separate capabilities:
 - `Qwen3-VL-8B-Instruct` is an audit candidate only. It is not the default on a 16 GB GPU.
 
 The primary route is local and non-thinking. External inference remains disabled. Qwen runs on the
-RTX 4080 SUPER; WinUI composition can remain on the AMD integrated GPU. OCR is loaded on demand and
-does not run simultaneously unless measured VRAM headroom permits it.
+RTX 4080 SUPER in NF4 4-bit mode; WinUI composition can remain on the AMD integrated GPU. Thumbnails
+do not wake a model. PaddleOCR starts only after the user selects “擷取圖片文字”; Qwen runs afterward.
+Both use bounded output, never coexist on the GPU, and are released afterward.
 
 ## 3. Source capability matrix
 
@@ -41,6 +45,12 @@ does not run simultaneously unless measured VRAM headroom permits it.
 | Messenger personal notification | Usually text preview only | Same limitation; open source for the real image |
 | LINE Official Account webhook | Image message ID is available | Fetch with official API only after connector setup |
 | Messenger Page webhook | Attachment URL may be available | Fetch through the official Page integration only |
+
+For direct images from personal accounts, model replacement is not the solution. The feasible
+product routes are an explicit Messenger Web companion that receives the bytes visible in the
+signed-in browser, and an explicit foreground/manual LINE Desktop companion. Both require separate
+privacy consent, provider/ToS review, failure states and connector QA; LINE foreground automation is
+inherently more brittle than Gmail or an official business webhook.
 
 ## 4. Data flow
 
@@ -60,7 +70,7 @@ flowchart LR
 ```
 
 The first implementation accepts at most eight media references per event and sends at most the
-latest one to the always-on model route. Remaining assets stay available in message detail. This is
+latest one to the on-demand model route. Remaining assets stay available in message detail. This is
 a latency/VRAM guard, not a permanent product limit.
 
 ## 5. Contracts and storage
@@ -140,9 +150,16 @@ confidence output becomes `needs_review` and retains `visual_evidence_unverified
 
 | Route | Input budget | Output budget | Residency |
 |---|---:|---:|---|
-| Text triage | 384 input tokens | 128 tokens | always-on/auto-sleep |
-| Visual triage | one resized image + 2K–4K text/visual context | 256 tokens | Qwen always-on or auto-sleep |
-| OCR | one image/document page | structured blocks | on-demand |
+| Text triage | bounded message context | validated JSON | Qwen NF4, on-demand |
+| Visual triage | one bounded image + message/OCR context | validated JSON | Qwen NF4, on-demand |
+| OCR | one image/document page | structured blocks | Paddle BF16, on-demand |
+
+Measured on the target RTX 4080 SUPER: the full fictional Qwen contract peaks at 3.238 GiB allocated
+VRAM and returns to 0.008 GiB after release. The separate PaddleOCR-VL image smoke peaks at 1.811 GiB
+and also returns to 0.008 GiB.
+The service serializes both runtimes, so their weights and temporary allocations are not additive.
+Paddle spotting is capped at 384 output tokens (configurable from 128–512) because a 1024-token noisy
+image run grew the live KV cache past 8 GiB. A single image is processed per explicit request.
 
 The old global 512-token statement applies only to text triage. Images create visual tokens and must
 use a separate pixel/context budget. Initial preprocessing targets a long edge around 1280 px and
@@ -197,7 +214,7 @@ collapse into a generic LINE, Messenger, browser or Windows card.
 - Qwen3.5-4B multimodal gateway plus a BF16/INT8/NF4 GPU benchmark command.
 - Hash- and coordinate-bound OCR evidence validator.
 - Persisted analysis API and automatic thread re-analysis after successful OCR.
-- Revision pinning is supported; explicit OOM cancellation/residency tuning remains.
+- Revision pinning, NF4 Qwen, explicit user-triggered OCR, bounded output, sequential OCR/Qwen scheduling and release are implemented.
 
 ### M5 — Audit and release (tooling implemented; real gates not yet satisfied)
 
@@ -235,6 +252,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-windows-model-runtime.p
 
 The installed desktop launcher detects this private runtime, starts Qwen/PaddleOCR locally, and
 falls back to the packaged deterministic service if the optional environment is damaged.
+
+No model training is required to use this pipeline. The release process first compares zero-shot
+NF4 output against at least 300 human-reviewed examples. QLoRA/SFT becomes justified only if repeated,
+well-labeled failures miss the predefined quality gates; OCR fine-tuning is a separate decision and
+is not assumed.
 
 ## 12. Definition of done
 

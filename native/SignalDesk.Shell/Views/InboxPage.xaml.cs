@@ -18,6 +18,7 @@ public sealed partial class InboxPage : UserControl, IAsyncPage
     private readonly string _view;
     private string _search = "";
     private string? _loadingDetailCardId;
+    private readonly HashSet<string> _analyzingAssets = [];
     private bool _loaded;
 
     public InboxPage(AppState state, string view)
@@ -233,6 +234,37 @@ public sealed partial class InboxPage : UserControl, IAsyncPage
         catch (Exception error)
         {
             ShowMessage("圖片無法開啟", error.Message, InfoBarSeverity.Error);
+        }
+    }
+
+    private async void AnalyzeMedia_Click(object sender, RoutedEventArgs e)
+    {
+        if (Detail is null || sender is not Button { Tag: string assetId } button ||
+            !_analyzingAssets.Add(assetId)) return;
+        var cardId = Detail.CardId;
+        button.IsEnabled = false;
+        ShowMessage(
+            "正在擷取圖片文字",
+            "PaddleOCR 只在這次操作期間使用 GPU；完成後會釋放，Qwen 再於背景整理語意。",
+            InfoBarSeverity.Informational);
+        try
+        {
+            var result = await _state.Api.AnalyzeMediaAsync(assetId);
+            var status = result.TryGetProperty("status", out var value) ? value.GetString() : null;
+            if (status != "completed")
+                throw new InvalidOperationException("圖片文字沒有成功擷取，請稍後重試。");
+            ShowMessage("圖片文字已擷取", "GPU 已釋放；語意摘要會在下一個背景週期更新。");
+            var card = Cards.FirstOrDefault(item => item.CardId == cardId);
+            if (card is not null) await ShowCardDetailAsync(card);
+        }
+        catch (Exception error)
+        {
+            ShowMessage("圖片分析失敗", error.Message, InfoBarSeverity.Error);
+        }
+        finally
+        {
+            _analyzingAssets.Remove(assetId);
+            button.IsEnabled = true;
         }
     }
 

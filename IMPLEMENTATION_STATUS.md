@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last verified: 2026-08-03 · Desktop build: `0.1.0.42`
+Last verified: 2026-08-03 · Desktop build: `0.1.0.44`
 
 ## Honest completion estimate
 
@@ -33,26 +33,28 @@ because it has a design document.
 | Attention policy | Complete | Focus, quiet hours, VIP/mute, uncertainty penalty, preference score, interruption budget, Shadow Mode |
 | Actions | Complete | Open source, snooze, done, local reminder, editable draft; no auto-send route |
 | Privacy controls | Complete | Retention worker, safe export, preference reset, confirmed private-data deletion |
-| Validation | Passing | 60 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; local and GitHub Windows native builds pass for 0.1.0.42 |
+| Validation | Passing | 64 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; local validation passes for 0.1.0.44 |
 | Media presentation | Implemented, packaged verification in progress | Safe decode + thumbnail endpoint, Inbox and Glance previews, detail full image, and an explicit unavailable state when a Windows toast contains no image bytes |
 | OCR evidence | Deployed, model audit pending | Pinned PaddleOCR-VL-1.6 Windows CUDA runtime, hash-bound blocks/regions, authenticated analysis API, deterministic evidence rejection |
 | Multimodal audit | Queue ready, 0/300 human-reviewed | 300 fictional local images with SHA-256 manifest and review/lock tool; no review is falsely claimed |
 | Shadow/release | Tooling ready, time gates pending | Content-free 7–14 day report, readiness verifier, production signing and recoverable rollback scripts |
-| RTX 4080 SUPER smoke | Passing | Qwen BF16 8.671 GiB/5.655 s; NF4 3.290 GiB/5.371 s; INT8 5.054 GiB/17.416 s; Paddle BF16 1.809 GiB/7.067 s |
-| Live model scheduling | Implemented | Rule card is persisted immediately; Qwen runs one pending thread per 30-second worker cycle and validated output replaces the baseline without blocking notification ingestion |
-| Agent model contract | Passing on RTX 4080 SUPER | Fictional end-to-end smoke produces valid summary/category/reply/action/deadline JSON with real source-event evidence IDs; unsafe output still falls back |
+| RTX 4080 SUPER smoke | Passing | Full NF4 agent 3.238 GiB and 0.008 GiB after release; Paddle BF16 1.811 GiB/7.092 s and 0.008 GiB after release; earlier BF16/INT8/NF4 comparison retained in benchmark results |
+| Live model scheduling | Implemented | Rule card/thumbnail appears without a model; OCR is user-triggered; only completed OCR or important full content wakes Qwen; both release afterward |
+| Agent model contract | Passing on RTX 4080 SUPER | NF4 fictional end-to-end smoke produces valid evidence-bound JSON at 3.238 GiB peak and 0.008 GiB allocated after release; unsafe output still falls back |
 
 ## Deliberate product boundaries
 
 - Personal LINE and Messenger do not offer a supported full private-chat sync API. SignalDesk uses official archives for history and Windows-visible notification previews for new inbound messages.
 - Notification previews may omit context, images, stickers, muted chats, and messages dismissed before Windows exposes them. The UI preserves this uncertainty instead of inventing content.
+- Qwen and PaddleOCR do not acquire images. Gmail attachments work because the connector supplies bytes; direct personal LINE/Messenger images require a separate opt-in acquisition companion.
+- Images are never scanned merely because SignalDesk is open. The user explicitly starts OCR from message detail; the 384-token cap prevents noisy images from growing an unbounded KV cache.
 - The default engine is deterministic and local. Optional Qwen integration remains opt-in until it passes a human-labeled audit.
 - Development MSIX signing is implemented; a public release still requires a production publisher certificate and release channel.
 
 ## Remaining release gates
 
 - Human-label 300+ anonymized events and run a 7–14 day Shadow Mode evaluation.
-- Measure optional local-model quality and GPU behavior against the deterministic baseline.
+- Measure optional local-model quality against the deterministic baseline; VRAM residency behavior now passes the target-machine smoke.
 - Complete production signing, installer distribution, upgrade/rollback testing, and release notes.
 - Run provider review and deploy public HTTPS endpoints only if LINE Official Account or Messenger Page webhooks are enabled.
 
@@ -65,13 +67,13 @@ because it has a design document.
 - Verify the new Inbox/Glance thumbnails in the packaged app with Gmail/Messenger images.
 - Expand the successful one-image PaddleOCR-VL and Qwen BF16/INT8/NF4 smoke into the locked
   300-item quality run after human review.
-- Add cancellation and explicit OOM fallback/residency policy based on measured headroom.
+- Add explicit cancellation/timeout UI for a running cold model load; NF4 residency and release are implemented.
 - Human-review and lock the prepared multimodal queue (currently 0/300).
 
 ### Qwen and learning
 
 - Keep the pinned Windows model runtime reproducible across clean-machine upgrades.
-- Complete the 20-step and full-dataset comparison; the one-image hardware/quant smoke now passes.
+- Complete the 20-step and full-dataset quality comparison; NF4 memory/function smoke now passes.
 - Build the annotation workflow and human-label at least 300 private/anonymized events locally.
 - Train only if the zero-shot audit misses predefined gates; QLoRA/SFT is conditional, not assumed.
 - Produce a model card, dataset manifests and reproducible evaluation report.

@@ -194,17 +194,32 @@ class Pipeline:
             baseline.uncertainty_flags.append("truncated_content")
         self.bus.publish("triage_started", {"thread_id": thread_id})
         visual_analyses = self.database.visual_analyses_for_thread(thread_id)
-        model_result = (
-            self.gateway.analyze(thread, signals, visual_analyses)
-            if use_model
-            else ModelResult(triage=None, backend="rule+model-pending")
-        )
-        candidate = model_result.triage or baseline
         has_available_media = any(
             str(media.availability) == "available"
             for message in thread.messages
             for media in message.media
         )
+        has_verified_visual = any(
+            analysis.status == "completed" for analysis in visual_analyses
+        )
+        # A partial LINE/Messenger toast cannot gain missing context from a language
+        # model. Reserve Qwen for user-verified OCR context or complete, actionable messages.
+        model_eligible = has_verified_visual or (
+            str(thread.content_completeness) == "full"
+            and (
+                signals.priority in {"urgent", "high"}
+                or signals.requires_reply == "yes"
+            )
+        )
+        model_result = (
+            self.gateway.analyze(thread, signals, visual_analyses)
+            if use_model
+            else ModelResult(
+                triage=None,
+                backend="rule+model-pending" if self.defer_model and model_eligible else "rule",
+            )
+        )
+        candidate = model_result.triage or baseline
         if has_available_media and model_result.triage is None:
             if "visual_evidence_unverified" not in candidate.uncertainty_flags:
                 candidate.uncertainty_flags.append("visual_evidence_unverified")

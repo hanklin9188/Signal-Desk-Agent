@@ -155,7 +155,7 @@ public sealed partial class MainWindow : Window
         ServiceStateText.Text = _state.Model.Backend == "rule" ? "本機規則引擎" : "本機 AI 引擎";
         ServiceStateHint.Text = _state.Model.Backend == "rule"
             ? "可檢查 · 不連雲端"
-            : $"{_state.Model.Id} · 本機執行";
+            : $"{_state.Model.Id} · {_state.Model.Quantization.ToUpperInvariant()} · 按需載入";
         if (!_focusUpdateInProgress)
             FocusToggle.IsChecked = _state.Preferences.FocusMode;
         UpdateFocusVisual();

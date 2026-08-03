@@ -12,6 +12,8 @@ from typing import Any
 
 from PIL import Image
 
+from .runtime_memory import release_cuda_memory
+
 
 def _quantization_config(mode: str, transformers: Any) -> tuple[dict[str, Any], str]:
     import torch
@@ -141,6 +143,13 @@ def benchmark(args: argparse.Namespace) -> dict[str, Any]:
     }
     if args.include_output:
         result["output"] = output_text
+    # Report the state that matters to a desktop user: the worker can finish a
+    # bounded batch without leaving either model resident on the GPU.
+    inputs = output = generated = model = processor = None
+    release_cuda_memory()
+    result["allocated_vram_after_release_gib"] = round(
+        torch.cuda.memory_allocated() / 1024**3, 3
+    )
     return result
 
 

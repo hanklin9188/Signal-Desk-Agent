@@ -56,6 +56,14 @@ public sealed class LocalApiClient
         return await response.Content.ReadAsByteArrayAsync(token);
     }
 
+    public Task<JsonElement> AnalyzeMediaAsync(
+        string assetId, CancellationToken token = default) =>
+        SendAsync<JsonElement>(
+            HttpMethod.Post,
+            $"api/v1/media/{Uri.EscapeDataString(assetId)}/analysis",
+            null,
+            token);
+
     public Task<JsonElement> CardActionAsync(
         string cardId, string action, object? value = null, CancellationToken token = default) =>
         SendAsync<JsonElement>(

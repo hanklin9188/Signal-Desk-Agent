@@ -56,14 +56,16 @@
                         <ComboBoxItem Content="需要時載入（較省資源）" Tag="on_demand" />
                         <ComboBoxItem Content="遊戲／訓練時自動休眠" Tag="auto_sleep" />
                     </ComboBox>
+                    <TextBlock x:Name="ModelRuntimeStatusText" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     <TextBox x:Name="AllowlistBox" Header="允許擷取通知的 App"
                              Description="用逗號分隔，例如 LINE, Messenger, Google Chrome。未列入的通知不會進入 SignalDesk。"
                              TextWrapping="Wrap" />
                     <NumberBox x:Name="RetentionDaysBox" Header="原始內容保存天數"
                                Minimum="1" Maximum="90" SpinButtonPlacementMode="Compact" />
                     <InfoBar IsOpen="True" IsClosable="False" Severity="Informational"
-                             Title="本機優先"
-                             Message="分類、摘要、偏好學習與稽核記錄都在本機完成；不會把私人訊息傳給雲端模型。" />
+                             Title="模型只負責理解，不負責下載圖片"
+                             Message="縮圖不需要模型。你按下訊息裡的「擷取圖片文字」後，PaddleOCR 才會暫時啟動；完成後 Qwen 再整理語意與待辦。兩者不會同時佔用 GPU，私人訊息也不會送到雲端模型。" />
                 </StackPanel>
             </Border>
 

@@ -43,9 +43,12 @@ $runtimeConfig = [ordered]@{
     SIGNALDESK_MODEL_BACKEND = "transformers"
     SIGNALDESK_MODEL_ID = $qwenModel
     SIGNALDESK_MODEL_REVISION = $qwenRevision
+    SIGNALDESK_MODEL_QUANTIZATION = "nf4"
     SIGNALDESK_VISION_BACKEND = "paddleocr-vl"
+    SIGNALDESK_VISION_AUTO_ANALYZE = "0"
     SIGNALDESK_OCR_MODEL_ID = $ocrModel
     SIGNALDESK_OCR_MODEL_REVISION = $ocrRevision
+    SIGNALDESK_OCR_MAX_NEW_TOKENS = "384"
 }
 $runtimeConfig | ConvertTo-Json | Set-Content `
     -LiteralPath (Join-Path $runtimeRoot "runtime.json") -Encoding UTF8
@@ -53,10 +56,10 @@ $runtimeConfig | ConvertTo-Json | Set-Content `
 if (-not $SkipSmokeTest) {
     $sample = Join-Path $projectRoot "benchmarks\multimodal\assets\mm-001.png"
     & $python -m signaldesk.model_benchmark --family qwen --model $qwenModel `
-        --revision $qwenRevision --image $sample --quantization bf16 `
+        --revision $qwenRevision --image $sample --quantization 4bit `
         --warmup 0 --iterations 1 --max-new-tokens 96 `
         --expected-text "Aug 9, 2026" `
-        --output (Join-Path $diagnostics "qwen3.5-4b-bf16.json")
+        --output (Join-Path $diagnostics "qwen3.5-4b-nf4.json")
     if ($LASTEXITCODE -ne 0) { throw "Qwen smoke test failed." }
     & $python -m signaldesk.model_benchmark --family paddle --model $ocrModel `
         --revision $ocrRevision --image $sample --quantization bf16 `

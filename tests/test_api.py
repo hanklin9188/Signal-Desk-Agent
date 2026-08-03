@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -17,6 +18,16 @@ def test_api_requires_local_session(test_config, database):
         response = client.get("/api/v1/bootstrap")
         assert response.status_code == 200
         assert response.json()["privacy"]["auto_send"] is False
+
+
+def test_bootstrap_reports_local_model_quantization(test_config, database):
+    config = replace(test_config, model_quantization="nf4")
+    with TestClient(create_app(config, database)) as client:
+        client.get("/")
+        model = client.get("/api/v1/bootstrap").json()["model"]
+
+    assert model["quantization"] == "nf4"
+    assert model["ocr_max_new_tokens"] == 384
 
 
 def test_windows_bridge_and_no_send_endpoint(test_config, database):

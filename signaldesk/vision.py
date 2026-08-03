@@ -10,6 +10,7 @@ from PIL import Image
 
 from .media_store import MediaStore
 from .models import MediaAssetRef, OcrBlock, OcrRegion, VisualAnalysis
+from .runtime_memory import release_cuda_memory
 
 
 def _region(values: list[float], width: int, height: int) -> OcrRegion | None:
@@ -122,6 +123,8 @@ class VisionAnalyzer(Protocol):
 
     def analyze(self, media: MediaAssetRef) -> VisualAnalysis: ...
 
+    def release(self) -> None: ...
+
 
 class DisabledVisionAnalyzer:
     backend_name = "disabled"
@@ -129,16 +132,27 @@ class DisabledVisionAnalyzer:
     def analyze(self, media: MediaAssetRef) -> VisualAnalysis:
         raise RuntimeError("vision analysis is disabled")
 
+    def release(self) -> None:
+        return
+
 
 class PaddleOcrVlAnalyzer:
     """Lazy, local Transformers runtime for PaddleOCR-VL-1.6 text spotting."""
 
     backend_name = "paddleocr-vl-transformers"
 
-    def __init__(self, model_id: str, revision: str | None, media_store: MediaStore):
+    def __init__(
+        self,
+        model_id: str,
+        revision: str | None,
+        media_store: MediaStore,
+        *,
+        max_new_tokens: int = 384,
+    ):
         self.model_id = model_id
         self.revision = revision
         self.media_store = media_store
+        self.max_new_tokens = max(128, min(512, max_new_tokens))
         self._model: Any = None
         self._processor: Any = None
 
@@ -187,7 +201,11 @@ class PaddleOcrVlAnalyzer:
                     return_dict=True,
                     return_tensors="pt",
                 ).to(self._model.device)
-                output = self._model.generate(**inputs, max_new_tokens=1024, do_sample=False)
+                # Spotting emits several location tokens per text line. A 1024-token
+                # ceiling allowed long/noisy images to grow an 8+ GiB KV cache.
+                output = self._model.generate(
+                    **inputs, max_new_tokens=self.max_new_tokens, do_sample=False
+                )
                 raw = self._processor.batch_decode(
                     output[:, inputs["input_ids"].shape[-1] :], skip_special_tokens=False
                 )[0]
@@ -207,6 +225,7 @@ class PaddleOcrVlAnalyzer:
                 started_at=started,
                 completed_at=datetime.now(UTC),
             )
+
         except Exception as error:
             return VisualAnalysis(
                 asset_id=media.asset_id,
@@ -219,10 +238,22 @@ class PaddleOcrVlAnalyzer:
                 completed_at=datetime.now(UTC),
             )
 
+    def release(self) -> None:
+        self._model = None
+        self._processor = None
+        release_cuda_memory()
+
 
 def build_vision_analyzer(
-    backend: str, model_id: str, revision: str | None, media_store: MediaStore
+    backend: str,
+    model_id: str,
+    revision: str | None,
+    media_store: MediaStore,
+    *,
+    max_new_tokens: int = 384,
 ) -> VisionAnalyzer:
     if backend in {"paddleocr-vl", "transformers"}:
-        return PaddleOcrVlAnalyzer(model_id, revision, media_store)
+        return PaddleOcrVlAnalyzer(
+            model_id, revision, media_store, max_new_tokens=max_new_tokens
+        )
     return DisabledVisionAnalyzer()

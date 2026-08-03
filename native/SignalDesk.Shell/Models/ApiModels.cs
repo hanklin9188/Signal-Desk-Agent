@@ -363,6 +363,7 @@ public sealed class ModelStatus
     public string Backend { get; set; } = "rule";
     public string Id { get; set; } = "";
     public string Status { get; set; } = "";
+    public string Quantization { get; set; } = "none";
 }
 
 public sealed class ChatArchiveImportResult
@@ -446,7 +447,7 @@ public sealed class UserPreferences
         OnboardingComplete = Flag(values, "onboarding_complete"),
         QuietStart = Text(values, "quiet_start", "23:00"),
         QuietEnd = Text(values, "quiet_end", "08:00"),
-        ModelResidency = Text(values, "model_residency", "always_on"),
+        ModelResidency = Text(values, "model_residency", "on_demand"),
         RawRetentionDays = Number(values, "raw_retention_days", 7),
         DigestTime = Text(values, "digest_time", "18:00"),
         FocusDigestMinutes = Number(values, "focus_digest_minutes", 60),

@@ -9,11 +9,18 @@ from signaldesk.media_store import MediaStore
 from signaldesk.models import GroupedThread, TriageResult, VisualAnalysis
 from signaldesk.rules import RuleSignals
 from signaldesk.validator import TriageValidator
-from signaldesk.vision import parse_spotting_output
+from signaldesk.vision import PaddleOcrVlAnalyzer, parse_spotting_output
 
 PNG_1X1 = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
 )
+
+
+def test_ocr_generation_budget_is_bounded(tmp_path):
+    store = MediaStore(tmp_path)
+
+    assert PaddleOcrVlAnalyzer("ocr", None, store, max_new_tokens=1024).max_new_tokens == 512
+    assert PaddleOcrVlAnalyzer("ocr", None, store, max_new_tokens=1).max_new_tokens == 128
 
 
 def _thread(media):

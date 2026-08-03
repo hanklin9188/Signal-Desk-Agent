@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from signaldesk.model_gateway import ModelResult
-from signaldesk.models import UnifiedEvent
+from signaldesk.models import MediaAssetRef, UnifiedEvent, VisualAnalysis
 from signaldesk.pipeline import Pipeline
 
 ZONE = ZoneInfo("Asia/Taipei")
@@ -277,3 +277,94 @@ def test_transformers_analysis_is_deferred_until_card_is_visible(database, test_
     assert database.card_detail(result.card_id)["model_backend"].startswith(
         "qwen-transformers"
     )
+
+
+def test_incomplete_chat_preview_does_not_wake_qwen(database, test_config):
+    class RecordingGateway:
+        backend_name = "qwen-transformers"
+
+        def __init__(self):
+            self.calls = 0
+
+        def analyze(self, thread, signals, visual_analyses=None):
+            self.calls += 1
+            return ModelResult(triage=None, backend=self.backend_name, error="unexpected")
+
+        def release(self):
+            return
+
+    gateway = RecordingGateway()
+    deferred = Pipeline(
+        database,
+        replace(test_config, model_backend="transformers"),
+        gateway,
+    )
+    result = deferred.process(
+        event(
+            event_id="preview-no-qwen",
+            source="messenger_notification",
+            source_app_id="Microsoft Edge",
+            account_id="windows",
+            sender="Example Person",
+            conversation_id="Example Person",
+            title="Example Person",
+            content="傳送了 1 張相片",
+            content_completeness="notification_preview",
+            metadata={"origin": "messenger.com"},
+        )
+    )
+
+    assert gateway.calls == 0
+    assert database.card_detail(result.card_id)["model_backend"] == "rule"
+    assert database.pending_model_thread_ids(limit=10) == []
+
+
+def test_image_wakes_qwen_only_after_user_triggered_ocr(database, test_config):
+    gateway = type(
+        "RecordingGateway",
+        (),
+        {
+            "backend_name": "qwen-transformers",
+            "analyze": lambda self, thread, signals, visual_analyses=None: ModelResult(
+                triage=None, backend=self.backend_name, error="simulated"
+            ),
+            "release": lambda self: None,
+        },
+    )()
+    deferred = Pipeline(
+        database,
+        replace(test_config, model_backend="transformers"),
+        gateway,
+    )
+    media = MediaAssetRef(
+        asset_id="media_" + "a" * 40,
+        kind="image",
+        mime_type="image/png",
+        availability="available",
+        sha256="b" * 64,
+    )
+    result = deferred.process(
+        event(
+            event_id="image-on-demand",
+            content="Attached image",
+            title="Image",
+            media=[media],
+        )
+    )
+
+    assert database.pending_model_thread_ids(limit=10) == []
+
+    now = datetime.now(ZONE)
+    database.save_visual_analysis(
+        VisualAnalysis(
+            asset_id=media.asset_id,
+            asset_sha256=media.sha256,
+            status="completed",
+            ocr_model_id="PaddlePaddle/PaddleOCR-VL-1.6",
+            started_at=now,
+            completed_at=now,
+        )
+    )
+    deferred.analyze_thread(result.thread_id)
+
+    assert database.pending_model_thread_ids(limit=10) == [result.thread_id]

@@ -52,7 +52,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "onboarding_complete": False,
     "quiet_start": "23:00",
     "quiet_end": "08:00",
-    "model_residency": "always_on",
+    "model_residency": "on_demand",
     "raw_retention_days": 7,
     "notification_allowlist": ["LINE", "Messenger", "Google Chrome", "Microsoft Edge"],
     "digest_time": "18:00",
@@ -164,12 +164,14 @@ def create_app(config: Settings | None = None, database: Database | None = None)
         config.model_id,
         media_store=media_store,
         revision=config.model_revision,
+        quantization=config.model_quantization,
     )
     vision = build_vision_analyzer(
         config.vision_backend,
         config.ocr_model_id,
         config.ocr_model_revision,
         media_store,
+        max_new_tokens=config.ocr_max_new_tokens,
     )
     preferences = PreferenceRanker(database)
     pipeline = Pipeline(database, config, gateway, bus, preferences)
@@ -265,10 +267,18 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             for reminder in database.fire_due_reminders():
                 bus.publish("reminder_due", reminder)
             ticks += 1
-            # Keep GPU work bounded to one new image per cycle. The original event/card is
+            # Keep GPU work in a small sequential batch. The original event/card is
             # already safely persisted, so OCR failure can never lose a notification.
-            if config.vision_backend != "disabled":
-                for media in database.unanalyzed_media(limit=1):
+            processed_vision = False
+            if config.vision_backend != "disabled" and config.vision_auto_analyze:
+                # One image per cycle bounds both foreground latency and KV-cache
+                # growth; the model is released before the next 30-second cycle.
+                media_batch = database.unanalyzed_media(limit=1)
+                if media_batch:
+                    # Never let the general VLM and OCR model coexist on a 16 GB GPU.
+                    await asyncio.to_thread(gateway.release)
+                for media in media_batch:
+                    processed_vision = True
                     analysis = await asyncio.to_thread(vision.analyze, media)
                     database.save_visual_analysis(analysis)
                     if analysis.status == "completed":
@@ -277,11 +287,29 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             # Qwen runs after the deterministic card is already visible. This keeps
             # notification ingestion and app startup responsive even when the model
             # is cold-loading, while still replacing the baseline after validation.
-            if config.model_backend in {"endpoint", "transformers"}:
-                for thread_id in database.pending_model_thread_ids(limit=1):
-                    await asyncio.to_thread(
-                        lambda value=thread_id: pipeline.analyze_thread(value, use_model=True)
-                    )
+                if processed_vision:
+                    await asyncio.to_thread(vision.release)
+            # OCR and Qwen never occupy VRAM together. Process a small Qwen batch only
+            # on a cycle without OCR work, then return its weights and KV cache.
+            model_residency = str(
+                database.settings().get("model_residency", "on_demand")
+            )
+            if (
+                not processed_vision
+                and model_residency != "paused"
+                and config.model_backend in {"endpoint", "transformers"}
+            ):
+                model_batch = database.pending_model_thread_ids(limit=3)
+                try:
+                    for thread_id in model_batch:
+                        await asyncio.to_thread(
+                            lambda value=thread_id: pipeline.analyze_thread(
+                                value, use_model=True
+                            )
+                        )
+                finally:
+                    if model_batch and model_residency != "always_on":
+                        await asyncio.to_thread(gateway.release)
             # Restore connected OAuth sessions immediately after launch, then poll
             # every 60 seconds. This prevents a healthy account from looking
             # disconnected during the first minute of every desktop session.
@@ -537,6 +565,8 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                 "backend": config.model_backend,
                 "id": config.model_id,
                 "revision": config.model_revision,
+                "quantization": config.model_quantization,
+                "ocr_max_new_tokens": config.ocr_max_new_tokens,
                 "external_inference": False,
                 "status": "available" if config.model_backend != "rule" else "rule_fallback",
             },
@@ -544,6 +574,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                 "backend": vision.backend_name,
                 "ocr_model_id": config.ocr_model_id,
                 "ocr_model_revision": config.ocr_model_revision,
+                "auto_analyze": config.vision_auto_analyze,
                 "status": "available" if config.vision_backend != "disabled" else "disabled",
             },
             "privacy": {"local_only": True, "auto_send": False},
@@ -624,12 +655,15 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             raise HTTPException(status_code=404, detail="media not found")
         if config.vision_backend == "disabled":
             raise HTTPException(status_code=503, detail="vision analysis is disabled")
-        analysis = await asyncio.to_thread(vision.analyze, media)
-        database.save_visual_analysis(analysis)
-        if analysis.status == "completed":
-            for thread_id in database.thread_ids_for_media(asset_id):
-                await asyncio.to_thread(pipeline.analyze_thread, thread_id)
-        return analysis.model_dump(mode="json")
+        try:
+            analysis = await asyncio.to_thread(vision.analyze, media)
+            database.save_visual_analysis(analysis)
+            if analysis.status == "completed":
+                for thread_id in database.thread_ids_for_media(asset_id):
+                    await asyncio.to_thread(pipeline.analyze_thread, thread_id)
+            return analysis.model_dump(mode="json")
+        finally:
+            await asyncio.to_thread(vision.release)
 
     @router.post("/cards/{card_id}/actions")
     def card_action(card_id: str, request: CardActionRequest) -> dict[str, Any]:
@@ -978,6 +1012,8 @@ def create_app(config: Settings | None = None, database: Database | None = None)
         return {
             "backend": config.model_backend,
             "model_id": config.model_id,
+            "quantization": config.model_quantization,
+            "ocr_max_new_tokens": config.ocr_max_new_tokens,
             "status": "disabled_rule_mode" if config.model_backend == "rule" else "configured",
             "context_tokens": 512,
             "thinking": False,

@@ -37,8 +37,8 @@ flowchart LR
 - Attention policy: quiet hours, focus mode, VIP/mute rules, uncertainty penalties, and an interruption budget.
 - Human control: the app can open, snooze, mark done, create reminders, and prepare drafts—but never auto-sends.
 - Local preference learning: feedback adjusts ranking without uploading private message text.
-- Multimodal foundation: validated local image storage and Qwen image requests preserve explicit
-  missing/blocked states; OCR-grounded release work is tracked separately.
+- Multimodal foundation: real connector-supplied image bytes are displayed directly; PaddleOCR-VL
+  extracts localized text and Qwen turns verified message/image context into structured triage.
 
 ## Desktop experience
 
@@ -67,6 +67,11 @@ Gmail, LINE, Messenger, and Windows notifications have distinct reusable source 
 | Messenger Page | Signed Meta webhook connector | Full webhook payload for the configured Page |
 
 Personal LINE and Messenger accounts do not expose a supported API for full private-chat synchronization. SignalDesk does not scrape UI, reverse-engineer chat databases, or steal sessions. When Windows only exposes a preview, the UI says so explicitly.
+
+Models do not acquire messages or images. Gmail supplies real attachment bytes and therefore already
+supports thumbnails. A personal LINE/Messenger toast that contains only “sent a photo” supplies no
+pixels for any model to read. Direct personal-chat images require a separate opt-in acquisition
+connector (Messenger Web companion; LINE foreground/manual companion), not a larger model.
 
 ## Architecture
 
@@ -141,7 +146,7 @@ SIGNALDESK_DEMO=1 .venv/bin/signaldesk
 
 Current local verification:
 
-- 60 automated tests passing.
+- 64 automated tests passing.
 - 300 synthetic locked scenarios / 1,800 checks passing.
 - RTX 4080 SUPER image smoke: Qwen3.5-4B BF16/NF4/INT8 and PaddleOCR-VL-1.6 BF16 all loaded
   locally and found the fictional visible deadline; see [raw metrics](benchmarks/results/README.md).
@@ -152,6 +157,10 @@ Current local verification:
 The optional Windows GPU runtime is reproducible with
 `scripts/setup-windows-model-runtime.ps1`. It pins Qwen3.5-4B and PaddleOCR-VL-1.6 revisions,
 keeps inference local, and performs model work after the deterministic card is already visible.
+Qwen uses NF4 4-bit weights by default. Thumbnails require no model; PaddleOCR starts only when the
+user selects “擷取圖片文字”, Qwen runs afterward, and neither remains resident on the GPU. A
+fictional end-to-end RTX 4080 SUPER run measured 3.238 GiB peak allocated VRAM and 0.008 GiB after
+Qwen release.
 
 CI repeats schema parsing, lint, tests, a benchmark smoke gate, and the Windows native build.
 
@@ -188,7 +197,7 @@ Security design: [SECURITY_PRIVACY.md](SECURITY_PRIVACY.md) · Responsible discl
 - Expand anonymized, human-labeled evaluation beyond synthetic scenarios.
 - Complete 7–14 day Shadow Mode calibration studies.
 - Add production publisher signing and a stable Windows release channel.
-- Audit optional local Qwen inference against the deterministic baseline before enabling it by default.
+- Audit optional local Qwen inference against the deterministic baseline before considering training.
 - Human-review the prepared 300-item multimodal audit and complete real PaddleOCR/Qwen quality runs.
 
 ## License

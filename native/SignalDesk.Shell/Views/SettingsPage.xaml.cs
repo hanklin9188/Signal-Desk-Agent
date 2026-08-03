@@ -32,6 +32,9 @@ public sealed partial class SettingsPage : UserControl, IAsyncPage
         AllowlistBox.Text = string.Join(", ", prefs.NotificationAllowlist);
         SelectByTag(ThemeCombo, prefs.Theme);
         SelectByTag(ModelResidencyCombo, prefs.ModelResidency);
+        ModelRuntimeStatusText.Text = _state.Model.Backend == "rule"
+            ? "目前使用規則引擎，不占用模型 VRAM。"
+            : $"{_state.Model.Id} · {_state.Model.Quantization.ToUpperInvariant()}。建議使用『需要時載入』，閒置時不占用模型 VRAM。";
 
         try
         {
@@ -60,7 +63,7 @@ public sealed partial class SettingsPage : UserControl, IAsyncPage
                 digest_time = FormatTime(DigestTimePicker.Time),
                 focus_digest_minutes = (int)FocusDigestBox.Value,
                 theme = SelectedTag(ThemeCombo, "system"),
-                model_residency = SelectedTag(ModelResidencyCombo, "always_on"),
+                model_residency = SelectedTag(ModelResidencyCombo, "on_demand"),
                 raw_retention_days = (int)RetentionDaysBox.Value,
                 notification_allowlist = AllowlistBox.Text
                     .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
