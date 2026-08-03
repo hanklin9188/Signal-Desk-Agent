@@ -33,7 +33,7 @@ because it has a design document.
 | Attention policy | Complete | Focus, quiet hours, VIP/mute, uncertainty penalty, preference score, interruption budget, Shadow Mode |
 | Actions | Complete | Open source, snooze, done, local reminder, editable draft; no auto-send route |
 | Privacy controls | Complete | Retention worker, safe export, preference reset, confirmed private-data deletion |
-| Validation | Passing | 56 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; Windows CI/build pending for 0.1.0.40 |
+| Validation | Passing | 56 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; GitHub Windows native build passes for 0.1.0.40 |
 | Media presentation | Implemented, packaged verification pending | Safe decode + thumbnail endpoint, Inbox and Glance direct previews, detail full image |
 | OCR evidence | Implemented, model audit pending | PaddleOCR-VL-1.6 runtime, hash-bound blocks/regions, authenticated analysis API, deterministic evidence rejection |
 | Multimodal audit | Queue ready, 0/300 human-reviewed | 300 fictional local images with SHA-256 manifest and review/lock tool; no review is falsely claimed |
