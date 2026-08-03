@@ -15,6 +15,6 @@
 - [x] Qwen and PaddleOCR model revisions pinned
 - [x] synthetic dataset manifest
 - [x] GitHub Actions green for 0.1.0.40
-- [ ] demo uses fictional messages
+- [x] demo uses fictional messages only
 - [x] production signing script rejects development identity and unmet release gates
 - [ ] production publisher certificate supplied and clean-machine upgrade/rollback exercised
