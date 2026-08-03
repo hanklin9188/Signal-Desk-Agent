@@ -23,7 +23,7 @@
     {
       "path": ".github/workflows/spec-validation.yml",
       "bytes": 1451,
-      "sha256": "5e1864f0b9aeb435310ef39b6a2ef0ac4025ef23d930ad58ba26ad85316abf44"
+      "sha256": "e0d4ae68901aac52663c3b1b11c1ca136700dcd24ac37938bf81c92dfae2b63b"
     },
     {
       "path": ".gitignore",
