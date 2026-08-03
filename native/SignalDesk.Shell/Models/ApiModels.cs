@@ -165,6 +165,16 @@ public sealed class CardDetail : CardItem
     public ValidationData? Validation { get; set; }
     public DecisionData? Decision { get; set; }
     public string? ModelBackend { get; set; }
+    public string SummaryEngineLabel => ModelBackend switch
+    {
+        string backend when backend.StartsWith("qwen", StringComparison.OrdinalIgnoreCase)
+            && !backend.Contains("fallback", StringComparison.OrdinalIgnoreCase) => "Qwen 本機摘要",
+        string backend when backend.Contains("pending", StringComparison.OrdinalIgnoreCase)
+            => "快速摘要 · Qwen 等候中",
+        string backend when backend.Contains("fallback", StringComparison.OrdinalIgnoreCase)
+            => "快速摘要 · Qwen 未完成",
+        _ => "快速摘要"
+    };
     public List<ActionItemData> ActionItems { get; set; } = [];
     public List<DeadlineData> Deadlines { get; set; } = [];
     public List<ReminderData> Reminders { get; set; } = [];

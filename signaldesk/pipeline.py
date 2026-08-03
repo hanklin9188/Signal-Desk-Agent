@@ -220,6 +220,18 @@ class Pipeline:
             )
         )
         candidate = model_result.triage or baseline
+        if model_result.triage is not None and not has_verified_visual:
+            # For ordinary text, Qwen owns language understanding while the deterministic
+            # engine owns exact-span evidence. This prevents a good summary from being lost
+            # merely because the model paraphrased an action or deadline supporting span.
+            candidate = model_result.triage.model_copy(
+                update={
+                    "action_items": baseline.action_items,
+                    "deadlines": baseline.deadlines,
+                    "suggested_actions": baseline.suggested_actions,
+                    "supporting_spans": baseline.supporting_spans,
+                }
+            )
         if has_available_media and model_result.triage is None:
             if "visual_evidence_unverified" not in candidate.uncertainty_flags:
                 candidate.uncertainty_flags.append("visual_evidence_unverified")
@@ -238,6 +250,9 @@ class Pipeline:
             model_backend += "+rule-fallback"
         elif model_result.error and model_result.backend != "rule":
             report.warnings.append("model_unavailable_rule_baseline_used")
+            if model_result.error_code:
+                # Persist only the exception class, never model output or private message text.
+                report.warnings.append(f"model_error_{model_result.error_code}")
             model_backend += "+rule-fallback"
 
         now = datetime.now(UTC)

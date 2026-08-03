@@ -1,7 +1,7 @@
 # Multimodal Image Design
 
 Status: thumbnail, OCR/evidence, local model and audit tooling implemented in development build
-`0.1.0.45`; real human review, field observation and production signing remain release gates.
+`0.1.0.46`; real human review, field observation and production signing remain release gates.
 
 ## 1. Product outcome
 
@@ -155,7 +155,7 @@ confidence output becomes `needs_review` and retains `visual_evidence_unverified
 | Visual triage | one bounded image + message/OCR context | validated JSON | Qwen NF4, on-demand |
 | OCR | one image/document page | structured blocks | Paddle BF16, on-demand |
 
-Measured on the target RTX 4080 SUPER: the full fictional Qwen contract peaks at 3.238 GiB allocated
+Measured on the target RTX 4080 SUPER: the full fictional Qwen contract peaks at 3.277 GiB allocated
 VRAM and returns to 0.008 GiB after release. The separate PaddleOCR-VL image smoke peaks at 1.811 GiB
 and also returns to 0.008 GiB.
 The service serializes both runtimes, so their weights and temporary allocations are not additive.

@@ -14,14 +14,14 @@ Legend: `[x]` verified · `[~]` implemented but release verification remains · 
 - [x] UnifiedEvent, connector cursor, idempotency, raw/normalized store and migrations.
 - [x] Per-conversation grouping and notification replay repair.
 - [x] MediaAsset contract, content-addressed store and per-event association.
-- [ ] Thumbnail/derivative table and immutable OCR/visual evidence contract.
+- [~] Content-addressed thumbnails and immutable OCR/visual evidence are implemented; a separate derivative metadata table is optional follow-up work.
 
 ## Epic 2 — Windows shell
 
 - [x] WinUI 3, package identity, notification listener, tray, Orb, Glance and deep-link open.
 - [x] Native file pickers, Focus Mode and authenticated local service lifecycle.
 - [~] Development MSIX; production signing and upgrade/rollback remain.
-- [~] Authenticated detail image viewer and media error labels implemented; thumbnails/OCR remain.
+- [x] Authenticated thumbnails, detail image viewer, explicit analysis action and media error labels.
 
 ## Epic 3 — Connectors
 
@@ -37,39 +37,39 @@ Legend: `[x]` verified · `[~]` implemented but release verification remains · 
 - [x] Normalize, deduplicate, group, rule triage, validation, policy and actions.
 - [x] Quiet hours, interruption budget, Shadow Mode and local preference ranker.
 - [~] Event isolation and quarantine exist; extended crash/soak validation remains.
-- [ ] Visual route queue, cancellation, retry, GPU OOM fallback and derived-media cleanup.
+- [~] Sequential on-demand OCR/Qwen route, safe fallback and model release are implemented; explicit cancellation/timeout UI remains.
 
 ## Epic 5 — Qwen and multimodal runtime
 
 - [x] Optional model gateway with deterministic rule fallback.
 - [x] OpenAI-compatible and Transformers message paths can carry one image.
-- [x] Separate 128-token text and 256-token visual output budgets.
-- [ ] Pin Qwen3.5-4B revision and verified Windows runtime.
-- [ ] PaddleOCR-VL-1.6 local service and hash-bound evidence.
-- [ ] Pixel/context compiler, batch queue, GPU modes, health and metrics.
-- [ ] Compare BF16/8-bit/4-bit quality, latency and peak VRAM on RTX 4080 SUPER.
+- [x] Bounded 640-token text and 768-token visual output budgets plus one in-memory schema-repair pass.
+- [x] Pinned Qwen3.5-4B NF4 revision and verified Windows CUDA runtime.
+- [x] Pinned PaddleOCR-VL-1.6 local runtime and hash/region-bound evidence.
+- [~] Bounded pixel/context compiler, sequential queue, on-demand residency, health and smoke metrics; cancellation UI remains.
+- [x] BF16/INT8/NF4 latency and peak-VRAM smoke comparison on RTX 4080 SUPER.
 
 ## Epic 6 — Validation and safety
 
 - [x] Text span/deadline validator, preview limitation and action allowlist.
 - [x] Image availability states and safe format/signature/size validation.
-- [ ] OCR-region validator for visual action items and exact deadlines.
-- [ ] Decoded-pixel/decompression-bomb limits and hardened thumbnail worker.
-- [ ] Multimodal calibration and end-to-end locked scenario runner.
+- [x] OCR-region validator for visual action items and exact deadlines.
+- [x] Decoded-pixel/decompression-bomb limits and hardened thumbnail generation.
+- [~] Deterministic 300-item multimodal queue and review/lock runner exist; human calibration is 0/300.
 
 ## Epic 7 — UI and UX
 
 - [x] Orb, Glance, Inbox/detail, source icons, relative time and actions.
 - [x] Source Center, Attention Policy, Privacy Controls and Daily Digest.
 - [~] Keyboard/responsive design implemented; formal accessibility audit remains.
-- [~] Detail image viewer implemented; thumbnail card, OCR highlight and retry states remain.
+- [~] Inbox/Glance thumbnails, detail viewer and analysis status are implemented; OCR region highlighting and explicit cancellation remain.
 - [ ] Current professional screenshot set and short visual demo.
 
 ## Epic 8 — Dataset and training
 
 - [x] Synthetic locked text-scenario generator and 300-scenario baseline.
 - [x] Annotation/dataset/training contracts documented.
-- [ ] Human annotation tool and 300+ reviewed real-world/anonymized text events.
+- [~] Local annotation/review-lock tooling exists; 300+ reviewed real-world/anonymized text events remain.
 - [ ] 300+ reviewed multimodal audit set with screenshot/document/photo/missing slices.
 - [ ] Zero-shot Qwen audit, calibration and Shadow Mode report.
 - [ ] Conditional QLoRA/SFT, only if the audit justifies it.
@@ -85,11 +85,11 @@ Legend: `[x]` verified · `[~]` implemented but release verification remains · 
 
 ## Current execution sequence
 
-1. Multimodal foundation: contracts, safe store, local API and model request path.
-2. Gmail/Messenger media acquisition and WinUI thumbnail/detail presentation.
-3. PaddleOCR-VL + Qwen runtime, evidence validator and GPU measurements.
-4. Annotation/audit tooling, 300+ multimodal audit and 7–14 day Shadow Mode.
-5. Accessibility/soak/upgrade gates, production signing and public v1.0.
+1. Verify Gmail and Messenger media variants in the packaged app.
+2. Human-review the prepared 300-item multimodal queue and compare zero-shot quality.
+3. Complete 7–14 day Shadow Mode and real-account reliability observation.
+4. Finish accessibility, cancellation, soak and upgrade/rollback gates.
+5. Add production signing, release artifacts and public v1.0 documentation.
 
 ## Definition of done v1.0
 

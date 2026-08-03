@@ -146,7 +146,7 @@ SIGNALDESK_DEMO=1 .venv/bin/signaldesk
 
 Current local verification:
 
-- 65 automated tests passing.
+- 68 automated tests passing.
 - 300 synthetic locked scenarios / 1,800 checks passing.
 - RTX 4080 SUPER image smoke: Qwen3.5-4B BF16/NF4/INT8 and PaddleOCR-VL-1.6 BF16 all loaded
   locally and found the fictional visible deadline; see [raw metrics](benchmarks/results/README.md).
@@ -160,8 +160,13 @@ keeps inference local, and performs model work after the deterministic card is a
 Qwen uses NF4 4-bit weights by default. Thumbnails require no model; after the user selects
 “分析圖片”, PaddleOCR extracts evidence and releases before Qwen interprets the photo or document.
 Neither model remains resident on the GPU. A
-fictional end-to-end RTX 4080 SUPER run measured 3.238 GiB peak allocated VRAM and 0.008 GiB after
+fictional end-to-end RTX 4080 SUPER run measured 3.277 GiB peak allocated VRAM and 0.008 GiB after
 Qwen release.
+
+Qwen summaries use a strict zh-TW contract: conclusion first, then the supported actor, event,
+next step and deadline. One in-memory repair pass corrects malformed/truncated JSON without loading
+a second model copy. Message detail identifies whether the visible result is a validated Qwen
+summary or the deterministic fast fallback.
 
 CI repeats schema parsing, lint, tests, a benchmark smoke gate, and the Windows native build.
 

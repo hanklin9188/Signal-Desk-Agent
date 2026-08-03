@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last verified: 2026-08-03 · Desktop build: `0.1.0.45`
+Last verified: 2026-08-03 · Desktop build: `0.1.0.46`
 
 ## Honest completion estimate
 
@@ -33,14 +33,14 @@ because it has a design document.
 | Attention policy | Complete | Focus, quiet hours, VIP/mute, uncertainty penalty, preference score, interruption budget, Shadow Mode |
 | Actions | Complete | Open source, snooze, done, local reminder, editable draft; no auto-send route |
 | Privacy controls | Complete | Retention worker, safe export, preference reset, confirmed private-data deletion |
-| Validation | Passing | 65 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; local validation passes for 0.1.0.45 |
+| Validation | Passing | 68 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; local validation passes for 0.1.0.46 |
 | Media presentation | Implemented, packaged verification in progress | Safe decode + thumbnail endpoint, Inbox and Glance previews, detail full image, and an explicit unavailable state when a Windows toast contains no image bytes |
 | OCR evidence | Deployed, model audit pending | Pinned PaddleOCR-VL-1.6 Windows CUDA runtime, hash-bound blocks/regions, authenticated analysis API, deterministic evidence rejection |
 | Multimodal audit | Queue ready, 0/300 human-reviewed | 300 fictional local images with SHA-256 manifest and review/lock tool; no review is falsely claimed |
 | Shadow/release | Tooling ready, time gates pending | Content-free 7–14 day report, readiness verifier, production signing and recoverable rollback scripts |
-| RTX 4080 SUPER smoke | Passing | Full NF4 agent 3.238 GiB and 0.008 GiB after release; Paddle BF16 1.811 GiB/7.092 s and 0.008 GiB after release; earlier BF16/INT8/NF4 comparison retained in benchmark results |
+| RTX 4080 SUPER smoke | Passing | Full NF4 agent 3.277 GiB and 0.008 GiB after release; Paddle BF16 1.811 GiB/7.092 s and 0.008 GiB after release; earlier BF16/INT8/NF4 comparison retained in benchmark results |
 | Live model scheduling | Implemented | Rule card/thumbnail appears without a model; “分析圖片” runs OCR then Qwen sequentially; important full text may wake Qwen directly; both release afterward |
-| Agent model contract | Passing on RTX 4080 SUPER | NF4 fictional end-to-end smoke produces valid evidence-bound JSON at 3.238 GiB peak and 0.008 GiB allocated after release; unsafe output still falls back |
+| Agent model contract | Passing on RTX 4080 SUPER | NF4 fictional end-to-end smoke produces a clear zh-TW summary and valid evidence-bound JSON at 3.277 GiB peak and 0.008 GiB allocated after release; one bounded format-repair pass reduces fallback without adding model weights |
 
 ## Deliberate product boundaries
 

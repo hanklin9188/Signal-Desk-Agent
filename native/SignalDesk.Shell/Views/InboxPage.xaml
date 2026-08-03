@@ -276,8 +276,14 @@
 
                     <Border Style="{StaticResource SignalCardStyle}" Background="{StaticResource SignalAccentSoftBrush}">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="SIGNALDESK 摘要" Style="{StaticResource SignalSectionLabelStyle}"
-                                       Foreground="{StaticResource SignalAccentBrush}" />
+                            <Grid>
+                                <TextBlock Text="SIGNALDESK 摘要" Style="{StaticResource SignalSectionLabelStyle}"
+                                           Foreground="{StaticResource SignalAccentBrush}" />
+                                <Border HorizontalAlignment="Right" Style="{StaticResource SignalChipStyle}">
+                                    <TextBlock Text="{Binding SummaryEngineLabel}" FontSize="10"
+                                               Foreground="{StaticResource SignalMutedBrush}" />
+                                </Border>
+                            </Grid>
                             <TextBlock Text="{Binding Summary}" FontSize="15" TextWrapping="Wrap" LineHeight="24" />
                         </StackPanel>
                     </Border>

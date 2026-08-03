@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from signaldesk.model_gateway import ModelResult
-from signaldesk.models import MediaAssetRef, UnifiedEvent, VisualAnalysis
+from signaldesk.models import ActionItem, MediaAssetRef, TriageResult, UnifiedEvent, VisualAnalysis
 from signaldesk.pipeline import Pipeline
 
 ZONE = ZoneInfo("Asia/Taipei")
@@ -255,6 +255,7 @@ def test_transformers_analysis_is_deferred_until_card_is_visible(database, test_
                 triage=None,
                 backend=self.backend_name,
                 error="simulated_model_unavailable",
+                error_code="runtimeerror",
             )
 
     gateway = RecordingGateway()
@@ -277,6 +278,49 @@ def test_transformers_analysis_is_deferred_until_card_is_visible(database, test_
     assert database.card_detail(result.card_id)["model_backend"].startswith(
         "qwen-transformers"
     )
+    assert "model_error_runtimeerror" in database.card_detail(result.card_id)[
+        "validation"
+    ]["warnings"]
+
+
+def test_qwen_text_summary_uses_deterministic_evidence_fields(database, test_config):
+    class SummaryGateway:
+        backend_name = "qwen-transformers"
+
+        def analyze(self, thread, signals, visual_analyses=None):
+            return ModelResult(
+                triage=TriageResult(
+                    summary="教授要求今晚前寄出目前的實驗結果。",
+                    category="research",
+                    priority="high",
+                    requires_reply="yes",
+                    action_items=[
+                        ActionItem(
+                            text="模型改寫過的待辦",
+                            supporting_span="這句並不存在於原文",
+                            source_event_ids=[thread.event_ids[0]],
+                        )
+                    ],
+                    suggested_actions=["draft_reply"],
+                ),
+                backend=self.backend_name,
+            )
+
+        def release(self):
+            return
+
+    pipeline = Pipeline(
+        database,
+        replace(test_config, model_backend="transformers"),
+        SummaryGateway(),
+    )
+    result = pipeline.process(event(event_id="qwen-summary-evidence"))
+    pipeline.analyze_thread(result.thread_id, use_model=True)
+    detail = database.card_detail(result.card_id)
+
+    assert detail["summary"] == "教授要求今晚前寄出目前的實驗結果。"
+    assert detail["action_items"][0]["supporting_span"] in detail["events"][0]["content"]
+    assert detail["model_backend"] == "qwen-transformers"
 
 
 def test_incomplete_chat_preview_does_not_wake_qwen(database, test_config):

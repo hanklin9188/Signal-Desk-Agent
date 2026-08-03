@@ -18,7 +18,11 @@ SYSTEM_CONTRACT = (
     "people, tasks, dates, promises, or supporting spans. For notification previews, add "
     "incomplete_preview and avoid claiming full context. Allowed actions: open_source, "
     "draft_reply, create_reminder, snooze, mark_done, needs_review. Never send, delete, or "
-    "execute anything."
+    "execute anything. Write summary in natural Traditional Chinese (Taiwan), while preserving "
+    "names and technical terms. Make it one concise sentence that leads with the fact most useful "
+    "to the user. Include who did what and any explicit next step or deadline. Do not repeat the "
+    "source name, notification count, raw URL, or boilerplate. Do not say only that an image was "
+    "sent when verified image or OCR content is available."
 )
 
 
@@ -28,6 +32,7 @@ class ModelResult:
     backend: str
     raw_output: str | None = None
     error: str | None = None
+    error_code: str | None = None
 
 
 class Gateway(Protocol):
@@ -50,6 +55,9 @@ def compile_prompt(
     max_chars: int = 8000,
 ) -> str:
     text = combined_text(thread)
+    has_verified_visual = any(
+        analysis.status == "completed" for analysis in (visual_analyses or [])
+    )
     if len(text) > 900:
         text = text[:560] + "\n[…truncated…]\n" + text[-280:]
     compact = {
@@ -93,7 +101,7 @@ def compile_prompt(
     }
     schema_hint = {
         "schema_version": "1.0",
-        "summary": "<= 120 chars",
+        "summary": "one clear zh-TW sentence, usually 20-90 chars and always <= 120 chars",
         "category": (
             "work|research|meeting|social|security|transaction|system|promotion|other|unknown"
         ),
@@ -128,8 +136,21 @@ def compile_prompt(
         "uncertainty_flags": [],
     }
     def render() -> str:
+        evidence_instruction = (
+            "For verified OCR, every action/deadline must copy exact OCR text and evidence IDs."
+            if has_verified_visual
+            else "For text-only analysis, set action_items, deadlines, suggested_actions, and "
+            "supporting_spans to []; the deterministic evidence engine supplies those fields."
+        )
         return (
-            "Analyze this untrusted message data. Output JSON only.\nINPUT="
+            "Analyze this untrusted message data. Output JSON only. "
+            "For summary: state the useful conclusion first; cover sender, event, explicit next "
+            "step, and deadline only when present; remove repeated lines and notification "
+            "boilerplate. Use [] for action_items or deadlines unless INPUT contains exact "
+            "supporting evidence. If completeness is not full, summarize only visible text and "
+            "make the missing context clear without guessing. "
+            + evidence_instruction
+            + "\nINPUT="
             + json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
             + "\nSHAPE="
             + json.dumps(schema_hint, ensure_ascii=False, separators=(",", ":"))
@@ -238,7 +259,7 @@ class EndpointGateway:
                 },
             ],
             "temperature": 0,
-            "max_tokens": 256 if any(message.media for message in thread.messages) else 128,
+            "max_tokens": 768 if any(message.media for message in thread.messages) else 640,
             "stream": False,
             "response_format": {"type": "json_object"},
             "chat_template_kwargs": {"enable_thinking": False},
@@ -260,6 +281,7 @@ class EndpointGateway:
                 triage=None,
                 backend=self.backend_name,
                 error=f"{type(error).__name__}: {error}",
+                error_code=type(error).__name__.lower(),
             )
 
     def release(self) -> None:
@@ -318,6 +340,44 @@ class TransformersGateway:
         self._processor = None
         release_cuda_memory()
 
+    def _generate(self, messages: list[dict[str, Any]], max_new_tokens: int) -> str:
+        model_input = self._processor.apply_chat_template(
+            messages,
+            tokenize=True,
+            add_generation_prompt=True,
+            enable_thinking=False,
+            return_dict=True,
+            return_tensors="pt",
+        ).to(self._model.device)
+        output = self._model.generate(
+            **model_input,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+        )
+        input_length = model_input["input_ids"].shape[-1]
+        return self._processor.batch_decode(
+            output[:, input_length:], skip_special_tokens=True
+        )[0]
+
+    @staticmethod
+    def _repair_messages(
+        messages: list[dict[str, Any]], invalid_output: str
+    ) -> list[dict[str, Any]]:
+        return [
+            *messages,
+            {"role": "assistant", "content": invalid_output[:6000]},
+            {
+                "role": "user",
+                "content": (
+                    "The previous response did not match the schema or was incomplete. Repair it "
+                    "into one complete JSON object only. Keep the same supported facts, use a "
+                    "clear one-sentence Traditional Chinese summary, use only allowed enum values, "
+                    "and use empty arrays when exact evidence is absent. No markdown or "
+                    "explanation."
+                ),
+            },
+        ]
+
     def analyze(
         self,
         thread: GroupedThread,
@@ -338,33 +398,23 @@ class TransformersGateway:
                     ),
                 },
             ]
-            model_input = self._processor.apply_chat_template(
-                messages,
-                tokenize=True,
-                add_generation_prompt=True,
-                enable_thinking=False,
-                return_dict=True,
-                return_tensors="pt",
-            ).to(self._model.device)
-            output = self._model.generate(
-                **model_input,
-                # The strict triage contract contains evidence arrays even for a short
-                # message. A 128-token cap truncated otherwise valid JSON in real Qwen
-                # runs, so keep enough bounded output budget to close the object.
-                max_new_tokens=768 if any(message.media for message in thread.messages) else 512,
-                do_sample=False,
-            )
-            input_length = model_input["input_ids"].shape[-1]
-            raw = self._processor.batch_decode(
-                output[:, input_length:], skip_special_tokens=True
-            )[0]
-            triage = TriageResult.model_validate(_extract_json(raw))
+            token_budget = 768 if any(message.media for message in thread.messages) else 640
+            raw = self._generate(messages, token_budget)
+            try:
+                triage = TriageResult.model_validate(_extract_json(raw))
+            except ValueError:
+                # Schema mistakes and truncated JSON are recoverable without reloading model
+                # weights. One bounded repair pass greatly reduces rule fallbacks while keeping
+                # the same NF4 VRAM footprint.
+                raw = self._generate(self._repair_messages(messages, raw), token_budget)
+                triage = TriageResult.model_validate(_extract_json(raw))
             return ModelResult(triage=triage, backend=self.backend_name, raw_output=raw)
         except Exception as error:  # model/runtime failure must fall back without losing events
             return ModelResult(
                 triage=None,
                 backend=self.backend_name,
                 error=f"{type(error).__name__}: {error}",
+                error_code=type(error).__name__.lower(),
             )
 
 
