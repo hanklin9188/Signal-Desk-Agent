@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="780" viewBox="0 0 1440 780" role="img" aria-labelledby="title desc">
+  <title id="title">SignalDesk local-first architecture</title>
+  <desc id="desc">Gmail and Windows notification previews enter a native Windows shell and authenticated loopback service, where the local agent pipeline stores data in SQLite and may call an optional local model.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0b1020"/><stop offset="1" stop-color="#101a30"/></linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#7b74ff"/><stop offset="1" stop-color="#45c8f5"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#02040c" flood-opacity=".4"/></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#6c7895"/></marker>
+    <marker id="arrowAccent" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#8e88ff"/></marker>
+  </defs>
+  <rect width="1440" height="780" rx="30" fill="url(#bg)"/>
+  <circle cx="1290" cy="130" r="240" fill="#795fff" opacity=".06"/>
+  <text x="72" y="76" fill="#f7f9ff" font-family="Inter,Segoe UI,sans-serif" font-size="30" font-weight="700">Local by default. Network access by connector.</text>
+  <text x="72" y="111" fill="#9ca9c7" font-family="Inter,Segoe UI,sans-serif" font-size="17">Private content stays inside the Windows trust boundary; the optional model runs locally.</text>
+
+  <rect x="46" y="146" width="1348" height="548" rx="28" fill="#0d1528" stroke="#3b4268" stroke-width="2" stroke-dasharray="9 8"/>
+  <rect x="72" y="126" width="240" height="40" rx="20" fill="#24264b"/>
+  <text x="192" y="152" text-anchor="middle" fill="#c4c0ff" font-family="Inter,Segoe UI,sans-serif" font-size="13" font-weight="700" letter-spacing="1.2">WINDOWS TRUST BOUNDARY</text>
+
+  <g filter="url(#shadow)">
+    <rect x="72" y="205" width="240" height="192" rx="24" fill="#151f35" stroke="#293957" stroke-width="2"/>
+    <text x="102" y="249" fill="#8794b3" font-family="Inter,Segoe UI,sans-serif" font-size="12" font-weight="700" letter-spacing="1.5">INPUTS</text>
+    <rect x="102" y="274" width="180" height="42" rx="12" fill="#1b2942"/>
+    <circle cx="126" cy="295" r="8" fill="#ea4335"/>
+    <text x="146" y="301" fill="#eef2ff" font-family="Inter,Segoe UI,sans-serif" font-size="15" font-weight="600">Gmail API</text>
+    <rect x="102" y="329" width="180" height="42" rx="12" fill="#1b2942"/>
+    <circle cx="126" cy="350" r="8" fill="#45c8f5"/>
+    <text x="146" y="356" fill="#eef2ff" font-family="Inter,Segoe UI,sans-serif" font-size="15" font-weight="600">Visible notifications</text>
+
+    <rect x="384" y="205" width="286" height="394" rx="24" fill="#151f35" stroke="#3b4471" stroke-width="2"/>
+    <rect x="384" y="205" width="7" height="394" rx="4" fill="#7b74ff"/>
+    <text x="422" y="249" fill="#9b95ff" font-family="Inter,Segoe UI,sans-serif" font-size="12" font-weight="700" letter-spacing="1.5">NATIVE EXPERIENCE</text>
+    <text x="422" y="293" fill="#f7f9ff" font-family="Inter,Segoe UI,sans-serif" font-size="23" font-weight="700">WinUI 3 shell</text>
+    <text x="422" y="324" fill="#a8b3cc" font-family="Inter,Segoe UI,sans-serif" font-size="15">Inbox · Glance · Digest</text>
+    <line x1="422" y1="352" x2="632" y2="352" stroke="#2b3852"/>
+    <text x="422" y="391" fill="#d8def0" font-family="Inter,Segoe UI,sans-serif" font-size="15">UserNotificationListener</text>
+    <text x="422" y="425" fill="#d8def0" font-family="Inter,Segoe UI,sans-serif" font-size="15">Tray + focus controls</text>
+    <text x="422" y="459" fill="#d8def0" font-family="Inter,Segoe UI,sans-serif" font-size="15">OAuth launch</text>
+    <rect x="422" y="503" width="210" height="58" rx="15" fill="#1c2942" stroke="#344968"/>
+    <text x="527" y="528" text-anchor="middle" fill="#edf2ff" font-family="Inter,Segoe UI,sans-serif" font-size="14" font-weight="600">Credential Manager</text>
+    <text x="527" y="549" text-anchor="middle" fill="#8f9bb6" font-family="Inter,Segoe UI,sans-serif" font-size="12">random bearer token</text>
+
+    <rect x="742" y="205" width="366" height="394" rx="24" fill="#151f35" stroke="#3b4471" stroke-width="2"/>
+    <rect x="742" y="205" width="7" height="394" rx="4" fill="url(#edge)"/>
+    <text x="780" y="249" fill="#65d6fb" font-family="Inter,Segoe UI,sans-serif" font-size="12" font-weight="700" letter-spacing="1.5">LOOPBACK-ONLY SERVICE</text>
+    <text x="780" y="293" fill="#f7f9ff" font-family="Inter,Segoe UI,sans-serif" font-size="23" font-weight="700">Python agent service</text>
+    <text x="780" y="324" fill="#a8b3cc" font-family="Inter,Segoe UI,sans-serif" font-size="15">FastAPI + authenticated SSE</text>
+    <rect x="780" y="358" width="290" height="45" rx="13" fill="#1a2740"/>
+    <text x="925" y="386" text-anchor="middle" fill="#dce3f4" font-family="Inter,Segoe UI,sans-serif" font-size="14">Normalize + deduplicate</text>
+    <path d="M925 403V422" stroke="#53617d" marker-end="url(#arrow)"/>
+    <rect x="780" y="427" width="290" height="45" rx="13" fill="#1a2740"/>
+    <text x="925" y="455" text-anchor="middle" fill="#dce3f4" font-family="Inter,Segoe UI,sans-serif" font-size="14">Triage + evidence extraction</text>
+    <path d="M925 472V491" stroke="#53617d" marker-end="url(#arrow)"/>
+    <rect x="780" y="496" width="290" height="65" rx="13" fill="#24264b" stroke="#4b4c87"/>
+    <text x="925" y="523" text-anchor="middle" fill="#c9c5ff" font-family="Inter,Segoe UI,sans-serif" font-size="14" font-weight="600">Validate + attention policy</text>
+    <text x="925" y="545" text-anchor="middle" fill="#929dc0" font-family="Inter,Segoe UI,sans-serif" font-size="12">bounded, explainable output</text>
+
+    <rect x="1180" y="205" width="178" height="176" rx="24" fill="#151f35" stroke="#293957" stroke-width="2"/>
+    <text x="1208" y="249" fill="#8794b3" font-family="Inter,Segoe UI,sans-serif" font-size="12" font-weight="700" letter-spacing="1.5">LOCAL DATA</text>
+    <text x="1208" y="294" fill="#f7f9ff" font-family="Inter,Segoe UI,sans-serif" font-size="20" font-weight="700">SQLite WAL</text>
+    <text x="1208" y="326" fill="#a8b3cc" font-family="Inter,Segoe UI,sans-serif" font-size="14">events · threads</text>
+    <text x="1208" y="351" fill="#a8b3cc" font-family="Inter,Segoe UI,sans-serif" font-size="14">actions · traces</text>
+
+    <rect x="1180" y="423" width="178" height="176" rx="24" fill="#151f35" stroke="#4a4476" stroke-width="2" stroke-dasharray="7 6"/>
+    <text x="1208" y="467" fill="#a49fff" font-family="Inter,Segoe UI,sans-serif" font-size="12" font-weight="700" letter-spacing="1.5">OPTIONAL</text>
+    <text x="1208" y="512" fill="#f7f9ff" font-family="Inter,Segoe UI,sans-serif" font-size="20" font-weight="700">Local Qwen</text>
+    <text x="1208" y="544" fill="#a8b3cc" font-family="Inter,Segoe UI,sans-serif" font-size="14">validated JSON</text>
+    <text x="1208" y="569" fill="#a8b3cc" font-family="Inter,Segoe UI,sans-serif" font-size="14">rules fallback</text>
+  </g>
+
+  <path d="M312 301H370" stroke="#6c7895" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M670 392H728" stroke="#8e88ff" stroke-width="3" marker-end="url(#arrowAccent)"/>
+  <path d="M1108 318H1166" stroke="#6c7895" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M1108 508H1166" stroke="#8e88ff" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrowAccent)"/>
+  <text x="699" y="371" text-anchor="middle" fill="#8f9bb6" font-family="Inter,Segoe UI,sans-serif" font-size="11">127.0.0.1</text>
+
+  <rect x="314" y="720" width="812" height="38" rx="19" fill="#151e33"/>
+  <text x="720" y="745" text-anchor="middle" fill="#aeb8d0" font-family="Inter,Segoe UI,sans-serif" font-size="14">No cloud model required  ·  No UI scraping  ·  No automatic sending  ·  No arbitrary shell access</text>
+</svg>
