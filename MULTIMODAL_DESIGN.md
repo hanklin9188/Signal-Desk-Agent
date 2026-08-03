@@ -1,6 +1,7 @@
 # Multimodal Image Design
 
-Status: foundation implemented; connector extraction, OCR runtime, visual UI and audit remain release work.
+Status: thumbnail, OCR/evidence, local model and audit tooling implemented in development build
+`0.1.0.40`; real human review, field observation and production signing remain release gates.
 
 ## 1. Product outcome
 
@@ -81,7 +82,8 @@ a latency/VRAM guard, not a permanent product limit.
 
 No local filesystem path crosses the API. The SQLite `media_assets` and `event_media` tables bind a
 content-addressed file to the exact event. The authenticated `GET /api/v1/media/{asset_id}` route is
-the only UI read path. Responses are `private, no-store`.
+the full-resolution UI read path. `GET /api/v1/media/{asset_id}/thumbnail` returns a bounded,
+metadata-stripped first-frame PNG for Inbox and Glance.
 
 `availability` is mandatory and honest:
 
@@ -101,9 +103,9 @@ the only UI read path. Responses are `private, no-store`.
 - The VLM input path has a stricter 8 MB limit and a future decoded-pixel budget.
 - EXIF and untrusted metadata are not included in the model prompt unless explicitly sanitized.
 
-Before public release, the thumbnail worker must decode out of process or through a hardened Windows
-codec boundary, enforce a decoded-pixel ceiling, normalize orientation, and strip metadata from its
-derived thumbnail.
+The implemented thumbnail worker enforces a 40-megapixel decoded ceiling, treats decompression-bomb
+warnings as errors, normalizes EXIF orientation, strips metadata, and atomically writes a maximum
+512 × 512 PNG. Out-of-process decoding remains optional defense-in-depth before public release.
 
 ## 7. OCR and evidence contract
 
@@ -116,18 +118,21 @@ The OCR service returns immutable analysis tied to `asset_id` and `sha256`:
   "asset_sha256": "...",
   "ocr_model_id": "PaddlePaddle/PaddleOCR-VL-1.6",
   "ocr_model_revision": "pinned-before-release",
-  "text_blocks": [
+  "blocks": [
     {
+      "block_id": "ocr_...",
       "text": "報名截止 8 月 10 日",
-      "region": [0.12, 0.40, 0.82, 0.51],
+      "region": {"x": 0.12, "y": 0.40, "width": 0.70, "height": 0.11},
       "confidence": 0.94
     }
   ]
 }
 ```
 
-Qwen receives the image, the latest bounded message context and the OCR result. A visual action or
-deadline is accepted only when its supporting text exists in an OCR block tied to the same hash.
+Qwen receives the image, the latest bounded message context and completed OCR blocks. A visual
+action or deadline is accepted only when its `evidence_asset_id` belongs to the thread and its
+`evidence_block_ids` resolve to localized OCR blocks tied to the same asset hash. Whole-image text
+without coordinates cannot prove an exact deadline.
 Object-only claims without OCR evidence may be summarized but cannot create an exact deadline. Low
 confidence output becomes `needs_review` and retains `visual_evidence_unverified`.
 
@@ -175,28 +180,49 @@ collapse into a generic LINE, Messenger, browser or Windows card.
 - Official webhook media fetch where configured.
 - Retry/quarantine and connector capability UI.
 
-### M3 — Desktop presentation (in progress)
+### M3 — Desktop presentation (implemented; packaged verification pending)
 
-- Thumbnail cache and WinUI image control.
+- Safe thumbnail cache and WinUI Inbox/Glance image controls (implemented).
 - Authenticated detail viewer and accessibility name (implemented); OCR/error/loading polish remains.
 - Glance uses a compact thumbnail without increasing card height unpredictably.
 
-### M4 — OCR/VLM evidence
+### M4 — OCR/VLM evidence (implemented; runtime quality audit pending)
 
-- Pinned PaddleOCR-VL service and result schema.
-- Pinned Qwen3.5-4B multimodal service.
-- Hash-bound OCR evidence validator.
-- GPU residency, OOM fallback, cancellation and metrics.
+- On-demand local PaddleOCR-VL-1.6 Transformers service and versioned result schema.
+- Qwen3.5-4B multimodal gateway plus a BF16/INT8/NF4 GPU benchmark command.
+- Hash- and coordinate-bound OCR evidence validator.
+- Persisted analysis API and automatic thread re-analysis after successful OCR.
+- Revision pinning is supported; explicit OOM cancellation/residency tuning remains.
 
-### M5 — Audit and release
+### M5 — Audit and release (tooling implemented; real gates not yet satisfied)
 
-- At least 300 human-reviewed multimodal examples.
+- A 300-item fictional image queue and SHA-256 manifest are committed; all are explicitly
+  `unreviewed` until a person records a reviewer and timestamp.
 - Separate screenshot, document, photo, sticker and missing-image slices.
 - Zero fabricated exact deadlines in the locked release gate.
 - Measure OCR character accuracy, evidence precision/recall, faithfulness, latency and peak VRAM.
-- 7–14 day Shadow Mode test before real-time visual interruptions are enabled.
+- A content-free Shadow report enforces the real elapsed-time and user-label gates.
+- Production release tooling refuses to sign unless the locked audit and Shadow gates pass.
 
-## 11. Definition of done
+## 11. Operator commands
+
+```bash
+SIGNALDESK_VISION_BACKEND=paddleocr-vl .venv/bin/signaldesk
+
+.venv/bin/signaldesk-model-benchmark --family qwen --model Qwen/Qwen3.5-4B \
+  --image benchmarks/multimodal/assets/mm-001.png --quantization bf16 \
+  --output benchmarks/results/qwen-bf16.json
+
+.venv/bin/signaldesk-multimodal-review status
+.venv/bin/signaldesk-multimodal-review review --id mm-001 --decision approved \
+  --reviewer "Reviewer name"
+
+.venv/bin/signaldesk-shadow --database data/signaldesk.db start
+.venv/bin/signaldesk-shadow --database data/signaldesk.db report --days 14 \
+  --output runs/shadow-report.json
+```
+
+## 12. Definition of done
 
 Image support is not complete merely because a thumbnail renders. It is complete only when supported
 connectors acquire real bytes, every state is visible in WinUI, OCR/VLM output is hash-bound and

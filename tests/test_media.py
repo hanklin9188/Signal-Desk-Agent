@@ -182,6 +182,7 @@ def test_media_is_content_addressed_and_available_to_authenticated_ui(
     assert detail["events"][0]["media"][0]["asset_id"] == media.asset_id
     assert database.media_for_event(event.event_id) == [media]
     assert media.original_name == "screenshot.png"
+    assert (media.width, media.height) == (1, 1)
 
     with TestClient(create_app(test_config, database)) as client:
         assert client.get(f"/api/v1/media/{media.asset_id}").status_code == 401
@@ -190,7 +191,11 @@ def test_media_is_content_addressed_and_available_to_authenticated_ui(
         assert response.status_code == 200
         assert response.headers["content-type"] == "image/png"
         assert response.content == PNG_1X1
-    assert response.headers["cache-control"] == "private, no-store"
+        assert response.headers["cache-control"] == "private, no-store"
+        thumbnail = client.get(f"/api/v1/media/{media.asset_id}/thumbnail")
+        assert thumbnail.status_code == 200
+        assert thumbnail.headers["content-type"] == "image/png"
+        assert thumbnail.content.startswith(b"\x89PNG\r\n\x1a\n")
     assert "visual_evidence_unverified" in detail["uncertainty_flags"]
 
 

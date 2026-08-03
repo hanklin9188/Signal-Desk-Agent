@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last verified: 2026-08-03 · Desktop build: `0.1.0.39`
+Last verified: 2026-08-03 · Desktop build: `0.1.0.40`
 
 ## Honest completion estimate
 
@@ -8,11 +8,11 @@ These percentages measure different scopes and must not be added together:
 
 | Scope | Baseline | Current estimate | Meaning |
 |---|---:|---:|---|
-| Desktop App and core messaging | 80% | 82% | Daily-use shell, inbox, connectors, grouping/actions and first image viewer exist |
-| Original complete technical plan | 65% | 69% | Multimodal foundation/acquisition added; model, audit and release engineering remain |
-| Public v1.0 release | 55% | 57% | Production signing, installer QA, model audit and field validation remain |
-| Qwen and dataset/training | 20% | 24% | Multimodal route exists; measured local runtime and reviewed data do not |
-| Multimodal image capability | — | 30% | Store/acquisition/detail viewer exist; thumbnails, OCR, evidence and audit remain |
+| Desktop App and core messaging | 80% | 86% | Inbox/Glance thumbnails, connectors, grouping, actions and image detail are implemented |
+| Original complete technical plan | 65% | 75% | OCR/evidence/audit/release tooling exists; real observation and provider QA remain |
+| Public v1.0 release | 55% | 62% | Signing is gated and automated; certificate, human audit and field validation remain |
+| Qwen and dataset/training | 20% | 40% | Runtime/quant benchmark and 300-item queue exist; human labels decide whether training is needed |
+| Multimodal image capability | — | 68% | Thumbnail, OCR contract/runtime, evidence validation and audit queue exist; quality gate remains |
 
 The percentages are planning estimates, not test coverage. A feature is never marked complete solely
 because it has a design document.
@@ -33,8 +33,12 @@ because it has a design document.
 | Attention policy | Complete | Focus, quiet hours, VIP/mute, uncertainty penalty, preference score, interruption budget, Shadow Mode |
 | Actions | Complete | Open source, snooze, done, local reminder, editable draft; no auto-send route |
 | Privacy controls | Complete | Retention worker, safe export, preference reset, confirmed private-data deletion |
-| Validation | Passing | 49 tests, Ruff clean, 300 locked scenarios / 1,800 checks, GitHub Windows native build passing for 0.1.0.39; installed-app image exercise remains |
-| Media foundation | In progress | Safe media contract/store/API and multimodal model request path implemented; connector/UI/OCR work remains |
+| Validation | Passing | 56 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; Windows CI/build pending for 0.1.0.40 |
+| Media presentation | Implemented, packaged verification pending | Safe decode + thumbnail endpoint, Inbox and Glance direct previews, detail full image |
+| OCR evidence | Implemented, model audit pending | PaddleOCR-VL-1.6 runtime, hash-bound blocks/regions, authenticated analysis API, deterministic evidence rejection |
+| Multimodal audit | Queue ready, 0/300 human-reviewed | 300 fictional local images with SHA-256 manifest and review/lock tool; no review is falsely claimed |
+| Shadow/release | Tooling ready, time gates pending | Content-free 7–14 day report, readiness verifier, production signing and recoverable rollback scripts |
+| RTX 4080 SUPER smoke | Passing | Qwen BF16 8.671 GiB/5.655 s; NF4 3.290 GiB/5.371 s; INT8 5.054 GiB/17.416 s; Paddle BF16 1.809 GiB/7.067 s |
 
 ## Deliberate product boundaries
 
@@ -56,16 +60,16 @@ because it has a design document.
 
 - Verify supported Gmail MIME image acquisition against both connected Windows accounts and packaged builds.
 - Verify Messenger ZIP media acquisition against real export variants and decompression-bomb cases.
-- Add thumbnail generation and WinUI Inbox/Glance previews; authenticated detail viewing is implemented.
-- Run PaddleOCR-VL-1.6 locally and persist hash-bound OCR regions.
-- Run Qwen3.5-4B with real image input, bounded pixel/context budgets and GPU telemetry.
-- Validate visual action/deadline evidence; add retry, cancellation and OOM fallback.
-- Build and human-review a 300+ item multimodal locked audit.
+- Verify the new Inbox/Glance thumbnails in the packaged app with Gmail/Messenger images.
+- Expand the successful one-image PaddleOCR-VL and Qwen BF16/INT8/NF4 smoke into the locked
+  300-item quality run after human review.
+- Add cancellation and explicit OOM fallback/residency policy based on measured headroom.
+- Human-review and lock the prepared multimodal queue (currently 0/300).
 
 ### Qwen and learning
 
 - Pin a known-good model revision and runtime stack on Windows.
-- Complete model load, 20-step smoke, latency/VRAM and deterministic-baseline comparison.
+- Complete the 20-step and full-dataset comparison; the one-image hardware/quant smoke now passes.
 - Build the annotation workflow and human-label at least 300 private/anonymized events locally.
 - Train only if the zero-shot audit misses predefined gates; QLoRA/SFT is conditional, not assumed.
 - Produce a model card, dataset manifests and reproducible evaluation report.

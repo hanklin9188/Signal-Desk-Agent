@@ -98,6 +98,7 @@
                                     <ColumnDefinition Width="42" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <ui:SourceBadge Source="{x:Bind Source}" BadgeSize="40" />
                                 <StackPanel Grid.Column="1" Spacing="5">
@@ -122,7 +123,13 @@
                                         </Border>
                                     </StackPanel>
                                 </StackPanel>
-                                <StackPanel Grid.Column="2" HorizontalAlignment="Right" Spacing="7">
+                                <Border Grid.Column="2" Width="64" Height="52" Margin="4,0,8,0"
+                                        CornerRadius="10" Background="{StaticResource SignalAccentSoftBrush}"
+                                        Visibility="{x:Bind ThumbnailVisibility, Mode=OneWay}">
+                                    <Image Source="{x:Bind ThumbnailSource, Mode=OneWay}"
+                                           Stretch="UniformToFill" AutomationProperties.Name="訊息圖片縮圖" />
+                                </Border>
+                                <StackPanel Grid.Column="3" HorizontalAlignment="Right" Spacing="7">
                                     <TextBlock Text="{x:Bind TimeLabel}" FontSize="10"
                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                     <TextBlock Text="{x:Bind PriorityLabel}" HorizontalAlignment="Right"

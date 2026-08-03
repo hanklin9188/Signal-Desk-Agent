@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 
 namespace SignalDesk.Shell.Models;
 
@@ -51,11 +52,29 @@ public class CardItem : INotifyPropertyChanged
     public List<string> WhyShown { get; set; } = [];
     public string ContentCompleteness { get; set; } = "full";
     public List<string> UncertaintyFlags { get; set; } = [];
+    public MediaAssetData? MediaPreview { get; set; }
     public string CreatedAt { get; set; } = "";
     public string UpdatedAt { get; set; } = "";
     public string Status { get; set; } = "open";
     public string? SnoozedUntil { get; set; }
     public int ActionCount { get; set; }
+    private ImageSource? _thumbnailSource;
+
+    public ImageSource? ThumbnailSource
+    {
+        get => _thumbnailSource;
+        private set
+        {
+            _thumbnailSource = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ThumbnailVisibility));
+        }
+    }
+
+    public Visibility ThumbnailVisibility => ThumbnailSource is not null
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+    public void SetThumbnail(ImageSource? source) => ThumbnailSource = source;
 
     public string SenderLabel => Sender ?? Title ?? "未知來源";
     public string TitleLabel => Title ?? Summary;

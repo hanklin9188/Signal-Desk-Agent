@@ -80,10 +80,25 @@
                                                    VerticalAlignment="Center"
                                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                     </Grid>
-                                    <TextBlock Grid.Row="2" Text="{x:Bind Summary}" FontSize="12" LineHeight="18"
-                                               MaxLines="2" TextWrapping="WrapWholeWords"
-                                               TextTrimming="CharacterEllipsis"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <Grid Grid.Row="2" ColumnSpacing="10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="68" Height="52" CornerRadius="10"
+                                                Background="{StaticResource SignalAccentSoftBrush}"
+                                                Visibility="{x:Bind ThumbnailVisibility, Mode=OneWay}">
+                                            <Image Source="{x:Bind ThumbnailSource, Mode=OneWay}"
+                                                   Stretch="UniformToFill"
+                                                   AutomationProperties.Name="訊息圖片縮圖" />
+                                        </Border>
+                                        <TextBlock Grid.Column="1" Text="{x:Bind Summary}"
+                                                   FontSize="12" LineHeight="18" MaxLines="2"
+                                                   TextWrapping="WrapWholeWords"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </Grid>
                                     <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="6">
                                         <Button Content="查看詳情" Tag="{x:Bind CardId}" Click="Card_Click"
                                                 MinWidth="0" Padding="12,6" />

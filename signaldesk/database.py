@@ -17,6 +17,7 @@ from .models import (
     NotificationCard,
     TriageResult,
     UnifiedEvent,
+    VisualAnalysis,
 )
 from .normalizer import (
     MESSENGER_GENERIC_TITLES,
@@ -464,6 +465,91 @@ class Database:
                 WHERE em.event_id=? ORDER BY em.ordinal
                 """,
                 (event_id,),
+            ).fetchall()
+        return [MediaAssetRef.model_validate_json(row["data_json"]) for row in rows]
+
+    def save_visual_analysis(self, analysis: VisualAnalysis) -> None:
+        """Persist a hash-bound OCR result so stale evidence cannot validate a new image."""
+        now = datetime.now(UTC).isoformat()
+        with self.transaction() as connection:
+            media = connection.execute(
+                "SELECT sha256 FROM media_assets WHERE asset_id=?", (analysis.asset_id,)
+            ).fetchone()
+            if not media:
+                raise ValueError("media asset not found")
+            if media["sha256"] != analysis.asset_sha256:
+                raise ValueError("visual analysis asset hash mismatch")
+            connection.execute(
+                """
+                INSERT INTO visual_analyses(
+                    asset_id, status, result_json, vision_model_id, ocr_model_id,
+                    created_at, updated_at
+                ) VALUES(?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(asset_id) DO UPDATE SET
+                    status=excluded.status,
+                    result_json=excluded.result_json,
+                    vision_model_id=excluded.vision_model_id,
+                    ocr_model_id=excluded.ocr_model_id,
+                    updated_at=excluded.updated_at
+                """,
+                (
+                    analysis.asset_id,
+                    analysis.status,
+                    _json(analysis),
+                    None,
+                    analysis.ocr_model_id,
+                    now,
+                    now,
+                ),
+            )
+
+    def visual_analysis(self, asset_id: str) -> VisualAnalysis | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT result_json FROM visual_analyses WHERE asset_id=?", (asset_id,)
+            ).fetchone()
+        return VisualAnalysis.model_validate_json(row["result_json"]) if row else None
+
+    def visual_analyses_for_thread(self, thread_id: str) -> list[VisualAnalysis]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT DISTINCT va.result_json
+                FROM thread_events te
+                JOIN event_media em ON em.event_id=te.event_id
+                JOIN visual_analyses va ON va.asset_id=em.asset_id
+                WHERE te.thread_id=? AND va.status='completed'
+                ORDER BY va.updated_at DESC
+                """,
+                (thread_id,),
+            ).fetchall()
+        return [VisualAnalysis.model_validate_json(row["result_json"]) for row in rows]
+
+    def thread_ids_for_media(self, asset_id: str) -> list[str]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT DISTINCT te.thread_id
+                FROM event_media em
+                JOIN thread_events te ON te.event_id=em.event_id
+                WHERE em.asset_id=?
+                """,
+                (asset_id,),
+            ).fetchall()
+        return [str(row["thread_id"]) for row in rows]
+
+    def unanalyzed_media(self, *, limit: int = 1) -> list[MediaAssetRef]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT m.data_json
+                FROM media_assets m
+                LEFT JOIN visual_analyses va ON va.asset_id=m.asset_id
+                WHERE m.availability='available' AND va.asset_id IS NULL
+                ORDER BY m.created_at ASC
+                LIMIT ?
+                """,
+                (max(1, min(limit, 20)),),
             ).fetchall()
         return [MediaAssetRef.model_validate_json(row["data_json"]) for row in rows]
 

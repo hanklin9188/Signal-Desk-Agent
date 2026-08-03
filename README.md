@@ -141,8 +141,10 @@ SIGNALDESK_DEMO=1 .venv/bin/signaldesk
 
 Current local verification:
 
-- 49 automated tests passing.
+- 56 automated tests passing.
 - 300 synthetic locked scenarios / 1,800 checks passing.
+- RTX 4080 SUPER image smoke: Qwen3.5-4B BF16/NF4/INT8 and PaddleOCR-VL-1.6 BF16 all loaded
+  locally and found the fictional visible deadline; see [raw metrics](benchmarks/results/README.md).
 - Zero unauthorized actions and zero auto-send paths.
 - Native WinUI build: 0 compile errors.
 - MSIX installed and exercised on Windows 11.
@@ -183,8 +185,7 @@ Security design: [SECURITY_PRIVACY.md](SECURITY_PRIVACY.md) · Responsible discl
 - Complete 7–14 day Shadow Mode calibration studies.
 - Add production publisher signing and a stable Windows release channel.
 - Audit optional local Qwen inference against the deterministic baseline before enabling it by default.
-- Complete supported connector image acquisition, WinUI presentation, PaddleOCR evidence and a
-  300+ item human-reviewed multimodal audit.
+- Human-review the prepared 300-item multimodal audit and complete real PaddleOCR/Qwen quality runs.
 
 ## License
 

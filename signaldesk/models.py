@@ -123,6 +123,36 @@ class GroupedThread(StrictModel):
     updated_at: datetime
 
 
+class OcrRegion(StrictModel):
+    """Normalized image coordinates, independent of the original resolution."""
+
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+    width: float = Field(gt=0, le=1)
+    height: float = Field(gt=0, le=1)
+
+
+class OcrBlock(StrictModel):
+    block_id: str = Field(pattern=r"^ocr_[a-f0-9]{12,64}$")
+    text: str = Field(min_length=1, max_length=4000)
+    region: OcrRegion | None = None
+    confidence: float | None = Field(default=None, ge=0, le=1)
+
+
+class VisualAnalysis(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    asset_id: str = Field(pattern=r"^media_[a-f0-9]{24,64}$")
+    asset_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    status: Literal["pending", "completed", "failed"]
+    ocr_model_id: str
+    ocr_model_revision: str | None = None
+    blocks: list[OcrBlock] = Field(default_factory=list, max_length=1000)
+    raw_text: str = Field(default="", max_length=200_000)
+    error_code: str | None = Field(default=None, max_length=120)
+    started_at: datetime
+    completed_at: datetime | None = None
+
+
 class Deadline(StrictModel):
     original_text: str
     normalized_at: datetime | None = None
@@ -130,6 +160,10 @@ class Deadline(StrictModel):
     timezone: str | None = None
     explicit: bool
     supporting_span: str
+    evidence_asset_id: str | None = Field(
+        default=None, pattern=r"^media_[a-f0-9]{24,64}$"
+    )
+    evidence_block_ids: list[str] = Field(default_factory=list, max_length=20)
 
 
 class ActionItem(StrictModel):
@@ -139,6 +173,10 @@ class ActionItem(StrictModel):
     source_event_ids: list[str] = Field(min_length=1)
     deadline_ref: int | None = Field(default=None, ge=0)
     status: Literal["open", "done", "unknown"] = "open"
+    evidence_asset_id: str | None = Field(
+        default=None, pattern=r"^media_[a-f0-9]{24,64}$"
+    )
+    evidence_block_ids: list[str] = Field(default_factory=list, max_length=20)
 
 
 ALLOWED_ACTIONS = {
@@ -227,6 +265,7 @@ class NotificationCard(StrictModel):
     why_shown: list[str] = Field(default_factory=list)
     content_completeness: ContentCompleteness
     uncertainty_flags: list[str] = Field(default_factory=list)
+    media_preview: MediaAssetRef | None = None
     created_at: datetime
     updated_at: datetime
     status: Literal["open", "snoozed", "done", "dismissed"] = "open"

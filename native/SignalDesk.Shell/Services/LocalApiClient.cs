@@ -47,6 +47,15 @@ public sealed class LocalApiClient
         return await response.Content.ReadAsByteArrayAsync(token);
     }
 
+    public async Task<byte[]> MediaThumbnailAsync(
+        string assetId, CancellationToken token = default)
+    {
+        using var response = await _client.GetAsync(
+            $"api/v1/media/{Uri.EscapeDataString(assetId)}/thumbnail", token);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync(token);
+    }
+
     public Task<JsonElement> CardActionAsync(
         string cardId, string action, object? value = null, CancellationToken token = default) =>
         SendAsync<JsonElement>(

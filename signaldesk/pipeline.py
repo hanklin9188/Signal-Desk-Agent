@@ -183,7 +183,8 @@ class Pipeline:
         if any(event and event.metadata.get("truncated") for event in source_events):
             baseline.uncertainty_flags.append("truncated_content")
         self.bus.publish("triage_started", {"thread_id": thread_id})
-        model_result = self.gateway.analyze(thread, signals)
+        visual_analyses = self.database.visual_analyses_for_thread(thread_id)
+        model_result = self.gateway.analyze(thread, signals, visual_analyses)
         candidate = model_result.triage or baseline
         has_available_media = any(
             str(media.availability) == "available"
@@ -193,12 +194,16 @@ class Pipeline:
         if has_available_media and model_result.triage is None:
             if "visual_evidence_unverified" not in candidate.uncertainty_flags:
                 candidate.uncertainty_flags.append("visual_evidence_unverified")
-        validated, report = self.validator.validate(candidate, thread, signals)
+        validated, report = self.validator.validate(
+            candidate, thread, signals, visual_analyses
+        )
 
         # An unsafe model output falls back to the deterministic baseline and is audited.
         model_backend = model_result.backend
         if model_result.triage is not None and not report.valid:
-            validated, baseline_report = self.validator.validate(baseline, thread, signals)
+            validated, baseline_report = self.validator.validate(
+                baseline, thread, signals, visual_analyses
+            )
             report.warnings.append("unsafe_model_output_replaced_by_rule_baseline")
             report.valid = baseline_report.valid
             model_backend += "+rule-fallback"
@@ -240,6 +245,15 @@ class Pipeline:
             if archive_import and first_event and first_event.title
             else thread.sender
         )
+        media_preview = next(
+            (
+                media
+                for message in reversed(thread.messages)
+                for media in message.media
+                if str(media.availability) == "available"
+            ),
+            None,
+        )
         card = NotificationCard(
             card_id=card_id,
             thread_id=thread_id,
@@ -256,6 +270,7 @@ class Pipeline:
             why_shown=decision.reason_codes,
             content_completeness=thread.content_completeness,
             uncertainty_flags=validated.uncertainty_flags,
+            media_preview=media_preview,
             created_at=card_time,
             updated_at=card_time,
         )

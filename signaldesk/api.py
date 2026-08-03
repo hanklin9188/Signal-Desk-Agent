@@ -43,6 +43,7 @@ from .models import (
 from .normalizer import is_browser_background_notice
 from .pipeline import Pipeline
 from .preference import PreferenceRanker
+from .vision import build_vision_analyzer
 
 DEFAULT_SETTINGS: dict[str, Any] = {
     "theme": "system",
@@ -143,6 +144,13 @@ def create_app(config: Settings | None = None, database: Database | None = None)
     database.ensure_defaults(
         {**DEFAULT_SETTINGS, "quiet_start": config.quiet_start, "quiet_end": config.quiet_end}
     )
+    initial_settings = database.settings()
+    if initial_settings.get("shadow_mode") and not initial_settings.get(
+        "shadow_evaluation_started_at"
+    ):
+        database.update_settings(
+            {"shadow_evaluation_started_at": datetime.now(UTC).isoformat()}
+        )
     database.hide_browser_background_cards()
     database.reclassify_messenger_browser_cards()
     database.collapse_duplicate_notification_replays()
@@ -155,6 +163,13 @@ def create_app(config: Settings | None = None, database: Database | None = None)
         config.model_endpoint,
         config.model_id,
         media_store=media_store,
+        revision=config.model_revision,
+    )
+    vision = build_vision_analyzer(
+        config.vision_backend,
+        config.ocr_model_id,
+        config.ocr_model_revision,
+        media_store,
     )
     preferences = PreferenceRanker(database)
     pipeline = Pipeline(database, config, gateway, bus, preferences)
@@ -247,6 +262,15 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             for reminder in database.fire_due_reminders():
                 bus.publish("reminder_due", reminder)
             ticks += 1
+            # Keep GPU work bounded to one new image per cycle. The original event/card is
+            # already safely persisted, so OCR failure can never lose a notification.
+            if config.vision_backend != "disabled":
+                for media in database.unanalyzed_media(limit=1):
+                    analysis = await asyncio.to_thread(vision.analyze, media)
+                    database.save_visual_analysis(analysis)
+                    if analysis.status == "completed":
+                        for thread_id in database.thread_ids_for_media(media.asset_id):
+                            await asyncio.to_thread(pipeline.analyze_thread, thread_id)
             # Restore connected OAuth sessions immediately after launch, then poll
             # every 60 seconds. This prevents a healthy account from looking
             # disconnected during the first minute of every desktop session.
@@ -501,8 +525,15 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             "model": {
                 "backend": config.model_backend,
                 "id": config.model_id,
+                "revision": config.model_revision,
                 "external_inference": False,
                 "status": "available" if config.model_backend != "rule" else "rule_fallback",
+            },
+            "vision": {
+                "backend": vision.backend_name,
+                "ocr_model_id": config.ocr_model_id,
+                "ocr_model_revision": config.ocr_model_revision,
+                "status": "available" if config.vision_backend != "disabled" else "disabled",
             },
             "privacy": {"local_only": True, "auto_send": False},
         }
@@ -550,6 +581,44 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             media_type=media.mime_type,
             headers={"Cache-Control": "private, no-store"},
         )
+
+    @router.get("/media/{asset_id}/thumbnail")
+    def media_thumbnail(asset_id: str) -> FileResponse:
+        media = database.media_asset(asset_id)
+        if not media:
+            raise HTTPException(status_code=404, detail="media not found")
+        try:
+            path = media_store.thumbnail_path_for(media)
+        except MediaError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        return FileResponse(
+            path,
+            media_type="image/png",
+            headers={"Cache-Control": "private, max-age=3600"},
+        )
+
+    @router.get("/media/{asset_id}/analysis")
+    def media_analysis(asset_id: str) -> dict[str, Any]:
+        if not database.media_asset(asset_id):
+            raise HTTPException(status_code=404, detail="media not found")
+        analysis = database.visual_analysis(asset_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="analysis not found")
+        return analysis.model_dump(mode="json")
+
+    @router.post("/media/{asset_id}/analysis")
+    async def analyze_media(asset_id: str) -> dict[str, Any]:
+        media = database.media_asset(asset_id)
+        if not media:
+            raise HTTPException(status_code=404, detail="media not found")
+        if config.vision_backend == "disabled":
+            raise HTTPException(status_code=503, detail="vision analysis is disabled")
+        analysis = await asyncio.to_thread(vision.analyze, media)
+        database.save_visual_analysis(analysis)
+        if analysis.status == "completed":
+            for thread_id in database.thread_ids_for_media(asset_id):
+                await asyncio.to_thread(pipeline.analyze_thread, thread_id)
+        return analysis.model_dump(mode="json")
 
     @router.post("/cards/{card_id}/actions")
     def card_action(card_id: str, request: CardActionRequest) -> dict[str, Any]:

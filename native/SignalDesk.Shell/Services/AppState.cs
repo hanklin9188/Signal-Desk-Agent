@@ -52,6 +52,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
             CurrentDate = date;
             var response = await Api.CardsAsync(view, search, source, priority, date);
             Replace(Cards, response.Items);
+            await MediaImageLoader.LoadThumbnailsAsync(Api, Cards, limit: 40);
             Counts = response.Counts;
         }
         finally { _refreshLock.Release(); }

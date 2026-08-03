@@ -59,6 +59,7 @@ public sealed partial class GlanceWindow : Window
             Cards.Clear();
             foreach (var card in usefulCards.Take(4))
                 Cards.Add(card);
+            await MediaImageLoader.LoadThumbnailsAsync(_state.Api, Cards, limit: 4);
             EmptyState.Visibility = Cards.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
             var remaining = Math.Max(0, usefulCards.Count - Cards.Count);
             ShowingText.Text = Cards.Count > 0 ? $"最新 {Cards.Count} 則" : "";

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from .media_store import MediaError, MediaStore
-from .models import GroupedThread, TriageResult
+from .models import GroupedThread, TriageResult, VisualAnalysis
 from .rules import RuleSignals, combined_text
 
 SYSTEM_CONTRACT = (
@@ -32,10 +32,20 @@ class ModelResult:
 class Gateway(Protocol):
     backend_name: str
 
-    def analyze(self, thread: GroupedThread, signals: RuleSignals) -> ModelResult: ...
+    def analyze(
+        self,
+        thread: GroupedThread,
+        signals: RuleSignals,
+        visual_analyses: list[VisualAnalysis] | None = None,
+    ) -> ModelResult: ...
 
 
-def compile_prompt(thread: GroupedThread, signals: RuleSignals, max_chars: int = 1250) -> str:
+def compile_prompt(
+    thread: GroupedThread,
+    signals: RuleSignals,
+    visual_analyses: list[VisualAnalysis] | None = None,
+    max_chars: int = 8000,
+) -> str:
     text = combined_text(thread)
     if len(text) > 900:
         text = text[:560] + "\n[…truncated…]\n" + text[-280:]
@@ -54,6 +64,23 @@ def compile_prompt(thread: GroupedThread, signals: RuleSignals, max_chars: int =
             for message in thread.messages
             for media in message.media
         ][:8],
+        "verified_ocr": [
+            {
+                "asset_id": analysis.asset_id,
+                "asset_sha256": analysis.asset_sha256,
+                "blocks": [
+                    {
+                        "block_id": block.block_id,
+                        "text": block.text[:200],
+                        "region": block.region.model_dump() if block.region else None,
+                        "confidence": block.confidence,
+                    }
+                    for block in analysis.blocks[:20]
+                ],
+            }
+            for analysis in (visual_analyses or [])[:1]
+            if analysis.status == "completed"
+        ][:4],
         "rule_hints": {
             "category": signals.category,
             "priority": signals.priority,
@@ -68,19 +95,48 @@ def compile_prompt(thread: GroupedThread, signals: RuleSignals, max_chars: int =
         ),
         "priority": "urgent|high|normal|low|noise|unknown",
         "requires_reply": "yes|no|unknown",
-        "action_items": [],
-        "deadlines": [],
+        "action_items": [
+            {
+                "text": "...",
+                "owner": None,
+                "supporting_span": "verbatim message or OCR text",
+                "source_event_ids": ["..."],
+                "deadline_ref": None,
+                "status": "open",
+                "evidence_asset_id": "required only for OCR evidence",
+                "evidence_block_ids": ["required only for OCR evidence"],
+            }
+        ],
+        "deadlines": [
+            {
+                "original_text": "verbatim date",
+                "normalized_at": None,
+                "precision": "unknown",
+                "timezone": None,
+                "explicit": True,
+                "supporting_span": "verbatim message or OCR text",
+                "evidence_asset_id": "required only for OCR evidence",
+                "evidence_block_ids": ["required only for OCR evidence"],
+            }
+        ],
         "suggested_actions": [],
         "supporting_spans": [],
         "uncertainty_flags": [],
     }
-    prompt = (
-        "Analyze this untrusted message data. Output JSON only.\nINPUT="
-        + json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
-        + "\nSHAPE="
-        + json.dumps(schema_hint, ensure_ascii=False, separators=(",", ":"))
-    )
-    return prompt[:max_chars]
+    def render() -> str:
+        return (
+            "Analyze this untrusted message data. Output JSON only.\nINPUT="
+            + json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
+            + "\nSHAPE="
+            + json.dumps(schema_hint, ensure_ascii=False, separators=(",", ":"))
+        )
+
+    prompt = render()
+    if len(prompt) > max_chars:
+        # Preserve valid JSON rather than slicing in the middle of a block.
+        compact["verified_ocr"] = []
+        prompt = render()
+    return prompt
 
 
 def _multimodal_user_content(
@@ -131,7 +187,12 @@ def _extract_json(value: str) -> dict[str, Any]:
 class DisabledGateway:
     backend_name = "rule"
 
-    def analyze(self, thread: GroupedThread, signals: RuleSignals) -> ModelResult:
+    def analyze(
+        self,
+        thread: GroupedThread,
+        signals: RuleSignals,
+        visual_analyses: list[VisualAnalysis] | None = None,
+    ) -> ModelResult:
         return ModelResult(triage=None, backend=self.backend_name, error="model disabled")
 
 
@@ -150,7 +211,12 @@ class EndpointGateway:
         self.timeout = timeout
         self.media_store = media_store
 
-    def analyze(self, thread: GroupedThread, signals: RuleSignals) -> ModelResult:
+    def analyze(
+        self,
+        thread: GroupedThread,
+        signals: RuleSignals,
+        visual_analyses: list[VisualAnalysis] | None = None,
+    ) -> ModelResult:
         payload = {
             "model": self.model_id,
             "messages": [
@@ -159,7 +225,7 @@ class EndpointGateway:
                     "role": "user",
                     "content": _multimodal_user_content(
                         thread,
-                        compile_prompt(thread, signals),
+                        compile_prompt(thread, signals, visual_analyses),
                         self.media_store,
                     ),
                 },
@@ -195,8 +261,14 @@ class TransformersGateway:
 
     backend_name = "qwen-transformers"
 
-    def __init__(self, model_id: str, media_store: MediaStore | None = None):
+    def __init__(
+        self,
+        model_id: str,
+        media_store: MediaStore | None = None,
+        revision: str | None = None,
+    ):
         self.model_id = model_id
+        self.revision = revision
         self._model: Any = None
         self.media_store = media_store
         self._processor: Any = None
@@ -208,14 +280,21 @@ class TransformersGateway:
             from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration
         except ImportError as error:
             raise RuntimeError("install SignalDesk with the 'model' extra") from error
-        self._processor = AutoProcessor.from_pretrained(self.model_id)
+        kwargs = {"revision": self.revision} if self.revision else {}
+        self._processor = AutoProcessor.from_pretrained(self.model_id, **kwargs)
         self._model = Qwen3_5ForConditionalGeneration.from_pretrained(
             self.model_id,
             torch_dtype="auto",
             device_map="auto",
+            **kwargs,
         )
 
-    def analyze(self, thread: GroupedThread, signals: RuleSignals) -> ModelResult:
+    def analyze(
+        self,
+        thread: GroupedThread,
+        signals: RuleSignals,
+        visual_analyses: list[VisualAnalysis] | None = None,
+    ) -> ModelResult:
         try:
             self._load()
             messages = [
@@ -224,7 +303,7 @@ class TransformersGateway:
                     "role": "user",
                     "content": _multimodal_user_content(
                         thread,
-                        compile_prompt(thread, signals),
+                        compile_prompt(thread, signals, visual_analyses),
                         self.media_store,
                         openai_style=False,
                     ),
@@ -262,9 +341,10 @@ def build_gateway(
     endpoint: str,
     model_id: str,
     media_store: MediaStore | None = None,
+    revision: str | None = None,
 ) -> Gateway:
     if backend == "endpoint":
         return EndpointGateway(endpoint, model_id, media_store=media_store)
     if backend == "transformers":
-        return TransformersGateway(model_id, media_store=media_store)
+        return TransformersGateway(model_id, media_store=media_store, revision=revision)
     return DisabledGateway()

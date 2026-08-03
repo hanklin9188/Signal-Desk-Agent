@@ -45,6 +45,10 @@ class Settings:
     normalized_retention_days: int
     summary_retention_days: int
     max_request_bytes: int = 1_000_000
+    vision_backend: str = "disabled"
+    ocr_model_id: str = "PaddlePaddle/PaddleOCR-VL-1.6"
+    ocr_model_revision: str | None = "66317acc4c9fc17bd154591ce650735cd2855f3e"
+    model_revision: str | None = "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a"
 
     @property
     def data_dir(self) -> Path:
@@ -86,4 +90,18 @@ def load_settings() -> Settings:
         raw_retention_days=int(privacy_config.get("raw_event_retention_days", 7)),
         normalized_retention_days=int(privacy_config.get("normalized_event_retention_days", 30)),
         summary_retention_days=int(privacy_config.get("summary_retention_days", 180)),
+        vision_backend=os.getenv("SIGNALDESK_VISION_BACKEND", "disabled").lower(),
+        ocr_model_id=os.getenv(
+            "SIGNALDESK_OCR_MODEL_ID", "PaddlePaddle/PaddleOCR-VL-1.6"
+        ),
+        ocr_model_revision=os.getenv(
+            "SIGNALDESK_OCR_MODEL_REVISION",
+            "66317acc4c9fc17bd154591ce650735cd2855f3e",
+        )
+        or None,
+        model_revision=os.getenv(
+            "SIGNALDESK_MODEL_REVISION",
+            "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+        )
+        or None,
     )

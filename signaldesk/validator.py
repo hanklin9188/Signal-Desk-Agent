@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .models import ALLOWED_ACTIONS, GroupedThread, TriageResult
+from .models import ALLOWED_ACTIONS, GroupedThread, TriageResult, VisualAnalysis
 from .rules import RuleSignals, combined_text
 
 
@@ -27,16 +27,63 @@ class ValidationReport:
 
 
 class TriageValidator:
+    @staticmethod
+    def _visual_supports(
+        span: str,
+        asset_id: str | None,
+        block_ids: list[str],
+        analyses: list[VisualAnalysis],
+        thread_asset_ids: set[str],
+    ) -> bool:
+        if not span or not asset_id or asset_id not in thread_asset_ids or not block_ids:
+            return False
+        analysis = next(
+            (
+                item
+                for item in analyses
+                if item.asset_id == asset_id and item.status == "completed"
+            ),
+            None,
+        )
+        if analysis is None:
+            return False
+        requested = set(block_ids)
+        blocks = [block for block in analysis.blocks if block.block_id in requested]
+        # OCR-derived actions and dates must point to real coordinates. A whole-image
+        # fallback transcription is useful for search, but is not strong enough evidence.
+        if not blocks or requested != {block.block_id for block in blocks}:
+            return False
+        if any(block.region is None for block in blocks):
+            return False
+        return span in "\n".join(block.text for block in blocks)
+
     def validate(
-        self, triage: TriageResult, thread: GroupedThread, signals: RuleSignals
+        self,
+        triage: TriageResult,
+        thread: GroupedThread,
+        signals: RuleSignals,
+        visual_analyses: list[VisualAnalysis] | None = None,
     ) -> tuple[TriageResult, ValidationReport]:
         report = ValidationReport()
         source = combined_text(thread)
+        analyses = visual_analyses or []
+        thread_asset_ids = {
+            asset.asset_id for message in thread.messages for asset in message.media
+        }
         cleaned = triage.model_copy(deep=True)
 
         valid_items = []
         for item in cleaned.action_items:
-            if item.supporting_span and item.supporting_span in source:
+            if item.supporting_span and (
+                item.supporting_span in source
+                or self._visual_supports(
+                    item.supporting_span,
+                    item.evidence_asset_id,
+                    item.evidence_block_ids,
+                    analyses,
+                    thread_asset_ids,
+                )
+            ):
                 valid_items.append(item)
             else:
                 report.removed_action_items += 1
@@ -45,11 +92,17 @@ class TriageValidator:
 
         valid_deadlines = []
         for deadline in cleaned.deadlines:
-            if (
-                deadline.original_text in source
-                and deadline.supporting_span in source
-                and deadline.original_text
-            ):
+            in_messages = (
+                deadline.original_text in source and deadline.supporting_span in source
+            )
+            in_visual_evidence = self._visual_supports(
+                deadline.supporting_span,
+                deadline.evidence_asset_id,
+                deadline.evidence_block_ids,
+                analyses,
+                thread_asset_ids,
+            ) and deadline.original_text in deadline.supporting_span
+            if deadline.original_text and (in_messages or in_visual_evidence):
                 valid_deadlines.append(deadline)
             else:
                 report.removed_deadlines += 1

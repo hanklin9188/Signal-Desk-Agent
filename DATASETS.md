@@ -77,6 +77,20 @@
 300+ human-reviewed examples, balanced across screenshot, document, photo/sticker and unavailable
 image slices. SFT image volume is not set until the zero-shot audit identifies real failure modes.
 
+The repository now contains 300 deterministic fictional images and `manifest.jsonl` under
+`benchmarks/multimodal/`. They are deliberately marked `unreviewed`; generation is not human
+review. Use:
+
+```bash
+.venv/bin/signaldesk-multimodal-review status
+.venv/bin/signaldesk-multimodal-review review --id mm-001 --decision approved \
+  --reviewer "Reviewer name"
+.venv/bin/signaldesk-multimodal-review lock --output data/multimodal-locked.jsonl
+```
+
+The `lock` command refuses to create a release audit until all 300 records have reviewer identity,
+timestamp and decision. Review ledgers stay under `data/` and are excluded from Git by default.
+
 ### 3.3 來源比例建議
 
 | 來源 | 比例 |
