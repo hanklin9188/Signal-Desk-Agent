@@ -11,6 +11,9 @@
 - 中文摘要是否忠實；
 - reply/action/deadline 指標；
 - preview uncertainty。
+- screenshot/photo understanding and OCR-grounded evidence faithfulness;
+- image-unavailable refusal behavior;
+- RTX 4080 SUPER latency, peak VRAM and OOM recovery.
 
 ## 2. 訓練觸發條件
 
@@ -164,3 +167,24 @@ metrics
 VRAM
 training time
 ```
+
+## 10. Multimodal audit before training
+
+Use `Qwen/Qwen3.5-4B` as the primary VLM and `PaddlePaddle/PaddleOCR-VL-1.6` as the
+specialized OCR/document parser. Pin exact revisions before recording results.
+
+Required evaluation slices:
+
+| Slice | Minimum audit examples | Primary metric |
+|---|---:|---|
+| Traditional Chinese screenshots | 75 | OCR-grounded faithfulness |
+| Documents/tables/posters | 75 | exact deadline/action evidence |
+| General photos/stickers/charts | 75 | faithful short summary |
+| Missing/blocked/metadata-only | 75 | refusal / no invention |
+
+Training is allowed only after error attribution separates connector acquisition, OCR, VLM,
+validator and UI failures. Do not train Qwen to compensate for missing pixels or broken grouping.
+
+Multimodal QLoRA, if triggered, must preserve image-text pairs, apply loss only to assistant output,
+and use a held-out family/thread split. Exact dates and action items remain validator-gated even if
+the trained model improves.

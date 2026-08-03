@@ -49,6 +49,7 @@ The split keeps Windows-only UI/notification code isolated from portable, heavil
 | `signaldesk/actions.py` | Bounded user actions; draft/reminder confirmation and no auto-send guarantee |
 | `signaldesk/preference.py` | Privacy-minimized local ranking feedback |
 | `signaldesk/model_gateway.py` | Optional Qwen/OpenAI-compatible inference with deterministic fallback |
+| `signaldesk/media_store.py` | Signature-validated content-addressed local image storage and model data URLs |
 | `signaldesk/connectors/gmail.py` | Gmail OAuth, MIME parsing, full/incremental synchronization and draft creation |
 | `signaldesk/connectors/chat_archive.py` | LINE TXT and Messenger JSON/ZIP archive parsers |
 | `signaldesk/benchmark.py` | Reproducible locked-scenario safety and quality gate |
@@ -65,6 +66,7 @@ The split keeps Windows-only UI/notification code isolated from portable, heavil
 | `tests/test_new_capabilities.py` | Webhook validation, preferences, drafts, reminders and safety controls |
 | `tests/test_gmail_legacy_cleanup.py` | Account migration and duplicate Gmail cleanup |
 | `tests/test_schema_fixtures.py` | Machine-readable contract conformance |
+| `tests/test_media.py` | Media signature, persistence, authenticated read and privacy deletion tests |
 
 ## Scripts
 
@@ -87,5 +89,7 @@ The split keeps Windows-only UI/notification code isolated from portable, heavil
 - New agent output: model/schema → rules/model gateway → validator → policy/card → desktop detail → benchmark.
 - New desktop setting: API settings contract → `UserPreferences` → settings page/global chrome → policy test.
 - New action: action allowlist → bounded implementation → confirmation UI → API and safety tests.
+- New media source: safe byte acquisition → media store/hash → event reference → OCR/VLM → evidence
+  validator → authenticated WinUI rendering → retention/delete tests.
 
 No module is allowed to bypass the validator/policy path for automatic external actions.

@@ -155,6 +155,29 @@ public sealed class SourceEvent
     public string ContentCompleteness { get; set; } = "";
     public string ReceivedAt { get; set; } = "";
     public string? SourceUrl { get; set; }
+    public List<MediaAssetData> Media { get; set; } = [];
+}
+
+public sealed class MediaAssetData
+{
+    public string AssetId { get; set; } = "";
+    public string Kind { get; set; } = "image";
+    public string? MimeType { get; set; }
+    public string? OriginalName { get; set; }
+    public long? ByteSize { get; set; }
+    public int? Width { get; set; }
+    public int? Height { get; set; }
+    public string Availability { get; set; } = "metadata_only";
+    public string? AltText { get; set; }
+    public bool IsAvailable => Availability == "available";
+    public string DisplayLabel => IsAvailable
+        ? $"查看圖片 · {OriginalName ?? "圖片"}"
+        : Availability switch
+        {
+            "blocked" => "圖片因安全規則未載入",
+            "missing" => "找不到匯入的圖片",
+            _ => "來源只提供圖片通知，沒有圖片內容"
+        };
 }
 
 public sealed class TriageData

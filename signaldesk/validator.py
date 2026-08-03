@@ -70,6 +70,12 @@ class TriageValidator:
             report.warnings.append("invalid_general_supporting_span_removed")
         cleaned.supporting_spans = list(dict.fromkeys(valid_spans))
 
+        media = [asset for message in thread.messages for asset in message.media]
+        if media and any(str(asset.availability) != "available" for asset in media):
+            if "image_unavailable" not in cleaned.uncertainty_flags:
+                cleaned.uncertainty_flags.append("image_unavailable")
+            report.warnings.append("image_content_unavailable")
+
         is_preview = thread.content_completeness in {
             "notification_preview",
             "metadata_only",

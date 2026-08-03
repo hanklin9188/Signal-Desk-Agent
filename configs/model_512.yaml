@@ -1,13 +1,26 @@
 model:
   id: Qwen/Qwen3.5-4B
   revision: pin-before-release
-  mode: text_only
+  mode: multimodal
   enable_thinking: false
 
 context:
+  route: text
   total_tokens: 512
   max_input_tokens: 384
   max_output_tokens: 128
+
+vision:
+  enabled: true
+  max_images_per_realtime_request: 1
+  max_original_bytes: 20000000
+  max_model_input_bytes: 8000000
+  target_long_edge_pixels: 1280
+  max_context_tokens: 4096
+  max_output_tokens: 256
+  ocr_model_id: PaddlePaddle/PaddleOCR-VL-1.6
+  ocr_model_revision: pin-before-release
+  ocr_residency: on_demand
 
 generation:
   do_sample: false

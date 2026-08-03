@@ -37,6 +37,8 @@ flowchart LR
 - Attention policy: quiet hours, focus mode, VIP/mute rules, uncertainty penalties, and an interruption budget.
 - Human control: the app can open, snooze, mark done, create reminders, and prepare drafts—but never auto-sends.
 - Local preference learning: feedback adjusts ranking without uploading private message text.
+- Multimodal foundation: validated local image storage and Qwen image requests preserve explicit
+  missing/blocked states; OCR-grounded release work is tracked separately.
 
 ## Desktop experience
 
@@ -83,6 +85,8 @@ flowchart TB
         Rules[Rules + validator + policy]
         Store[(SQLite WAL)]
         Model[Optional local Qwen endpoint]
+        Media[Safe media store]
+        OCR[On-demand PaddleOCR-VL]
     end
 
     Gmail[Gmail API] --> API
@@ -91,10 +95,16 @@ flowchart TB
     Tray <--> Shell
     Vault --> Shell
     API --> Pipeline --> Rules --> Store
+    API --> Media --> OCR
+    OCR -. evidence .-> Pipeline
     Model -. optional .-> Pipeline
 ```
 
 The native shell launches the packaged Python service on `127.0.0.1`, retrieves a random bearer token from Windows Credential Manager, and communicates only through the authenticated loopback API. See [architecture details](ARCHITECTURE.md) and the [code ownership map](docs/PROJECT_STRUCTURE.md).
+
+The image/OCR/Qwen delivery contract, supported-source limits and acceptance gates are documented in
+[Multimodal Image Design](MULTIMODAL_DESIGN.md). A notification saying "sent a photo" is not treated
+as image access.
 
 ## Run the project
 
@@ -131,7 +141,7 @@ SIGNALDESK_DEMO=1 .venv/bin/signaldesk
 
 Current local verification:
 
-- 41 automated tests passing.
+- 49 automated tests passing.
 - 300 synthetic locked scenarios / 1,800 checks passing.
 - Zero unauthorized actions and zero auto-send paths.
 - Native WinUI build: 0 compile errors.
@@ -161,6 +171,8 @@ For module-by-module responsibilities, start with [Project Structure & Code Owne
 - OAuth tokens live in the OS credential store, not SQLite or Git.
 - Source URLs must match connector-specific HTTPS allowlists.
 - Notification previews remain labeled incomplete; image/sticker content is never guessed.
+- Media paths never cross the API; supported bytes use content-addressed local storage and are
+  removed by confirmed private-data deletion.
 - There is no endpoint for automatic sending, source deletion, or arbitrary shell execution.
 
 Security design: [SECURITY_PRIVACY.md](SECURITY_PRIVACY.md) · Responsible disclosure: [SECURITY.md](SECURITY.md)
@@ -171,6 +183,8 @@ Security design: [SECURITY_PRIVACY.md](SECURITY_PRIVACY.md) · Responsible discl
 - Complete 7–14 day Shadow Mode calibration studies.
 - Add production publisher signing and a stable Windows release channel.
 - Audit optional local Qwen inference against the deterministic baseline before enabling it by default.
+- Complete supported connector image acquisition, WinUI presentation, PaddleOCR evidence and a
+  300+ item human-reviewed multimodal audit.
 
 ## License
 

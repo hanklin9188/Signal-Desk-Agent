@@ -30,7 +30,7 @@ def test_two_optional_gmail_accounts_can_be_registered(test_config, database):
         assert {"gmail:personal", "gmail:work", "gmail:nycu"} <= ids
         assert next(item for item in connectors if item["connector_id"] == "gmail:work")[
             "capabilities"
-        ] == ["read", "create_draft"]
+        ] == ["read", "read_images", "create_draft"]
 
 
 def test_existing_gmail_account_can_be_configured_before_oauth(test_config, database, tmp_path):

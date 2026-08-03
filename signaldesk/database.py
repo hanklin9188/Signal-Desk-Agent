@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 from .models import (
     AgentDecision,
     GroupedThread,
+    MediaAssetRef,
     NotificationCard,
     TriageResult,
     UnifiedEvent,
@@ -104,6 +105,44 @@ class Database:
                 );
                 CREATE INDEX IF NOT EXISTS idx_events_received
                     ON normalized_events(received_at DESC);
+
+                CREATE TABLE IF NOT EXISTS media_assets (
+                    asset_id TEXT PRIMARY KEY,
+                    kind TEXT NOT NULL,
+                    mime_type TEXT,
+                    original_name TEXT,
+                    byte_size INTEGER,
+                    width INTEGER,
+                    height INTEGER,
+                    availability TEXT NOT NULL,
+                    sha256 TEXT UNIQUE,
+                    alt_text TEXT,
+                    data_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS event_media (
+                    event_id TEXT NOT NULL
+                        REFERENCES normalized_events(event_id) ON DELETE CASCADE,
+                    asset_id TEXT NOT NULL
+                        REFERENCES media_assets(asset_id) ON DELETE RESTRICT,
+                    ordinal INTEGER NOT NULL,
+                    PRIMARY KEY(event_id, asset_id),
+                    UNIQUE(event_id, ordinal)
+                );
+                CREATE INDEX IF NOT EXISTS idx_event_media_asset
+                    ON event_media(asset_id);
+
+                CREATE TABLE IF NOT EXISTS visual_analyses (
+                    asset_id TEXT PRIMARY KEY
+                        REFERENCES media_assets(asset_id) ON DELETE CASCADE,
+                    status TEXT NOT NULL,
+                    result_json TEXT NOT NULL,
+                    vision_model_id TEXT,
+                    ocr_model_id TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
 
                 CREATE TABLE IF NOT EXISTS threads (
                     thread_id TEXT PRIMARY KEY,
@@ -296,6 +335,8 @@ class Database:
 
                 INSERT OR IGNORE INTO schema_migrations(version, applied_at)
                 VALUES(1, datetime('now'));
+                INSERT OR IGNORE INTO schema_migrations(version, applied_at)
+                VALUES(2, datetime('now'));
                 """
             )
 
@@ -375,7 +416,73 @@ class Database:
                     now,
                 ),
             )
+            for ordinal, media in enumerate(event.media):
+                connection.execute(
+                    """
+                    INSERT INTO media_assets(
+                        asset_id, kind, mime_type, original_name, byte_size, width, height,
+                        availability, sha256, alt_text, data_json, created_at
+                    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(asset_id) DO UPDATE SET
+                        availability=excluded.availability,
+                        data_json=excluded.data_json
+                    """,
+                    (
+                        media.asset_id,
+                        media.kind,
+                        media.mime_type,
+                        media.original_name,
+                        media.byte_size,
+                        media.width,
+                        media.height,
+                        media.availability,
+                        media.sha256,
+                        media.alt_text,
+                        _json(media),
+                        now,
+                    ),
+                )
+                connection.execute(
+                    "INSERT INTO event_media(event_id, asset_id, ordinal) VALUES(?, ?, ?)",
+                    (event.event_id, media.asset_id, ordinal),
+                )
         return True
+
+    def media_asset(self, asset_id: str) -> MediaAssetRef | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT data_json FROM media_assets WHERE asset_id=?", (asset_id,)
+            ).fetchone()
+        return MediaAssetRef.model_validate_json(row["data_json"]) if row else None
+
+    def media_for_event(self, event_id: str) -> list[MediaAssetRef]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT m.data_json FROM event_media em
+                JOIN media_assets m ON m.asset_id=em.asset_id
+                WHERE em.event_id=? ORDER BY em.ordinal
+                """,
+                (event_id,),
+            ).fetchall()
+        return [MediaAssetRef.model_validate_json(row["data_json"]) for row in rows]
+
+    def delete_orphan_media(self) -> list[MediaAssetRef]:
+        """Remove metadata no longer referenced by an event and return files to delete."""
+        with self.transaction() as connection:
+            rows = connection.execute(
+                """
+                SELECT data_json FROM media_assets
+                WHERE asset_id NOT IN (SELECT asset_id FROM event_media)
+                """
+            ).fetchall()
+            connection.execute(
+                """
+                DELETE FROM media_assets
+                WHERE asset_id NOT IN (SELECT asset_id FROM event_media)
+                """
+            )
+        return [MediaAssetRef.model_validate_json(row["data_json"]) for row in rows]
 
     def existing_event_ids(self, event_ids: list[str]) -> set[str]:
         """Resolve deterministic archive duplicates in bounded SQLite batches."""
@@ -608,6 +715,7 @@ class Database:
                     "received_at": event.received_at,
                     "sender": event.sender,
                     "content": event.content,
+                    "media": event.media,
                 }
                 for event in parsed
             ],
@@ -1867,6 +1975,7 @@ class Database:
                 "reminders",
                 "interruptions",
                 "reply_drafts",
+                "visual_analyses",
                 "action_items",
                 "deadlines",
                 "notification_cards",
@@ -1876,6 +1985,7 @@ class Database:
                 "threads",
                 "normalized_events",
                 "raw_events",
+                "media_assets",
                 "quarantine",
                 "connector_cursors",
                 "connector_accounts",

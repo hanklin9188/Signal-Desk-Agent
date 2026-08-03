@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MediaAssetRef",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["asset_id", "kind", "availability"],
+  "properties": {
+    "asset_id": {
+      "type": "string",
+      "pattern": "^media_[a-f0-9]{24,64}$"
+    },
+    "kind": {
+      "enum": ["image", "screenshot", "sticker", "animated_image", "document_preview"]
+    },
+    "mime_type": {
+      "type": ["string", "null"],
+      "pattern": "^image/(jpeg|png|webp|gif)$"
+    },
+    "original_name": {
+      "type": ["string", "null"],
+      "maxLength": 240
+    },
+    "byte_size": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 20000000
+    },
+    "width": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "maximum": 32768
+    },
+    "height": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "maximum": 32768
+    },
+    "availability": {
+      "enum": ["available", "metadata_only", "missing", "blocked"]
+    },
+    "sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "alt_text": {
+      "type": ["string", "null"],
+      "maxLength": 500
+    }
+  }
+}

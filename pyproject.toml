@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "signaldesk-agent"
-version = "0.1.0.38"
+version = "0.1.0.39"
 description = "Local-first unified message triage agent for Windows"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -25,7 +25,7 @@ gmail = [
 ]
 model = [
   "torch>=2.7",
-  "transformers>=4.53",
+  "transformers>=5.2,<6",
   "accelerate>=1.9",
 ]
 dev = [

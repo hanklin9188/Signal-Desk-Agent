@@ -24,6 +24,7 @@
 - benchmark。
 - validator。
 - developer trace。
+- multimodal event/media contract and safe local store。
 
 ## v0.4 — Unified Agent
 
@@ -32,6 +33,9 @@
 - focus mode。
 - Gmail draft。
 - connector health。
+- Gmail/Messenger archive image acquisition。
+- native image thumbnail/detail viewer。
+- PaddleOCR-VL + Qwen image route and evidence validator。
 
 ## v0.5 — Shadow Mode
 
@@ -39,6 +43,8 @@
 - personal thresholds。
 - preference ranker。
 - false interruption analysis。
+- 300+ human-reviewed multimodal locked audit。
+- image/OCR latency, VRAM and faithfulness report。
 
 ## v0.6 — SFT（conditional）
 
@@ -63,6 +69,7 @@
 - no auto-send。
 - benchmark/report。
 - installer/release。
+- supported-source image display, OCR and evidence-backed understanding。
 
 ## Future
 

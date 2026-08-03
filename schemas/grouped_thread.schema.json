@@ -75,6 +75,13 @@
           },
           "content": {
             "type": "string"
+          },
+          "media": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "$ref": "media_asset.schema.json"
+            }
           }
         }
       }

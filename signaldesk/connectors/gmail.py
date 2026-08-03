@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-from ..models import UnifiedEvent
+from ..media_store import MAX_MEDIA_BYTES, MediaError, MediaStore
+from ..models import MediaAssetRef, UnifiedEvent
 from ..normalizer import clean_text
 from .base import Connector, ConnectorHealth, SyncBatch
 
@@ -31,12 +32,14 @@ class GmailConnector(Connector):
         *,
         draft_scope: bool = False,
         keyring_service: str = "SignalDesk.Gmail",
+        media_store: MediaStore | None = None,
     ):
         self.account_id = account_id
         self.connector_id = f"gmail:{account_id}"
         self.client_secrets = client_secrets
         self.draft_scope = draft_scope
         self.keyring_service = keyring_service
+        self.media_store = media_store
         self._service: Any = None
         self._error: str | None = None
         self.authenticated_email: str | None = None
@@ -147,7 +150,7 @@ class GmailConnector(Connector):
             source=self.source,
             status=status,
             detail=self._error or detail,
-            capabilities=["read", *(["create_draft"] if self.draft_scope else [])],
+            capabilities=["read", "read_images", *(["create_draft"] if self.draft_scope else [])],
         )
 
     def revoke(self) -> None:
@@ -201,6 +204,7 @@ class GmailConnector(Connector):
             for item in message.get("payload", {}).get("headers", [])
         }
         content = self._extract_body(message.get("payload", {}))
+        media = self._extract_media(message.get("payload", {}), message_id)
         received_at = datetime.fromtimestamp(int(message["internalDate"]) / 1000, tz=UTC)
         history_id = str(message.get("historyId", "initial"))
         thread_id = message.get("threadId")
@@ -230,8 +234,93 @@ class GmailConnector(Connector):
                 "history_id": history_id,
                 "labels": message.get("labelIds", []),
             },
+            media=media,
             checksum=hashlib.sha256(content.encode("utf-8")).hexdigest(),
         )
+
+    def _extract_media(self, payload: dict[str, Any], message_id: str) -> list[MediaAssetRef]:
+        supported = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+        results: list[MediaAssetRef] = []
+
+        def visit(part: dict[str, Any], path: str) -> None:
+            if len(results) >= 8:
+                return
+            mime_type = str(part.get("mimeType") or "").casefold()
+            body = part.get("body") or {}
+            if mime_type in supported and (body.get("data") or body.get("attachmentId")):
+                seed = f"gmail|{self.account_id}|{message_id}|{path}"
+                placeholder_id = f"media_{hashlib.sha256(seed.encode()).hexdigest()[:40]}"
+                filename = str(part.get("filename") or "gmail-image")
+                size = int(body.get("size") or 0)
+                if size > MAX_MEDIA_BYTES:
+                    results.append(
+                        MediaAssetRef(
+                            asset_id=placeholder_id,
+                            kind="image",
+                            mime_type=mime_type,
+                            original_name=filename,
+                            byte_size=size,
+                            availability="blocked",
+                            alt_text="Gmail image exceeds the local 20 MB limit",
+                        )
+                    )
+                elif self.media_store is None:
+                    results.append(
+                        MediaAssetRef(
+                            asset_id=placeholder_id,
+                            kind="image",
+                            mime_type=mime_type,
+                            original_name=filename,
+                            byte_size=size or None,
+                            availability="metadata_only",
+                        )
+                    )
+                else:
+                    try:
+                        encoded = body.get("data")
+                        if not encoded:
+                            attachment = (
+                                self._require_service()
+                                .users()
+                                .messages()
+                                .attachments()
+                                .get(
+                                    userId="me",
+                                    messageId=message_id,
+                                    id=body["attachmentId"],
+                                )
+                                .execute()
+                            )
+                            encoded = attachment.get("data")
+                        if not encoded:
+                            raise MediaError("Gmail attachment has no data")
+                        padding = "=" * (-len(encoded) % 4)
+                        content = base64.urlsafe_b64decode(encoded + padding)
+                        results.append(
+                            self.media_store.import_bytes(
+                                content,
+                                declared_mime=mime_type,
+                                original_name=filename,
+                            )
+                        )
+                    except Exception as error:
+                        results.append(
+                            MediaAssetRef(
+                                asset_id=placeholder_id,
+                                kind="image",
+                                mime_type=mime_type,
+                                original_name=filename,
+                                byte_size=size or None,
+                                availability="blocked",
+                                alt_text=f"Image import failed: {type(error).__name__}",
+                            )
+                        )
+            for index, child in enumerate(part.get("parts") or []):
+                if isinstance(child, dict):
+                    visit(child, f"{path}.{index}")
+
+        visit(payload, "0")
+        return results
 
     @classmethod
     def _extract_body(cls, payload: dict[str, Any]) -> str:

@@ -7,6 +7,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from .media_store import MediaError, MediaStore
 from .models import GroupedThread, TriageResult
 from .rules import RuleSignals, combined_text
 
@@ -43,6 +44,16 @@ def compile_prompt(thread: GroupedThread, signals: RuleSignals, max_chars: int =
         "completeness": thread.content_completeness,
         "sender": thread.sender,
         "messages": text,
+        "media": [
+            {
+                "asset_id": media.asset_id,
+                "kind": media.kind,
+                "availability": media.availability,
+                "alt_text": media.alt_text,
+            }
+            for message in thread.messages
+            for media in message.media
+        ][:8],
         "rule_hints": {
             "category": signals.category,
             "priority": signals.priority,
@@ -72,6 +83,34 @@ def compile_prompt(thread: GroupedThread, signals: RuleSignals, max_chars: int =
     return prompt[:max_chars]
 
 
+def _multimodal_user_content(
+    thread: GroupedThread,
+    prompt: str,
+    media_store: MediaStore | None,
+    *,
+    openai_style: bool = True,
+) -> str | list[dict[str, Any]]:
+    if media_store is None:
+        return prompt
+    content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+    # One image keeps the always-on path bounded; additional assets remain visible in detail.
+    for message in reversed(thread.messages):
+        for media in message.media:
+            if str(media.availability) != "available" or not media.mime_type:
+                continue
+            try:
+                url = media_store.as_data_url(media)
+                content.append(
+                    {"type": "image_url", "image_url": {"url": url}}
+                    if openai_style
+                    else {"type": "image", "url": url}
+                )
+                return content
+            except MediaError:
+                continue
+    return prompt
+
+
 def _extract_json(value: str) -> dict[str, Any]:
     value = value.strip()
     if value.startswith("```"):
@@ -99,20 +138,34 @@ class DisabledGateway:
 class EndpointGateway:
     backend_name = "qwen-endpoint"
 
-    def __init__(self, endpoint: str, model_id: str, timeout: float = 20):
+    def __init__(
+        self,
+        endpoint: str,
+        model_id: str,
+        timeout: float = 20,
+        media_store: MediaStore | None = None,
+    ):
         self.endpoint = endpoint
         self.model_id = model_id
         self.timeout = timeout
+        self.media_store = media_store
 
     def analyze(self, thread: GroupedThread, signals: RuleSignals) -> ModelResult:
         payload = {
             "model": self.model_id,
             "messages": [
                 {"role": "system", "content": SYSTEM_CONTRACT},
-                {"role": "user", "content": compile_prompt(thread, signals)},
+                {
+                    "role": "user",
+                    "content": _multimodal_user_content(
+                        thread,
+                        compile_prompt(thread, signals),
+                        self.media_store,
+                    ),
+                },
             ],
             "temperature": 0,
-            "max_tokens": 128,
+            "max_tokens": 256 if any(message.media for message in thread.messages) else 128,
             "stream": False,
             "response_format": {"type": "json_object"},
             "chat_template_kwargs": {"enable_thinking": False},
@@ -142,20 +195,21 @@ class TransformersGateway:
 
     backend_name = "qwen-transformers"
 
-    def __init__(self, model_id: str):
+    def __init__(self, model_id: str, media_store: MediaStore | None = None):
         self.model_id = model_id
         self._model: Any = None
-        self._tokenizer: Any = None
+        self.media_store = media_store
+        self._processor: Any = None
 
     def _load(self) -> None:
         if self._model is not None:
             return
         try:
-            from transformers import AutoModelForCausalLM, AutoTokenizer
+            from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration
         except ImportError as error:
             raise RuntimeError("install SignalDesk with the 'model' extra") from error
-        self._tokenizer = AutoTokenizer.from_pretrained(self.model_id)
-        self._model = AutoModelForCausalLM.from_pretrained(
+        self._processor = AutoProcessor.from_pretrained(self.model_id)
+        self._model = Qwen3_5ForConditionalGeneration.from_pretrained(
             self.model_id,
             torch_dtype="auto",
             device_map="auto",
@@ -166,26 +220,33 @@ class TransformersGateway:
             self._load()
             messages = [
                 {"role": "system", "content": SYSTEM_CONTRACT},
-                {"role": "user", "content": compile_prompt(thread, signals)},
+                {
+                    "role": "user",
+                    "content": _multimodal_user_content(
+                        thread,
+                        compile_prompt(thread, signals),
+                        self.media_store,
+                        openai_style=False,
+                    ),
+                },
             ]
-            model_input = self._tokenizer.apply_chat_template(
+            model_input = self._processor.apply_chat_template(
                 messages,
                 tokenize=True,
                 add_generation_prompt=True,
                 enable_thinking=False,
+                return_dict=True,
                 return_tensors="pt",
             ).to(self._model.device)
-            if model_input.shape[-1] > 384:
-                model_input = model_input[:, -384:]
             output = self._model.generate(
-                model_input,
-                max_new_tokens=128,
+                **model_input,
+                max_new_tokens=256 if any(message.media for message in thread.messages) else 128,
                 do_sample=False,
-                pad_token_id=self._tokenizer.eos_token_id,
             )
-            raw = self._tokenizer.decode(
-                output[0][model_input.shape[-1] :], skip_special_tokens=True
-            )
+            input_length = model_input["input_ids"].shape[-1]
+            raw = self._processor.batch_decode(
+                output[:, input_length:], skip_special_tokens=True
+            )[0]
             triage = TriageResult.model_validate(_extract_json(raw))
             return ModelResult(triage=triage, backend=self.backend_name, raw_output=raw)
         except Exception as error:  # model/runtime failure must fall back without losing events
@@ -196,9 +257,14 @@ class TransformersGateway:
             )
 
 
-def build_gateway(backend: str, endpoint: str, model_id: str) -> Gateway:
+def build_gateway(
+    backend: str,
+    endpoint: str,
+    model_id: str,
+    media_store: MediaStore | None = None,
+) -> Gateway:
     if backend == "endpoint":
-        return EndpointGateway(endpoint, model_id)
+        return EndpointGateway(endpoint, model_id, media_store=media_store)
     if backend == "transformers":
-        return TransformersGateway(model_id)
+        return TransformersGateway(model_id, media_store=media_store)
     return DisabledGateway()

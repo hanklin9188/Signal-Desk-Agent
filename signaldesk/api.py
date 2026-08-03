@@ -31,6 +31,7 @@ from .connectors.windows_bridge import WindowsBridgeConnector
 from .database import Database
 from .demo import seed_demo
 from .events import EventBus
+from .media_store import MediaError, MediaStore
 from .model_gateway import build_gateway
 from .models import (
     CardActionRequest,
@@ -148,7 +149,13 @@ def create_app(config: Settings | None = None, database: Database | None = None)
     repaired_line_threads = database.normalize_line_notification_identities()
     merged_messenger_threads = database.merge_duplicate_messenger_threads()
     bus = EventBus()
-    gateway = build_gateway(config.model_backend, config.model_endpoint, config.model_id)
+    media_store = MediaStore(config.data_dir / "media")
+    gateway = build_gateway(
+        config.model_backend,
+        config.model_endpoint,
+        config.model_id,
+        media_store=media_store,
+    )
     preferences = PreferenceRanker(database)
     pipeline = Pipeline(database, config, gateway, bus, preferences)
     for thread_id in repaired_line_threads:
@@ -180,6 +187,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             account_id=record["account_id"],
             client_secrets=Path(record["config"].get("credentials_path", default_credentials)),
             draft_scope=bool(record["config"].get("draft_scope", default_draft_scope)),
+            media_store=media_store,
         )
         for record in account_records
     }
@@ -197,7 +205,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             "gmail",
             "not_configured",
             gmail_detail,
-            ["read", *(["create_draft"] if gmail.draft_scope else [])],
+            ["read", "read_images", *(["create_draft"] if gmail.draft_scope else [])],
         )
     windows_health = windows.health()
     database.set_connector_health(
@@ -288,6 +296,8 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                     config.normalized_retention_days,
                     config.summary_retention_days,
                 )
+                for media in database.delete_orphan_media():
+                    media_store.delete(media)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -319,6 +329,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
     app.state.auth_token = token
     app.state.windows_connector = windows
     app.state.gmail_connectors = gmail_connectors
+    app.state.media_store = media_store
 
     request_times: dict[str, deque[float]] = defaultdict(deque)
 
@@ -525,6 +536,21 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             raise HTTPException(status_code=404, detail="card not found")
         return detail
 
+    @router.get("/media/{asset_id}")
+    def media_content(asset_id: str) -> FileResponse:
+        media = database.media_asset(asset_id)
+        if not media:
+            raise HTTPException(status_code=404, detail="media not found")
+        try:
+            path = media_store.path_for(media)
+        except MediaError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        return FileResponse(
+            path,
+            media_type=media.mime_type,
+            headers={"Cache-Control": "private, no-store"},
+        )
+
     @router.post("/cards/{card_id}/actions")
     def card_action(card_id: str, request: CardActionRequest) -> dict[str, Any]:
         try:
@@ -611,6 +637,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                 request.source,
                 request.paths,
                 timezone=config.timezone,
+                media_store=media_store,
             )
         except ChatArchiveError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
@@ -717,7 +744,12 @@ def create_app(config: Settings | None = None, database: Database | None = None)
         credentials = (
             Path(request.credentials_path) if request.credentials_path else default_credentials
         )
-        connector = GmailConnector(request.account_id, credentials, draft_scope=request.draft_scope)
+        connector = GmailConnector(
+            request.account_id,
+            credentials,
+            draft_scope=request.draft_scope,
+            media_store=media_store,
+        )
         gmail_connectors[request.account_id] = connector
         save_gmail_config(connector, connected=False)
         persist_gmail_health(connector)
@@ -822,6 +854,8 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             # No optional Gmail extra means no usable token exists to revoke.
             pass
         removed = database.delete_source_account_data("gmail", account_id)
+        for media in database.delete_orphan_media():
+            media_store.delete(media)
         save_gmail_config(gmail, connected=False)
         persist_gmail_health(gmail)
         bus.publish(
@@ -926,9 +960,13 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             except Exception:
                 pass
         database.delete_all_personal_data()
+        media_store.clear()
         gmail_connectors.clear()
         replacement = GmailConnector(
-            "personal", default_credentials, draft_scope=default_draft_scope
+            "personal",
+            default_credentials,
+            draft_scope=default_draft_scope,
+            media_store=media_store,
         )
         gmail_connectors["personal"] = replacement
         save_gmail_config(replacement, connected=False)

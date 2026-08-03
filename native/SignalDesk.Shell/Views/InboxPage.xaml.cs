@@ -1,9 +1,13 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using SignalDesk.Shell.Models;
 using SignalDesk.Shell.Services;
+using Windows.Storage.Streams;
 using Windows.System;
 
 namespace SignalDesk.Shell.Views;
@@ -176,6 +180,60 @@ public sealed partial class InboxPage : UserControl, IAsyncPage
             Uri.TryCreate(source.GetString(), UriKind.Absolute, out var uri))
             await Launcher.LaunchUriAsync(uri);
         else ShowMessage("無法開啟", "來源沒有提供安全的連結。", InfoBarSeverity.Warning);
+    }
+
+    private async void Media_Click(object sender, RoutedEventArgs e)
+    {
+        if (Detail is null || sender is not Button { Tag: string assetId }) return;
+        var media = Detail.Events
+            .SelectMany(item => item.Media)
+            .FirstOrDefault(item => item.AssetId == assetId);
+        if (media is null || !media.IsAvailable) return;
+        try
+        {
+            var bytes = await _state.Api.MediaAsync(assetId);
+            using var stream = new InMemoryRandomAccessStream();
+            using (var writer = new DataWriter(stream))
+            {
+                writer.WriteBytes(bytes);
+                await writer.StoreAsync();
+                writer.DetachStream();
+            }
+            stream.Seek(0);
+            var bitmap = new BitmapImage();
+            await bitmap.SetSourceAsync(stream);
+            var image = new Image
+            {
+                Source = bitmap,
+                Stretch = Stretch.Uniform,
+                MaxHeight = 660,
+                MaxWidth = 920,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            AutomationProperties.SetName(
+                image,
+                media.AltText ?? media.OriginalName ?? "訊息圖片");
+            var dialog = new ContentDialog
+            {
+                XamlRoot = XamlRoot,
+                Title = media.OriginalName ?? "訊息圖片",
+                Content = new ScrollViewer
+                {
+                    Content = image,
+                    MaxHeight = 700,
+                    HorizontalScrollMode = ScrollMode.Auto,
+                    VerticalScrollMode = ScrollMode.Auto,
+                    ZoomMode = ZoomMode.Enabled
+                },
+                CloseButtonText = "關閉",
+                DefaultButton = ContentDialogButton.Close
+            };
+            await dialog.ShowAsync();
+        }
+        catch (Exception error)
+        {
+            ShowMessage("圖片無法開啟", error.Message, InfoBarSeverity.Error);
+        }
     }
 
     private async Task SnoozeAsync()

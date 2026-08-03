@@ -28,6 +28,38 @@ class ContentCompleteness(StrEnum):
     MIXED = "mixed"
 
 
+class MediaKind(StrEnum):
+    IMAGE = "image"
+    SCREENSHOT = "screenshot"
+    STICKER = "sticker"
+    ANIMATED_IMAGE = "animated_image"
+    DOCUMENT_PREVIEW = "document_preview"
+
+
+class MediaAvailability(StrEnum):
+    AVAILABLE = "available"
+    METADATA_ONLY = "metadata_only"
+    MISSING = "missing"
+    BLOCKED = "blocked"
+
+
+class MediaAssetRef(StrictModel):
+    """Safe, portable media metadata; local filesystem paths never cross the API."""
+
+    asset_id: str = Field(pattern=r"^media_[a-f0-9]{24,64}$")
+    kind: MediaKind
+    mime_type: str | None = Field(
+        default=None, pattern=r"^image/(?:jpeg|png|webp|gif)$"
+    )
+    original_name: str | None = Field(default=None, max_length=240)
+    byte_size: int | None = Field(default=None, ge=0, le=20_000_000)
+    width: int | None = Field(default=None, ge=1, le=32_768)
+    height: int | None = Field(default=None, ge=1, le=32_768)
+    availability: MediaAvailability = MediaAvailability.AVAILABLE
+    sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    alt_text: str | None = Field(default=None, max_length=500)
+
+
 class Priority(StrEnum):
     URGENT = "urgent"
     HIGH = "high"
@@ -59,6 +91,7 @@ class UnifiedEvent(StrictModel):
     raw_notification_id: str | None = None
     privacy_class: Literal["private", "sensitive", "normal"] = "private"
     metadata: dict[str, Any] = Field(default_factory=dict)
+    media: list[MediaAssetRef] = Field(default_factory=list, max_length=8)
     checksum: str | None = None
 
     @field_validator("content")
@@ -74,6 +107,7 @@ class GroupedMessage(StrictModel):
     received_at: datetime
     sender: str | None = None
     content: str
+    media: list[MediaAssetRef] = Field(default_factory=list, max_length=8)
 
 
 class GroupedThread(StrictModel):
@@ -156,6 +190,9 @@ class TriageResult(StrictModel):
             "missing_context",
             "source_resolution_uncertain",
             "conflicting_information",
+            "image_unavailable",
+            "image_analysis_failed",
+            "visual_evidence_unverified",
         ]
     ] = Field(default_factory=list)
 

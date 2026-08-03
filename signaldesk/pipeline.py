@@ -185,6 +185,14 @@ class Pipeline:
         self.bus.publish("triage_started", {"thread_id": thread_id})
         model_result = self.gateway.analyze(thread, signals)
         candidate = model_result.triage or baseline
+        has_available_media = any(
+            str(media.availability) == "available"
+            for message in thread.messages
+            for media in message.media
+        )
+        if has_available_media and model_result.triage is None:
+            if "visual_evidence_unverified" not in candidate.uncertainty_flags:
+                candidate.uncertainty_flags.append("visual_evidence_unverified")
         validated, report = self.validator.validate(candidate, thread, signals)
 
         # An unsafe model output falls back to the deterministic baseline and is audited.
