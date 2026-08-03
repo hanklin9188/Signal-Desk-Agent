@@ -39,6 +39,31 @@ public sealed class LocalApiClient
     public Task<CardDetail> CardAsync(string cardId, CancellationToken token = default) =>
         GetAsync<CardDetail>($"api/v1/cards/{Uri.EscapeDataString(cardId)}", token);
 
+    public async Task<byte[]> MediaAsync(string assetId, CancellationToken token = default)
+    {
+        using var response = await _client.GetAsync(
+            $"api/v1/media/{Uri.EscapeDataString(assetId)}", token);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync(token);
+    }
+
+    public async Task<byte[]> MediaThumbnailAsync(
+        string assetId, CancellationToken token = default)
+    {
+        using var response = await _client.GetAsync(
+            $"api/v1/media/{Uri.EscapeDataString(assetId)}/thumbnail", token);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsByteArrayAsync(token);
+    }
+
+    public Task<JsonElement> AnalyzeMediaAsync(
+        string assetId, CancellationToken token = default) =>
+        SendAsync<JsonElement>(
+            HttpMethod.Post,
+            $"api/v1/media/{Uri.EscapeDataString(assetId)}/analysis",
+            null,
+            token);
+
     public Task<JsonElement> CardActionAsync(
         string cardId, string action, object? value = null, CancellationToken token = default) =>
         SendAsync<JsonElement>(

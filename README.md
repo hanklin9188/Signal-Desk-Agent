@@ -37,6 +37,8 @@ flowchart LR
 - Attention policy: quiet hours, focus mode, VIP/mute rules, uncertainty penalties, and an interruption budget.
 - Human control: the app can open, snooze, mark done, create reminders, and prepare drafts—but never auto-sends.
 - Local preference learning: feedback adjusts ranking without uploading private message text.
+- Multimodal foundation: real connector-supplied image bytes are displayed directly; PaddleOCR-VL
+  extracts localized text and Qwen turns verified message/image context into structured triage.
 
 ## Desktop experience
 
@@ -44,10 +46,10 @@ The production interface is a native WinUI 3 application, not a web wrapper.
 
 | Surface | Purpose |
 |---|---|
-| Inbox Center | Search, source filters, priority filters, batch actions, and evidence-rich message detail |
+| Inbox Center | “Now” is a configurable recent window (6 hours by default); “Today” starts at local midnight, with search, filters, actions, and evidence-rich detail |
 | Glance | Always-on-top view of the latest useful items; refreshes every 30 seconds |
 | Focus mode | Raises the real-time interruption threshold while keeping messages available in the inbox |
-| Daily Digest | Groups urgent items, deadlines, replies, and lower-priority information |
+| Daily Digest | Uses validated Qwen semantics to separate urgent, important, reply, and informational items |
 | Source Center | Gmail OAuth health, Windows notification permission, and local chat archive imports |
 | Attention Policy | Explainable VIP, priority, and mute rules that can be removed at any time |
 | Privacy Controls | Local export, retention settings, preference reset, and confirmed private-data deletion |
@@ -58,13 +60,18 @@ Gmail, LINE, Messenger, and Windows notifications have distinct reusable source 
 
 | Source | Current integration | Completeness |
 |---|---|---|
-| Gmail | Official OAuth, initial sync, 60-second incremental sync, multiple accounts | Full message/thread content under granted scope |
+| Gmail | Official OAuth, initial sync, 60-second incremental sync, multiple accounts, transient transport retry and per-message failure isolation | Full message/thread content under granted scope |
 | LINE personal | Official text archive import + Windows notification listener | Notification preview for new inbound messages |
 | Messenger personal | Accounts Center JSON/ZIP import + Windows/browser notification listener | Notification preview for new inbound messages |
 | LINE Official Account | Signed webhook connector | Full webhook payload for the configured official account |
 | Messenger Page | Signed Meta webhook connector | Full webhook payload for the configured Page |
 
 Personal LINE and Messenger accounts do not expose a supported API for full private-chat synchronization. SignalDesk does not scrape UI, reverse-engineer chat databases, or steal sessions. When Windows only exposes a preview, the UI says so explicitly.
+
+Models do not acquire messages or images. Gmail supplies real attachment bytes and therefore already
+supports thumbnails. A personal LINE/Messenger toast that contains only “sent a photo” supplies no
+pixels for any model to read. Direct personal-chat images require a separate opt-in acquisition
+connector (Messenger Web companion; LINE foreground/manual companion), not a larger model.
 
 ## Architecture
 
@@ -82,7 +89,9 @@ flowchart TB
         Pipeline[Agent pipeline]
         Rules[Rules + validator + policy]
         Store[(SQLite WAL)]
-        Model[Optional local Qwen endpoint]
+        Model[Disposable local Qwen worker]
+        Media[Safe media store]
+        OCR[Automatic PaddleOCR-VL]
     end
 
     Gmail[Gmail API] --> API
@@ -91,10 +100,16 @@ flowchart TB
     Tray <--> Shell
     Vault --> Shell
     API --> Pipeline --> Rules --> Store
-    Model -. optional .-> Pipeline
+    API --> Media --> OCR
+    OCR -->|worker exits + localized evidence| Model
+    Model -->|worker exits + semantic summary| Pipeline
 ```
 
-The native shell launches the packaged Python service on `127.0.0.1`, retrieves a random bearer token from Windows Credential Manager, and communicates only through the authenticated loopback API. See [architecture details](ARCHITECTURE.md) and the [code ownership map](docs/PROJECT_STRUCTURE.md).
+The native shell launches the packaged Python service on `127.0.0.1`, retrieves a random bearer token from Windows Credential Manager, and communicates only through the authenticated loopback API. CUDA inference runs in disposable local child processes so the long-lived desktop service does not retain an idle GPU context. See [architecture details](ARCHITECTURE.md) and the [code ownership map](docs/PROJECT_STRUCTURE.md).
+
+The image/OCR/Qwen delivery contract, supported-source limits and acceptance gates are documented in
+[Multimodal Image Design](MULTIMODAL_DESIGN.md). A notification saying "sent a photo" is not treated
+as image access.
 
 ## Run the project
 
@@ -131,11 +146,34 @@ SIGNALDESK_DEMO=1 .venv/bin/signaldesk
 
 Current local verification:
 
-- 41 automated tests passing.
+- 72 automated tests passing.
 - 300 synthetic locked scenarios / 1,800 checks passing.
+- RTX 4080 SUPER image smoke: Qwen3.5-4B BF16/NF4/INT8 and PaddleOCR-VL-1.6 BF16 all loaded
+  locally and found the fictional visible deadline; see [raw metrics](benchmarks/results/README.md).
 - Zero unauthorized actions and zero auto-send paths.
 - Native WinUI build: 0 compile errors.
 - MSIX installed and exercised on Windows 11.
+
+The optional Windows GPU runtime is reproducible with
+`scripts/setup-windows-model-runtime.ps1`. It pins Qwen3.5-4B and PaddleOCR-VL-1.6 revisions,
+keeps inference local, and performs model work after the deterministic card is already visible.
+Qwen uses NF4 4-bit weights by default. Thumbnails require no model; when real image bytes arrive,
+the background worker automatically runs PaddleOCR, releases it, then asks Qwen to inspect both the
+pixels and verified OCR context. Neither model remains resident on the GPU. A
+fictional end-to-end RTX 4080 SUPER run measured 3.277 GiB peak allocated VRAM and 0.008 GiB after
+Qwen release.
+
+The current privacy-safe calibration set contains 24 diverse triage cases. Qwen plus explicit,
+observable constraints reached 100% priority/reply/category accuracy on that calibration set; the
+raw Qwen-only pass was lower, so the result is not presented as general model accuracy. PaddleOCR
+reached 100% token recall on six synthetic text images and correctly handled one genuine no-text
+image. The sequential two-image OCR → Qwen workflow passed 2/2 in 29.1 seconds. See
+[Local Model Validation](docs/LOCAL_MODEL_VALIDATION.md) for methodology and limitations.
+
+Qwen summaries use a strict zh-TW contract: conclusion first, then the supported actor, event,
+next step and deadline. One in-memory repair pass corrects malformed/truncated JSON without loading
+a second model copy. Message detail identifies whether the visible result is a validated Qwen
+summary or the deterministic fast fallback.
 
 CI repeats schema parsing, lint, tests, a benchmark smoke gate, and the Windows native build.
 
@@ -160,7 +198,10 @@ For module-by-module responsibilities, start with [Project Structure & Code Owne
 - The API binds to loopback and requires an unguessable token.
 - OAuth tokens live in the OS credential store, not SQLite or Git.
 - Source URLs must match connector-specific HTTPS allowlists.
-- Notification previews remain labeled incomplete; image/sticker content is never guessed.
+- Notification previews remain labeled incomplete; an image is analyzed only when a connector
+  supplied validated bytes, never from a “sent a photo” placeholder.
+- Media paths never cross the API; supported bytes use content-addressed local storage and are
+  removed by confirmed private-data deletion.
 - There is no endpoint for automatic sending, source deletion, or arbitrary shell execution.
 
 Security design: [SECURITY_PRIVACY.md](SECURITY_PRIVACY.md) · Responsible disclosure: [SECURITY.md](SECURITY.md)
@@ -170,7 +211,8 @@ Security design: [SECURITY_PRIVACY.md](SECURITY_PRIVACY.md) · Responsible discl
 - Expand anonymized, human-labeled evaluation beyond synthetic scenarios.
 - Complete 7–14 day Shadow Mode calibration studies.
 - Add production publisher signing and a stable Windows release channel.
-- Audit optional local Qwen inference against the deterministic baseline before enabling it by default.
+- Human-review the prepared 300-item multimodal audit and real-source samples before considering
+  QLoRA/SFT; the current synthetic calibration does not justify training by itself.
 
 ## License
 

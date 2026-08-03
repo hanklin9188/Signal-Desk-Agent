@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from signaldesk.models import UnifiedEvent
+from signaldesk.model_gateway import ModelResult
+from signaldesk.models import ActionItem, MediaAssetRef, TriageResult, UnifiedEvent, VisualAnalysis
+from signaldesk.pipeline import Pipeline
 
 ZONE = ZoneInfo("Asia/Taipei")
 NOW = datetime(2026, 8, 2, 18, 0, tzinfo=ZONE)
@@ -237,3 +240,200 @@ def test_hourly_interruption_budget_routes_excess_to_digest(pipeline, database):
     assert all(card["decision"]["decision"] == "surface_now" for card in first_four)
     assert fifth["decision"]["decision"] == "include_in_digest"
     assert "interruption_budget" in fifth["why_shown"]
+
+
+def test_transformers_analysis_is_deferred_until_card_is_visible(database, test_config):
+    class RecordingGateway:
+        backend_name = "qwen-transformers"
+
+        def __init__(self):
+            self.calls = 0
+
+        def analyze(self, thread, signals, visual_analyses=None):
+            self.calls += 1
+            return ModelResult(
+                triage=None,
+                backend=self.backend_name,
+                error="simulated_model_unavailable",
+                error_code="runtimeerror",
+            )
+
+    gateway = RecordingGateway()
+    deferred = Pipeline(
+        database,
+        replace(test_config, model_backend="transformers"),
+        gateway,
+    )
+
+    result = deferred.process(event(event_id="deferred-model"))
+
+    assert gateway.calls == 0
+    assert result.thread_id in database.pending_model_thread_ids(limit=10)
+    assert database.card_detail(result.card_id)["model_backend"] == "rule+model-pending"
+
+    deferred.analyze_thread(result.thread_id, use_model=True)
+
+    assert gateway.calls == 1
+    assert result.thread_id not in database.pending_model_thread_ids(limit=10)
+    assert database.card_detail(result.card_id)["model_backend"].startswith(
+        "qwen-transformers"
+    )
+    assert "model_error_runtimeerror" in database.card_detail(result.card_id)[
+        "validation"
+    ]["warnings"]
+
+
+def test_qwen_text_summary_uses_deterministic_evidence_fields(database, test_config):
+    class SummaryGateway:
+        backend_name = "qwen-transformers"
+
+        def analyze(self, thread, signals, visual_analyses=None):
+            return ModelResult(
+                triage=TriageResult(
+                    summary="教授要求今晚前寄出目前的實驗結果。",
+                    # Deliberately weak raw labels: high-precision observable rules must
+                    # survive when the semantic model under-rates an explicit request.
+                    category="other",
+                    priority="normal",
+                    requires_reply="no",
+                    action_items=[
+                        ActionItem(
+                            text="模型改寫過的待辦",
+                            supporting_span="這句並不存在於原文",
+                            source_event_ids=[thread.event_ids[0]],
+                        )
+                    ],
+                    suggested_actions=["draft_reply"],
+                ),
+                backend=self.backend_name,
+            )
+
+        def release(self):
+            return
+
+    pipeline = Pipeline(
+        database,
+        replace(test_config, model_backend="transformers"),
+        SummaryGateway(),
+    )
+    result = pipeline.process(event(event_id="qwen-summary-evidence"))
+    pipeline.analyze_thread(result.thread_id, use_model=True)
+    detail = database.card_detail(result.card_id)
+
+    assert detail["summary"] == "教授要求今晚前寄出目前的實驗結果。"
+    assert detail["category"] == "research"
+    assert detail["priority"] == "high"
+    assert detail["requires_reply"] == "yes"
+    assert detail["action_items"][0]["supporting_span"] in detail["events"][0]["content"]
+    assert detail["model_backend"] == "qwen-transformers+calibrated-v1"
+
+    # A calibrated result is stable across launches. Older Qwen rows are queued once
+    # so an installed database receives the revised classifier without data deletion.
+    assert database.queue_recent_cards_for_model() == 0
+    with database.transaction() as connection:
+        connection.execute(
+            "UPDATE triage_results SET model_backend='qwen-transformers' WHERE thread_id=?",
+            (result.thread_id,),
+        )
+    assert database.queue_recent_cards_for_model() == 1
+    assert result.thread_id in database.pending_model_thread_ids(limit=10)
+    assert database.mark_model_worker_failed([result.thread_id]) == 1
+    assert database.pending_model_thread_ids(limit=10) == []
+    assert "isolated-worker+rule-fallback" in database.card_detail(result.card_id)[
+        "model_backend"
+    ]
+
+
+def test_image_only_preview_without_retrievable_media_stays_on_safe_rules(
+    database, test_config
+):
+    class RecordingGateway:
+        backend_name = "qwen-transformers"
+
+        def __init__(self):
+            self.calls = 0
+
+        def analyze(self, thread, signals, visual_analyses=None):
+            self.calls += 1
+            return ModelResult(triage=None, backend=self.backend_name, error="unexpected")
+
+        def release(self):
+            return
+
+    gateway = RecordingGateway()
+    deferred = Pipeline(
+        database,
+        replace(test_config, model_backend="transformers"),
+        gateway,
+    )
+    result = deferred.process(
+        event(
+            event_id="preview-no-qwen",
+            source="messenger_notification",
+            source_app_id="Microsoft Edge",
+            account_id="windows",
+            sender="Example Person",
+            conversation_id="Example Person",
+            title="Example Person",
+            content="傳送了 1 張相片",
+            content_completeness="notification_preview",
+            metadata={"origin": "messenger.com"},
+        )
+    )
+
+    assert gateway.calls == 0
+    assert database.card_detail(result.card_id)["model_backend"] == "rule"
+    assert database.pending_model_thread_ids(limit=10) == []
+
+
+def test_available_image_automatically_queues_ocr_and_qwen(database, test_config):
+    gateway = type(
+        "RecordingGateway",
+        (),
+        {
+            "backend_name": "qwen-transformers",
+            "analyze": lambda self, thread, signals, visual_analyses=None: ModelResult(
+                triage=None, backend=self.backend_name, error="simulated"
+            ),
+            "release": lambda self: None,
+        },
+    )()
+    deferred = Pipeline(
+        database,
+        replace(test_config, model_backend="transformers"),
+        gateway,
+    )
+    media = MediaAssetRef(
+        asset_id="media_" + "a" * 40,
+        kind="image",
+        mime_type="image/png",
+        availability="available",
+        sha256="b" * 64,
+    )
+    result = deferred.process(
+        event(
+            event_id="image-on-demand",
+            content="Attached image",
+            title="Image",
+            media=[media],
+        )
+    )
+
+    # The user does not need to press an Analyze button. Qwen is queued immediately;
+    # the worker drains OCR first so the later Qwen pass receives verified OCR evidence.
+    assert database.pending_model_thread_ids(limit=10) == [result.thread_id]
+
+    now = datetime.now(ZONE)
+    database.save_visual_analysis(
+        VisualAnalysis(
+            asset_id=media.asset_id,
+            asset_sha256=media.sha256,
+            status="completed",
+            ocr_model_id="PaddlePaddle/PaddleOCR-VL-1.6",
+            started_at=now,
+            completed_at=now,
+        )
+    )
+    deferred.analyze_thread(result.thread_id)
+
+    assert database.pending_model_thread_ids(limit=10) == [result.thread_id]

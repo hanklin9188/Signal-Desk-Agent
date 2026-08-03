@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "measured_at": "2026-08-03T07:56:03.992478+00:00",
+  "model_id": "Qwen/Qwen3.5-4B",
+  "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "family": "qwen",
+  "quantization": "bf16",
+  "quantization_backend": "bf16",
+  "gpu": "NVIDIA GeForce RTX 4080 SUPER",
+  "torch_version": "2.13.0+cu130",
+  "transformers_version": "5.14.1",
+  "load_seconds": 221.383,
+  "peak_vram_gib": 8.671,
+  "iterations": 1,
+  "latency_seconds": [
+    5.655
+  ],
+  "median_latency_seconds": 5.655,
+  "output_tokens": 94,
+  "median_tokens_per_second": 16.621,
+  "output_sha256": "6d510525c6ebfe645d1e3db2dbd1a767af51c7ee66fc9f350187636bf4d9dd1a",
+  "expected_text_found": true,
+  "private_input_recorded": false
+}

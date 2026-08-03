@@ -28,10 +28,14 @@ public sealed partial class SettingsPage : UserControl, IAsyncPage
         QuietEndPicker.Time = ParseTime(prefs.QuietEnd, new TimeSpan(8, 0, 0));
         DigestTimePicker.Time = ParseTime(prefs.DigestTime, new TimeSpan(18, 0, 0));
         FocusDigestBox.Value = prefs.FocusDigestMinutes;
+        NowWindowBox.Value = prefs.NowWindowHours;
         RetentionDaysBox.Value = prefs.RawRetentionDays;
         AllowlistBox.Text = string.Join(", ", prefs.NotificationAllowlist);
         SelectByTag(ThemeCombo, prefs.Theme);
         SelectByTag(ModelResidencyCombo, prefs.ModelResidency);
+        ModelRuntimeStatusText.Text = _state.Model.Backend == "rule"
+            ? "目前使用規則引擎，不占用模型 VRAM。"
+            : $"{_state.Model.Id} · {_state.Model.Quantization.ToUpperInvariant()}。建議使用『需要時載入』，閒置時不占用模型 VRAM。";
 
         try
         {
@@ -59,8 +63,9 @@ public sealed partial class SettingsPage : UserControl, IAsyncPage
                 quiet_end = FormatTime(QuietEndPicker.Time),
                 digest_time = FormatTime(DigestTimePicker.Time),
                 focus_digest_minutes = (int)FocusDigestBox.Value,
+                now_window_hours = (int)NowWindowBox.Value,
                 theme = SelectedTag(ThemeCombo, "system"),
-                model_residency = SelectedTag(ModelResidencyCombo, "always_on"),
+                model_residency = SelectedTag(ModelResidencyCombo, "on_demand"),
                 raw_retention_days = (int)RetentionDaysBox.Value,
                 notification_allowlist = AllowlistBox.Text
                     .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)

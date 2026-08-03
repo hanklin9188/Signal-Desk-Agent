@@ -64,7 +64,8 @@
         "full",
         "thread_delta",
         "notification_preview",
-        "metadata_only"
+        "metadata_only",
+        "mixed"
       ]
     },
     "received_at": {
@@ -92,6 +93,13 @@
     },
     "metadata": {
       "type": "object"
+    },
+    "media": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "$ref": "media_asset.schema.json"
+      }
     },
     "checksum": {
       "type": [

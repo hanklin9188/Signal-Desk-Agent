@@ -22,10 +22,16 @@ public sealed partial class DigestPage : UserControl, IAsyncPage
         Bindings.Update();
         UrgentEmpty.Visibility = Digest.Urgent.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         UrgentList.Visibility = Digest.Urgent.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        ImportantEmpty.Visibility = Digest.Important.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ImportantList.Visibility = Digest.Important.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         DueEmpty.Visibility = Digest.DueToday.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         DueList.Visibility = Digest.DueToday.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         ReplyEmpty.Visibility = Digest.NeedsReply.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ReplyList.Visibility = Digest.NeedsReply.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        InformationEmpty.Visibility = Digest.ForInformation.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        InformationList.Visibility = Digest.ForInformation.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        DigestScroll.UpdateLayout();
+        DigestScroll.ChangeView(null, 0, null, true);
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs e) => await LoadAsync();

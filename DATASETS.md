@@ -53,6 +53,10 @@
 - Image/sticker-only notification。
 - Conflicting messages。
 - Long thread delta。
+- Traditional Chinese screenshots and chat captures with fictional identities。
+- Event posters, receipts, tables and document pages。
+- General photos/stickers where no exact text claim is possible。
+- Image metadata-only, missing, blocked and corrupted hard negatives。
 
 ### 3.2 目標規模
 
@@ -67,6 +71,25 @@
 #### SFT v2
 
 20,000+ examples，包含 hard negatives。
+
+#### Multimodal audit v0
+
+300+ human-reviewed examples, balanced across screenshot, document, photo/sticker and unavailable
+image slices. SFT image volume is not set until the zero-shot audit identifies real failure modes.
+
+The repository now contains 300 deterministic fictional images and `manifest.jsonl` under
+`benchmarks/multimodal/`. They are deliberately marked `unreviewed`; generation is not human
+review. Use:
+
+```bash
+.venv/bin/signaldesk-multimodal-review status
+.venv/bin/signaldesk-multimodal-review review --id mm-001 --decision approved \
+  --reviewer "Reviewer name"
+.venv/bin/signaldesk-multimodal-review lock --output data/multimodal-locked.jsonl
+```
+
+The `lock` command refuses to create a release audit until all 300 records have reviewer identity,
+timestamp and decision. Review ledgers stay under `data/` and are excluded from Git by default.
 
 ### 3.3 來源比例建議
 
@@ -120,3 +143,20 @@ locked test 10%
   "split_group": "scenario_family_001"
 }
 ```
+
+Multimodal records additionally include asset hashes and evidence regions, never public local paths:
+
+```json
+{
+  "asset_sha256": "<sha256>",
+  "media_kind": "screenshot",
+  "availability": "available",
+  "ocr_blocks": [{"text": "截止 8 月 10 日", "region": [0.1, 0.4, 0.8, 0.5]}],
+  "visual_target": {"summary": "活動報名海報", "deadline_span": "截止 8 月 10 日"},
+  "review_status": "human_verified"
+}
+```
+
+Private originals remain local. An export for annotation includes only explicit opt-in assets with
+metadata stripped, or irreversible fictional/redacted derivatives. Image hashes are split-group
+keys so resized copies of the same image cannot leak across train and test.

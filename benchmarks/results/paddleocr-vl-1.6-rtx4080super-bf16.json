@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "measured_at": "2026-08-03T08:01:00.725072+00:00",
+  "model_id": "PaddlePaddle/PaddleOCR-VL-1.6",
+  "revision": "66317acc4c9fc17bd154591ce650735cd2855f3e",
+  "family": "paddle",
+  "quantization": "bf16",
+  "quantization_backend": "bf16",
+  "gpu": "NVIDIA GeForce RTX 4080 SUPER",
+  "torch_version": "2.13.0+cu130",
+  "transformers_version": "5.14.1",
+  "load_seconds": 2.839,
+  "peak_vram_gib": 1.809,
+  "iterations": 1,
+  "latency_seconds": [
+    7.067
+  ],
+  "median_latency_seconds": 7.067,
+  "output_tokens": 79,
+  "median_tokens_per_second": 11.179,
+  "output_sha256": "1c73a793ee248e7e21599aa83d51be681ae921061b2163e12d5c7c8e830d14f5",
+  "expected_text_found": true,
+  "private_input_recorded": false
+}

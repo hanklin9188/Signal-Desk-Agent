@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="using:SignalDesk.Shell.Controls"
     xmlns:models="using:SignalDesk.Shell.Models">
-    <ScrollViewer Background="Transparent">
+    <ScrollViewer x:Name="SourcesScroll" Background="Transparent">
         <StackPanel Padding="42,34,48,72" Spacing="20" MaxWidth="1180" HorizontalAlignment="Center">
             <Grid>
                 <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
@@ -22,13 +22,14 @@
                 </StackPanel>
             </Grid>
             <ItemsControl ItemsSource="{x:Bind Connectors}" HorizontalAlignment="Stretch">
-                <ItemsControl.ItemsPanel><ItemsPanelTemplate><ItemsWrapGrid MaximumRowsOrColumns="2" Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><ItemsWrapGrid MaximumRowsOrColumns="2" Orientation="Horizontal" ItemWidth="452" ItemHeight="222" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:ConnectorItem">
-                        <Border Style="{StaticResource SignalCardStyle}" Width="440" MinHeight="210" Margin="0,0,12,12"
+                        <Border Style="{StaticResource SignalCardStyle}" Width="440" Height="210" Margin="0,0,12,12"
+                                VerticalAlignment="Top"
                                 Visibility="{x:Bind IsBusinessWebhook, Converter={StaticResource NotBoolVisibility}}">
                             <Grid>
-                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                                 <Grid ColumnSpacing="10">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="42" /><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                                     <ui:SourceBadge Source="{x:Bind BadgeSource}" BadgeSize="42" />

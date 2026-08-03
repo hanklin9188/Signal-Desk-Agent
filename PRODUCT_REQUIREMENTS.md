@@ -30,6 +30,9 @@ SignalDesk 必須讓使用者在不頻繁切換 Gmail、LINE、Messenger 的情�
 - Gmail reply draft preview。
 - Local SQLite。
 - Trace 與 benchmark。
+- Supported connector 圖片安全儲存、縮圖與詳細檢視。
+- Qwen3.5-4B 圖片理解與 PaddleOCR-VL 文字證據路由。
+- 圖片不可用、分析失敗與未驗證證據的明確狀態。
 
 ### P1
 
@@ -40,6 +43,7 @@ SignalDesk 必須讓使用者在不頻繁切換 Gmail、LINE、Messenger 的情�
 - Search/filter。
 - Export anonymized benchmark。
 - Page/Official Account webhooks。
+- 多圖片批次、OCR 區域高亮與分析重試。
 
 ### 非 MVP
 
@@ -77,6 +81,20 @@ SignalDesk 必須讓使用者在不頻繁切換 Gmail、LINE、Messenger 的情�
 
 我希望所有私人訊息預設留在本機，且可以刪除歷史。
 
+### US-07
+
+當 Gmail 或匯入的 Messenger 對話真的包含圖片，我希望在訊息卡詳細頁看到圖片、OCR
+文字及圖片摘要，不必跳回來源才能知道內容。
+
+### US-08
+
+當 LINE/Messenger 通知只說「傳送一張圖片」卻沒有提供圖片內容，我希望 SignalDesk
+清楚顯示無法讀取，不得產生假的圖片摘要、期限或待辦。
+
+### US-09
+
+當活動海報包含截止日期，我希望截止日期只有在 OCR 證據能對應同一張圖片時才進入待辦。
+
 ## 4. 非功能需求
 
 - Windows 11。
@@ -90,6 +108,10 @@ SignalDesk 必須讓使用者在不頻繁切換 Gmail、LINE、Messenger 的情�
 - Accessibility：keyboard、screen reader、contrast。
 - 重要事件到卡片 p95 目標 < 10 秒（模型已常駐時）。
 - 規則可直接處理的事件 p95 目標 < 1 秒。
+- 原始圖片只接受允許格式、檔案簽章必須符合 MIME，單檔上限 20 MB。
+- 本機路徑不得出現在 API、trace、export 或模型輸出。
+- 圖片衍生檔、OCR 與分析結果必須受 retention/full-delete 管理。
+- 圖片即時路由 p95 目標 < 15 秒（模型已常駐且圖片已在本機時）。
 
 ## 5. MVP 驗收
 
@@ -101,3 +123,5 @@ SignalDesk 必須讓使用者在不頻繁切換 Gmail、LINE、Messenger 的情�
 - no unauthorized action。
 - shadow mode 完成。
 - 產品 UI 可連續運作一個工作日。
+- 300+ 人工審查圖片案例完成 locked audit，精確期限虛構率為 0。
+- 可用圖片、metadata-only、missing、blocked 與分析失敗皆有可測試 WinUI 狀態。

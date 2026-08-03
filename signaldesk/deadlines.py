@@ -32,6 +32,12 @@ PATTERNS = [
     re.compile(r"\d{4}[/-]\d{1,2}[/-]\d{1,2}(?:\s+\d{1,2}:\d{2})?"),
     re.compile(r"\d{1,2}[/-]\d{1,2}(?:\s+\d{1,2}:\d{2})?(?:前)?"),
     re.compile(r"(?:before|by)\s+(?:tonight|tomorrow|\d{4}-\d{1,2}-\d{1,2})", re.I),
+    re.compile(
+        r"(?:before|by)\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|"
+        r"Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|"
+        r"Dec(?:ember)?)\s+\d{1,2}(?:\s*[,，]\s*\d{4})?",
+        re.I,
+    ),
 ]
 
 
@@ -82,11 +88,27 @@ def _normalize_deadline(text_value: str, received_at: datetime, timezone: str) -
         normalized = datetime.combine(target, time(18, 0), zone)
         precision = "week"
     else:
+        english_month = re.search(
+            r"(?:before|by)\s+([A-Za-z]+\s+\d{1,2}(?:\s*[,，]\s*\d{4})?)",
+            text_value,
+            re.I,
+        )
+        if english_month:
+            cleaned = english_month.group(1).replace("，", ",")
+            for date_format in ("%b %d, %Y", "%B %d, %Y", "%b %d", "%B %d"):
+                try:
+                    parsed = datetime.strptime(cleaned, date_format)
+                    year = parsed.year if "%Y" in date_format else base.year
+                    normalized = datetime(year, parsed.month, parsed.day, 18, 0, tzinfo=zone)
+                    precision = "day"
+                    break
+                except ValueError:
+                    continue
         numeric = re.search(
             r"(?:(\d{4})[/-])?(\d{1,2})[/-](\d{1,2})(?:\s+(\d{1,2}):(\d{2}))?",
             text_value,
         )
-        if numeric:
+        if normalized is None and numeric:
             year = int(numeric.group(1) or base.year)
             month, day = int(numeric.group(2)), int(numeric.group(3))
             hour, minute = int(numeric.group(4) or 18), int(numeric.group(5) or 0)

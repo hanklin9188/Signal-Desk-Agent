@@ -2,18 +2,21 @@ from __future__ import annotations
 
 import hashlib
 import json
+import mimetypes
 import re
 import zipfile
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
-from ..models import UnifiedEvent
+from ..media_store import MAX_MEDIA_BYTES, MediaError, MediaStore
+from ..models import MediaAssetRef, UnifiedEvent
 
 ArchiveSource = Literal["line", "messenger"]
+MediaLoader = Callable[[str], MediaAssetRef | None]
 
 MAX_ARCHIVE_FILES = 500
 MAX_ARCHIVE_BYTES = 2 * 1024 * 1024 * 1024
@@ -41,6 +44,7 @@ def load_chat_archives(
     paths: Iterable[str | Path],
     *,
     timezone: str,
+    media_store: MediaStore | None = None,
 ) -> ArchiveParseResult:
     files = _validated_files(source, paths)
     result = ArchiveParseResult(source=source, files=len(files))
@@ -50,7 +54,7 @@ def load_chat_archives(
             _parse_line_file(path, zone, result)
     else:
         for path in files:
-            _parse_messenger_path(path, result)
+            _parse_messenger_path(path, result, media_store=media_store)
     if not result.events:
         raise ChatArchiveError("封存檔中找不到可匯入的訊息")
     if len(result.events) > MAX_MESSAGES:
@@ -167,6 +171,7 @@ def _archive_event(
     provider_key: str,
     file_name: str,
     metadata: dict[str, Any] | None = None,
+    media: list[MediaAssetRef] | None = None,
 ) -> UnifiedEvent:
     content = content.strip()
     truncated = len(content) > MAX_MESSAGE_CHARS
@@ -184,6 +189,8 @@ def _archive_event(
         **(metadata or {}),
     }
     prefix = "line_archive" if source_name == "line" else "messenger_archive"
+    media = media or []
+    has_available_media = any(str(item.availability) == "available" for item in media)
     return UnifiedEvent(
         event_id=f"{prefix}_{digest[:32]}",
         source=source,
@@ -193,10 +200,13 @@ def _archive_event(
         conversation_id=conversation.strip() or source_name.title(),
         title=conversation.strip() or source_name.title(),
         content=content or "[無文字內容]",
-        content_completeness="metadata_only" if _attachment_only(content) else "full",
+        content_completeness=(
+            "metadata_only" if _attachment_only(content) and not has_available_media else "full"
+        ),
         received_at=received_at,
         privacy_class="private",
         metadata=values,
+        media=media,
     )
 
 
@@ -345,11 +355,69 @@ def _messenger_content(message: dict[str, Any]) -> tuple[str, list[str]]:
     return content, attachment_types
 
 
+def _messenger_image_uris(message: dict[str, Any]) -> list[str]:
+    values: list[str] = []
+    for field_name in ("photos", "gifs"):
+        for item in message.get(field_name) or []:
+            if isinstance(item, dict) and item.get("uri"):
+                values.append(str(item["uri"]))
+    sticker = message.get("sticker")
+    if isinstance(sticker, dict) and sticker.get("uri"):
+        values.append(str(sticker["uri"]))
+    for item in message.get("media") or []:
+        if not isinstance(item, dict) or not item.get("uri"):
+            continue
+        kind = str(item.get("type") or "").casefold()
+        if any(marker in kind for marker in ("image", "photo", "gif", "sticker")):
+            values.append(str(item["uri"]))
+    return list(dict.fromkeys(values))[:8]
+
+
+def _messenger_media_refs(
+    message: dict[str, Any], loader: MediaLoader | None
+) -> list[MediaAssetRef]:
+    results: list[MediaAssetRef] = []
+    for uri in _messenger_image_uris(message):
+        placeholder_id = f"media_{hashlib.sha256(uri.encode()).hexdigest()[:40]}"
+        mime_type = mimetypes.guess_type(uri)[0]
+        mime_type = (
+            mime_type
+            if mime_type in {"image/jpeg", "image/png", "image/webp", "image/gif"}
+            else None
+        )
+        try:
+            imported = loader(uri) if loader else None
+        except Exception as error:
+            results.append(
+                MediaAssetRef(
+                    asset_id=placeholder_id,
+                    kind="image",
+                    mime_type=mime_type,
+                    original_name=PurePosixPath(uri.replace("\\", "/")).name,
+                    availability="blocked",
+                    alt_text=f"Archive image import failed: {type(error).__name__}",
+                )
+            )
+            continue
+        results.append(
+            imported
+            or MediaAssetRef(
+                asset_id=placeholder_id,
+                kind="image",
+                mime_type=mime_type,
+                original_name=PurePosixPath(uri.replace("\\", "/")).name,
+                availability="metadata_only",
+            )
+        )
+    return results
+
+
 def _parse_messenger_conversation(
     conversation: dict[str, Any],
     *,
     origin: str,
     result: ArchiveParseResult,
+    media_loader: MediaLoader | None = None,
 ) -> None:
     participants: list[str] = []
     for item in conversation.get("participants", []):
@@ -379,6 +447,7 @@ def _parse_messenger_conversation(
             continue
         received_at = _messenger_timestamp(message)
         content, attachment_types = _messenger_content(message)
+        media = _messenger_media_refs(message, media_loader)
         if received_at is None or not content:
             result.skipped += 1
             continue
@@ -403,11 +472,18 @@ def _parse_messenger_conversation(
                 "exported_thread_name": exported_title or None,
                 "attachment_types": attachment_types,
             },
+            media=media,
         )
         result.events.append(event)
 
 
-def _parse_messenger_json(raw: bytes, *, origin: str, result: ArchiveParseResult) -> None:
+def _parse_messenger_json(
+    raw: bytes,
+    *,
+    origin: str,
+    result: ArchiveParseResult,
+    media_loader: MediaLoader | None = None,
+) -> None:
     try:
         payload = json.loads(raw.decode("utf-8-sig"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -415,19 +491,64 @@ def _parse_messenger_json(raw: bytes, *, origin: str, result: ArchiveParseResult
     found = False
     for conversation in _conversation_objects(payload):
         found = True
-        _parse_messenger_conversation(conversation, origin=origin, result=result)
+        _parse_messenger_conversation(
+            conversation,
+            origin=origin,
+            result=result,
+            media_loader=media_loader,
+        )
     if not found:
         result.warnings.append(f"{Path(origin).name}：找不到 Messenger messages 結構")
 
 
-def _parse_messenger_path(path: Path, result: ArchiveParseResult) -> None:
+def _parse_messenger_path(
+    path: Path,
+    result: ArchiveParseResult,
+    *,
+    media_store: MediaStore | None = None,
+) -> None:
     if path.suffix.casefold() == ".json":
         if path.stat().st_size > MAX_JSON_MEMBER_BYTES:
             raise ChatArchiveError(f"單一 Messenger JSON 超過 256 MB：{path.name}")
-        _parse_messenger_json(path.read_bytes(), origin=path.name, result=result)
+        media_loader: MediaLoader | None = None
+        if media_store:
+            root = path.parent.resolve()
+
+            def load_file(uri: str) -> MediaAssetRef | None:
+                normalized = PurePosixPath(uri.replace("\\", "/"))
+                if normalized.is_absolute() or ".." in normalized.parts:
+                    raise MediaError("unsafe archive media path")
+                candidate = (root / Path(*normalized.parts)).resolve()
+                try:
+                    candidate.relative_to(root)
+                except ValueError as error:
+                    raise MediaError("unsafe archive media path") from error
+                if not candidate.is_file():
+                    return None
+                if candidate.stat().st_size > MAX_MEDIA_BYTES:
+                    raise MediaError("archive image exceeds 20 MB")
+                mime_type = mimetypes.guess_type(candidate.name)[0] or ""
+                return media_store.import_bytes(
+                    candidate.read_bytes(),
+                    declared_mime=mime_type,
+                    original_name=candidate.name,
+                )
+
+            media_loader = load_file
+        _parse_messenger_json(
+            path.read_bytes(),
+            origin=path.name,
+            result=result,
+            media_loader=media_loader,
+        )
         return
     try:
         with zipfile.ZipFile(path) as archive:
+            members = {
+                PurePosixPath(item.filename.replace("\\", "/")).as_posix(): item
+                for item in archive.infolist()
+                if not item.is_dir()
+            }
             candidates = [
                 item
                 for item in archive.infolist()
@@ -452,10 +573,42 @@ def _parse_messenger_path(path: Path, result: ArchiveParseResult) -> None:
                     raise ChatArchiveError(
                         f"ZIP 中單一 JSON 超過 256 MB：{Path(item.filename).name}"
                     )
+                media_loader = None
+                if media_store:
+                    json_parent = PurePosixPath(item.filename.replace("\\", "/")).parent
+
+                    def load_member(
+                        uri: str, parent: PurePosixPath = json_parent
+                    ) -> MediaAssetRef | None:
+                        normalized = PurePosixPath(uri.replace("\\", "/"))
+                        if normalized.is_absolute() or ".." in normalized.parts:
+                            raise MediaError("unsafe archive media path")
+                        names = [normalized.as_posix(), (parent / normalized).as_posix()]
+                        media_info = next(
+                            (members.get(name) for name in names if name in members),
+                            None,
+                        )
+                        if media_info is None:
+                            return None
+                        if media_info.file_size > MAX_MEDIA_BYTES:
+                            raise MediaError("archive image exceeds 20 MB")
+                        mime_type = mimetypes.guess_type(media_info.filename)[0] or ""
+                        with archive.open(media_info) as handle:
+                            content = handle.read(MAX_MEDIA_BYTES + 1)
+                        if len(content) > MAX_MEDIA_BYTES:
+                            raise MediaError("archive image exceeds 20 MB")
+                        return media_store.import_bytes(
+                            content,
+                            declared_mime=mime_type,
+                            original_name=PurePosixPath(media_info.filename).name,
+                        )
+
+                    media_loader = load_member
                 _parse_messenger_json(
                     archive.read(item),
                     origin=f"{path.name}/{item.filename}",
                     result=result,
+                    media_loader=media_loader,
                 )
     except zipfile.BadZipFile as error:
         raise ChatArchiveError(f"Messenger ZIP 已損壞或格式不正確：{path.name}") from error

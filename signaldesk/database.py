@@ -13,12 +13,15 @@ from zoneinfo import ZoneInfo
 from .models import (
     AgentDecision,
     GroupedThread,
+    MediaAssetRef,
     NotificationCard,
     TriageResult,
     UnifiedEvent,
+    VisualAnalysis,
 )
 from .normalizer import (
     MESSENGER_GENERIC_TITLES,
+    is_messenger_notification_preview,
     line_identity_from_title,
     messenger_sender_from_preview,
 )
@@ -104,6 +107,44 @@ class Database:
                 );
                 CREATE INDEX IF NOT EXISTS idx_events_received
                     ON normalized_events(received_at DESC);
+
+                CREATE TABLE IF NOT EXISTS media_assets (
+                    asset_id TEXT PRIMARY KEY,
+                    kind TEXT NOT NULL,
+                    mime_type TEXT,
+                    original_name TEXT,
+                    byte_size INTEGER,
+                    width INTEGER,
+                    height INTEGER,
+                    availability TEXT NOT NULL,
+                    sha256 TEXT UNIQUE,
+                    alt_text TEXT,
+                    data_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS event_media (
+                    event_id TEXT NOT NULL
+                        REFERENCES normalized_events(event_id) ON DELETE CASCADE,
+                    asset_id TEXT NOT NULL
+                        REFERENCES media_assets(asset_id) ON DELETE RESTRICT,
+                    ordinal INTEGER NOT NULL,
+                    PRIMARY KEY(event_id, asset_id),
+                    UNIQUE(event_id, ordinal)
+                );
+                CREATE INDEX IF NOT EXISTS idx_event_media_asset
+                    ON event_media(asset_id);
+
+                CREATE TABLE IF NOT EXISTS visual_analyses (
+                    asset_id TEXT PRIMARY KEY
+                        REFERENCES media_assets(asset_id) ON DELETE CASCADE,
+                    status TEXT NOT NULL,
+                    result_json TEXT NOT NULL,
+                    vision_model_id TEXT,
+                    ocr_model_id TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
 
                 CREATE TABLE IF NOT EXISTS threads (
                     thread_id TEXT PRIMARY KEY,
@@ -296,6 +337,8 @@ class Database:
 
                 INSERT OR IGNORE INTO schema_migrations(version, applied_at)
                 VALUES(1, datetime('now'));
+                INSERT OR IGNORE INTO schema_migrations(version, applied_at)
+                VALUES(2, datetime('now'));
                 """
             )
 
@@ -375,7 +418,158 @@ class Database:
                     now,
                 ),
             )
+            for ordinal, media in enumerate(event.media):
+                connection.execute(
+                    """
+                    INSERT INTO media_assets(
+                        asset_id, kind, mime_type, original_name, byte_size, width, height,
+                        availability, sha256, alt_text, data_json, created_at
+                    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(asset_id) DO UPDATE SET
+                        availability=excluded.availability,
+                        data_json=excluded.data_json
+                    """,
+                    (
+                        media.asset_id,
+                        media.kind,
+                        media.mime_type,
+                        media.original_name,
+                        media.byte_size,
+                        media.width,
+                        media.height,
+                        media.availability,
+                        media.sha256,
+                        media.alt_text,
+                        _json(media),
+                        now,
+                    ),
+                )
+                connection.execute(
+                    "INSERT INTO event_media(event_id, asset_id, ordinal) VALUES(?, ?, ?)",
+                    (event.event_id, media.asset_id, ordinal),
+                )
         return True
+
+    def media_asset(self, asset_id: str) -> MediaAssetRef | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT data_json FROM media_assets WHERE asset_id=?", (asset_id,)
+            ).fetchone()
+        return MediaAssetRef.model_validate_json(row["data_json"]) if row else None
+
+    def media_for_event(self, event_id: str) -> list[MediaAssetRef]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT m.data_json FROM event_media em
+                JOIN media_assets m ON m.asset_id=em.asset_id
+                WHERE em.event_id=? ORDER BY em.ordinal
+                """,
+                (event_id,),
+            ).fetchall()
+        return [MediaAssetRef.model_validate_json(row["data_json"]) for row in rows]
+
+    def save_visual_analysis(self, analysis: VisualAnalysis) -> None:
+        """Persist a hash-bound OCR result so stale evidence cannot validate a new image."""
+        now = datetime.now(UTC).isoformat()
+        with self.transaction() as connection:
+            media = connection.execute(
+                "SELECT sha256 FROM media_assets WHERE asset_id=?", (analysis.asset_id,)
+            ).fetchone()
+            if not media:
+                raise ValueError("media asset not found")
+            if media["sha256"] != analysis.asset_sha256:
+                raise ValueError("visual analysis asset hash mismatch")
+            connection.execute(
+                """
+                INSERT INTO visual_analyses(
+                    asset_id, status, result_json, vision_model_id, ocr_model_id,
+                    created_at, updated_at
+                ) VALUES(?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(asset_id) DO UPDATE SET
+                    status=excluded.status,
+                    result_json=excluded.result_json,
+                    vision_model_id=excluded.vision_model_id,
+                    ocr_model_id=excluded.ocr_model_id,
+                    updated_at=excluded.updated_at
+                """,
+                (
+                    analysis.asset_id,
+                    analysis.status,
+                    _json(analysis),
+                    None,
+                    analysis.ocr_model_id,
+                    now,
+                    now,
+                ),
+            )
+
+    def visual_analysis(self, asset_id: str) -> VisualAnalysis | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT result_json FROM visual_analyses WHERE asset_id=?", (asset_id,)
+            ).fetchone()
+        return VisualAnalysis.model_validate_json(row["result_json"]) if row else None
+
+    def visual_analyses_for_thread(self, thread_id: str) -> list[VisualAnalysis]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT DISTINCT va.result_json
+                FROM thread_events te
+                JOIN event_media em ON em.event_id=te.event_id
+                JOIN visual_analyses va ON va.asset_id=em.asset_id
+                WHERE te.thread_id=?
+                ORDER BY va.updated_at DESC
+                """,
+                (thread_id,),
+            ).fetchall()
+        return [VisualAnalysis.model_validate_json(row["result_json"]) for row in rows]
+
+    def thread_ids_for_media(self, asset_id: str) -> list[str]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT DISTINCT te.thread_id
+                FROM event_media em
+                JOIN thread_events te ON te.event_id=em.event_id
+                WHERE em.asset_id=?
+                """,
+                (asset_id,),
+            ).fetchall()
+        return [str(row["thread_id"]) for row in rows]
+
+    def unanalyzed_media(self, *, limit: int = 1) -> list[MediaAssetRef]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT m.data_json
+                FROM media_assets m
+                LEFT JOIN visual_analyses va ON va.asset_id=m.asset_id
+                WHERE m.availability='available' AND va.asset_id IS NULL
+                ORDER BY m.created_at ASC
+                LIMIT ?
+                """,
+                (max(1, min(limit, 20)),),
+            ).fetchall()
+        return [MediaAssetRef.model_validate_json(row["data_json"]) for row in rows]
+
+    def delete_orphan_media(self) -> list[MediaAssetRef]:
+        """Remove metadata no longer referenced by an event and return files to delete."""
+        with self.transaction() as connection:
+            rows = connection.execute(
+                """
+                SELECT data_json FROM media_assets
+                WHERE asset_id NOT IN (SELECT asset_id FROM event_media)
+                """
+            ).fetchall()
+            connection.execute(
+                """
+                DELETE FROM media_assets
+                WHERE asset_id NOT IN (SELECT asset_id FROM event_media)
+                """
+            )
+        return [MediaAssetRef.model_validate_json(row["data_json"]) for row in rows]
 
     def existing_event_ids(self, event_ids: list[str]) -> set[str]:
         """Resolve deterministic archive duplicates in bounded SQLite batches."""
@@ -608,6 +802,7 @@ class Database:
                     "received_at": event.received_at,
                     "sender": event.sender,
                     "content": event.content,
+                    "media": event.media,
                 }
                 for event in parsed
             ],
@@ -709,12 +904,13 @@ class Database:
     def list_cards(
         self,
         *,
-        view: str = "now",
+        view: str = "all",
         search: str = "",
         source: str | None = None,
         priority: str | None = None,
         date_filter: str | None = None,
         timezone: str = "Asia/Taipei",
+        now_window_hours: int = 6,
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         conditions: list[str] = ["c.display_mode!='hidden'"]
@@ -743,10 +939,16 @@ class Database:
                 ]
             )
             parameters.extend([day_start, day_end, day_start, day_end])
+        elif view in {"all", "latest"}:
+            conditions.append("c.status='open'")
         else:
             conditions.append("c.status='open'")
             conditions.append("(c.snoozed_until IS NULL OR c.snoozed_until<=?)")
             parameters.append(now)
+            conditions.append("julianday(c.updated_at)>=julianday(?)")
+            parameters.append(
+                (utc_now() - timedelta(hours=max(1, min(24, now_window_hours)))).isoformat()
+            )
         if search:
             conditions.append(
                 "(c.summary LIKE ? OR c.sender LIKE ? OR c.title LIKE ? OR EXISTS ("
@@ -776,7 +978,7 @@ class Database:
         parameters.append(min(limit, 500))
         order_by = (
             "c.updated_at DESC"
-            if view == "latest"
+            if view in {"latest", "now", "today"}
             else """CASE c.priority
                     WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2
                     WHEN 'unknown' THEN 3 WHEN 'low' THEN 4 ELSE 5 END,
@@ -785,11 +987,12 @@ class Database:
         with self.connect() as connection:
             rows = connection.execute(
                 f"""
-                SELECT c.*, d.normalized_at AS deadline_at,
+                SELECT c.*, d.normalized_at AS deadline_at, tr.model_backend,
                     (SELECT COUNT(*) FROM action_items ai WHERE ai.thread_id=c.thread_id
                         AND ai.status='open') AS action_count
                 FROM notification_cards c
                 LEFT JOIN deadlines d ON d.thread_id=c.thread_id AND d.deadline_index=0
+                LEFT JOIN triage_results tr ON tr.thread_id=c.thread_id
                 WHERE {where}
                 ORDER BY {order_by}
                 LIMIT ?
@@ -811,6 +1014,8 @@ class Database:
         if "deadline_at" in row.keys():
             card["deadline_at"] = row["deadline_at"]
             card["action_count"] = row["action_count"]
+        if "model_backend" in row.keys():
+            card["model_backend"] = row["model_backend"]
         return card
 
     def card_detail(self, card_id: str) -> dict[str, Any] | None:
@@ -850,8 +1055,29 @@ class Database:
                 "SELECT * FROM traces WHERE thread_id=? ORDER BY created_at DESC LIMIT 30",
                 (thread_id,),
             ).fetchall()
+            visual_rows = connection.execute(
+                """
+                SELECT DISTINCT va.asset_id, va.status
+                FROM visual_analyses va
+                JOIN event_media em ON em.asset_id=va.asset_id
+                JOIN thread_events te ON te.event_id=em.event_id
+                WHERE te.thread_id=?
+                """,
+                (thread_id,),
+            ).fetchall()
         result = self._card_row(card)
         result["events"] = [json.loads(row["data_json"]) for row in events]
+        visual_status = {row["asset_id"]: dict(row) for row in visual_rows}
+        for source_event in result["events"]:
+            for media in source_event.get("media", []):
+                analysis = visual_status.get(media.get("asset_id"))
+                media["analysis_status"] = (
+                    analysis["status"]
+                    if analysis
+                    else "queued"
+                    if media.get("availability") == "available"
+                    else "unavailable"
+                )
         result["triage"] = json.loads(triage["result_json"]) if triage else None
         result["validation"] = json.loads(triage["validation_json"]) if triage else None
         result["decision"] = json.loads(triage["decision_json"]) if triage else None
@@ -1387,12 +1613,20 @@ class Database:
             "cards": int(plan["card_count"]),
         }
 
-    def counts(self) -> dict[str, int]:
+    def counts(self, *, now_window_hours: int | None = None) -> dict[str, int]:
+        recent_clause = ""
+        parameters: tuple[str, ...] = ()
+        if now_window_hours is not None:
+            recent_clause = " AND julianday(updated_at)>=julianday(?)"
+            parameters = (
+                (utc_now() - timedelta(hours=max(1, min(24, now_window_hours)))).isoformat(),
+            )
         with self.connect() as connection:
             row = connection.execute(
-                """
+                f"""
                 SELECT
-                  SUM(CASE WHEN status='open' AND display_mode!='hidden' THEN 1 ELSE 0 END) AS open,
+                  SUM(CASE WHEN status='open' AND display_mode!='hidden'{recent_clause}
+                    THEN 1 ELSE 0 END) AS open,
                   SUM(CASE WHEN status='open' AND display_mode!='hidden'
                     AND priority IN ('urgent','high') THEN 1 ELSE 0 END)
                     AS important,
@@ -1401,7 +1635,8 @@ class Database:
                     AS reply,
                   SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) AS done
                 FROM notification_cards
-                """
+                """,
+                parameters,
             ).fetchone()
         return {key: int(row[key] or 0) for key in ("open", "important", "reply", "done")}
 
@@ -1453,10 +1688,14 @@ class Database:
                 title = str(event.get("title") or "").strip()
                 if not any(browser in native_app for browser in ("chrome", "edge", "firefox")):
                     continue
-                if title.casefold() not in MESSENGER_GENERIC_TITLES:
+                content = str(event.get("content") or "")
+                generic_title = title.casefold() in MESSENGER_GENERIC_TITLES
+                if not generic_title and not is_messenger_notification_preview(content):
                     continue
 
-                sender = messenger_sender_from_preview(str(event.get("content") or "")) or title
+                sender = (
+                    messenger_sender_from_preview(content) if generic_title else title
+                ) or title
                 event.update(
                     {
                         "source": "messenger_notification",
@@ -1797,6 +2036,56 @@ class Database:
             ).fetchall()
         return [row["thread_id"] for row in rows]
 
+    def pending_model_thread_ids(self, *, limit: int = 1) -> list[str]:
+        """Return bounded deferred-model work without storing message content in a queue."""
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT thread_id FROM triage_results
+                WHERE model_backend LIKE '%model-pending%'
+                ORDER BY updated_at DESC LIMIT ?
+                """,
+                (max(1, limit),),
+            ).fetchall()
+        return [row["thread_id"] for row in rows]
+
+    def mark_model_worker_failed(self, thread_ids: list[str]) -> int:
+        """Keep the accepted baseline and stop retry storms after a worker crash."""
+        if not thread_ids:
+            return 0
+        placeholders = ",".join("?" for _ in thread_ids)
+        with self.transaction() as connection:
+            result = connection.execute(
+                f"""
+                UPDATE triage_results
+                SET model_backend='qwen-transformers+isolated-worker+rule-fallback',
+                    updated_at=?
+                WHERE thread_id IN ({placeholders})
+                  AND model_backend LIKE '%model-pending%'
+                """,
+                (_iso(), *thread_ids),
+            )
+        return result.rowcount
+
+    def queue_recent_cards_for_model(self, *, hours: int = 24 * 2) -> int:
+        """Queue recent visible cards that predate semantic classification."""
+        cutoff = (utc_now() - timedelta(hours=max(1, hours))).isoformat()
+        with self.transaction() as connection:
+            result = connection.execute(
+                """
+                UPDATE triage_results SET model_backend='rule+model-pending'
+                WHERE (model_backend NOT LIKE '%calibrated-v1%'
+                       OR model_backend LIKE '%fallback%')
+                  AND thread_id IN (
+                    SELECT thread_id FROM notification_cards
+                    WHERE status='open' AND display_mode!='hidden'
+                      AND julianday(updated_at)>=julianday(?)
+                  )
+                """,
+                (cutoff,),
+            )
+        return result.rowcount
+
     @staticmethod
     def _remove_replay_cluster(
         connection: sqlite3.Connection,
@@ -1815,7 +2104,7 @@ class Database:
         return len(cluster) - 1
 
     def digest(self) -> dict[str, Any]:
-        cards = self.list_cards(view="now", limit=300)
+        cards = self.list_cards(view="today", limit=300)
         now = utc_now()
         due_today = [
             card
@@ -1825,7 +2114,8 @@ class Database:
             == now.astimezone().date()
         ]
         return {
-            "urgent": [c for c in cards if c["priority"] in {"urgent", "high"}][:5],
+            "urgent": [c for c in cards if c["priority"] == "urgent"][:5],
+            "important": [c for c in cards if c["priority"] == "high"][:8],
             "due_today": due_today[:5],
             "needs_reply": [c for c in cards if c["requires_reply"] == "yes"][:8],
             "for_information": [
@@ -1833,10 +2123,25 @@ class Database:
             ][:8],
             "connector_issues": [c for c in self.connectors() if c["status"] != "healthy"],
             "counts": {
-                "urgent": sum(c["priority"] in {"urgent", "high"} for c in cards),
+                "urgent": sum(c["priority"] == "urgent" for c in cards),
+                "important": sum(c["priority"] == "high" for c in cards),
                 "due_today": len(due_today),
                 "needs_reply": sum(c["requires_reply"] == "yes" for c in cards),
                 "for_information": sum(c["priority"] in {"normal", "low"} for c in cards),
+            },
+            "analysis": {
+                "qwen": sum(
+                    str(c.get("model_backend", "")).startswith("qwen-")
+                    and "fallback" not in str(c.get("model_backend", ""))
+                    for c in cards
+                ),
+                "pending": sum(
+                    "pending" in str(c.get("model_backend", "")) for c in cards
+                ),
+                "fallback": sum(
+                    "fallback" in str(c.get("model_backend", "")) for c in cards
+                ),
+                "total": len(cards),
             },
             "generated_at": _iso(),
         }
@@ -1867,6 +2172,7 @@ class Database:
                 "reminders",
                 "interruptions",
                 "reply_drafts",
+                "visual_analyses",
                 "action_items",
                 "deadlines",
                 "notification_cards",
@@ -1876,6 +2182,7 @@ class Database:
                 "threads",
                 "normalized_events",
                 "raw_events",
+                "media_assets",
                 "quarantine",
                 "connector_cursors",
                 "connector_accounts",

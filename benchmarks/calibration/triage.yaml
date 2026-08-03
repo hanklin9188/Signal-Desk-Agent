@@ -1,0 +1,144 @@
+- id: urgent-security-zh
+  source: gmail
+  sender: Google 安全中心
+  completeness: full
+  content: 偵測到陌生裝置剛剛登入你的帳號；如果不是你，請立刻保護帳戶並變更密碼。
+  expected: {priority: urgent, requires_reply: no, category: security}
+- id: urgent-outage-en
+  source: gmail
+  sender: Release manager
+  completeness: full
+  content: Production checkout is down and the customer demo starts in 20 minutes. Please confirm who is investigating now.
+  expected: {priority: urgent, requires_reply: yes, category: work}
+- id: urgent-family-zh
+  source: line_notification
+  sender: 家人
+  completeness: notification_preview
+  content: 爸爸剛送急診，我們在市立醫院，看到請馬上回電。
+  expected: {priority: urgent, requires_reply: yes, category: social}
+- id: high-deadline-zh
+  source: gmail
+  sender: 指導教授
+  completeness: full
+  content: 明早會議要用最終圖表，今天下午五點前請放到共享資料夾並告訴我。
+  expected: {priority: high, requires_reply: yes, category: research}
+- id: high-question-zh
+  source: line_notification
+  sender: 實驗室同學
+  completeness: notification_preview
+  content: 明天下午的受試者改成三點到，你可以負責接待嗎？
+  expected: {priority: high, requires_reply: yes, category: research}
+- id: high-review-en
+  source: gmail
+  sender: Journal editor
+  completeness: full
+  content: Please upload the revised manuscript and response letter by Friday, then let us know when the upload is complete.
+  expected: {priority: high, requires_reply: yes, category: research}
+- id: high-confirmation-en
+  source: messenger_notification
+  sender: Project lead
+  completeness: notification_preview
+  content: Are we still on for the client call at 14:00? I need your confirmation before noon.
+  expected: {priority: high, requires_reply: yes, category: meeting}
+- id: high-implicit-zh
+  source: gmail
+  sender: 專案經理
+  completeness: full
+  content: 客戶簡報缺最後一張成本圖，下午四點封版；完成後回我一聲。
+  expected: {priority: high, requires_reply: yes, category: work}
+- id: normal-fyi-zh
+  source: gmail
+  sender: 行政辦公室
+  completeness: full
+  content: 提醒你，下週一校慶補假，辦公室全天不開放。本信僅供通知。
+  expected: {priority: normal, requires_reply: no, category: work}
+- id: normal-receipt-zh
+  source: gmail
+  sender: 雲端服務
+  completeness: full
+  content: 你的月租方案付款成功，電子收據已附在此信，無需回覆。
+  expected: {priority: normal, requires_reply: no, category: transaction}
+- id: normal-calendar-en
+  source: gmail
+  sender: Calendar
+  completeness: full
+  content: The weekly team sync has been moved from Tuesday to Wednesday at 10:00. No response is required.
+  expected: {priority: normal, requires_reply: no, category: meeting}
+- id: normal-arrived-zh
+  source: line_notification
+  sender: 同學
+  completeness: notification_preview
+  content: 我已經到會議室了，你慢慢來，不用回覆。
+  expected: {priority: normal, requires_reply: no, category: social}
+- id: normal-received-zh
+  source: gmail
+  sender: 合作夥伴
+  completeness: full
+  content: 資料已經收到，格式也確認沒有問題，謝謝你，不用回覆。
+  expected: {priority: normal, requires_reply: no, category: work}
+- id: normal-maintenance-zh
+  source: gmail
+  sender: 校園資訊中心
+  completeness: full
+  content: 圖書館系統將於週六凌晨例行維護兩小時，期間可能暫時無法查詢。
+  expected: {priority: normal, requires_reply: no, category: system}
+- id: low-casual-zh
+  source: messenger_notification
+  sender: 朋友
+  completeness: notification_preview
+  content: 剛看到一間不錯的咖啡店，有空再一起去。
+  expected: {priority: low, requires_reply: no, category: social}
+- id: low-reading-en
+  source: gmail
+  sender: Lab newsletter
+  completeness: full
+  content: Here is an optional reading list for whenever you have time. There is no deadline and no response is needed.
+  expected: {priority: low, requires_reply: no, category: research}
+- id: low-reaction-zh
+  source: line_notification
+  sender: 社團群組
+  completeness: notification_preview
+  content: 大家對昨天的照片按了好多讚，週末愉快！
+  expected: {priority: low, requires_reply: no, category: social}
+- id: noise-promotion-zh
+  source: gmail
+  sender: 購物網站
+  completeness: full
+  content: 限時優惠最後一天，全館折扣再送折價券，立即購買！取消訂閱請點頁尾。
+  expected: {priority: noise, requires_reply: no, category: promotion}
+- id: noise-build-en
+  source: gmail
+  sender: CI Bot
+  completeness: full
+  content: Build succeeded. All 428 checks passed. This is an automated notification.
+  expected: {priority: noise, requires_reply: no, category: system}
+- id: noise-social-zh
+  source: messenger_notification
+  sender: 遊戲社群
+  completeness: notification_preview
+  content: 你獲得了新的徽章，回來看看本週熱門動態！
+  expected: {priority: noise, requires_reply: no, category: promotion}
+- id: unknown-photo-zh
+  source: messenger_notification
+  sender: 王小明
+  completeness: notification_preview
+  content: 傳送了一張相片
+  expected: {priority: unknown, requires_reply: unknown, category: unknown}
+- id: unknown-sticker-zh
+  source: line_notification
+  sender: 家庭群組
+  completeness: notification_preview
+  content: 傳送了貼圖
+  expected: {priority: unknown, requires_reply: unknown, category: unknown}
+- id: unknown-metadata-zh
+  source: windows_notification
+  sender: 通知來源
+  completeness: metadata_only
+  content: ""
+  expected: {priority: unknown, requires_reply: unknown, category: unknown}
+- id: normal-status-en
+  source: messenger_notification
+  sender: Teammate
+  completeness: notification_preview
+  content: FYI, the upload finished successfully and the file is now available to everyone.
+  expected: {priority: normal, requires_reply: no, category: work}

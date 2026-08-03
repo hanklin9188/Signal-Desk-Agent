@@ -24,9 +24,24 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
 }
 & .\.venv\Scripts\python.exe -m pip install --upgrade pip
 if ($LASTEXITCODE -ne 0) { throw "pip upgrade failed with exit code $LASTEXITCODE." }
-& .\.venv\Scripts\python.exe -m pip install -e ".[gmail]" "pyinstaller>=6.11,<7"
+$sitePackages = Join-Path $projectRoot ".venv\Lib\site-packages"
+# Old editable builds on a WSL UNC checkout can leave orphaned metadata that makes pip
+# report the wrong installed version. This directory is a disposable build environment.
+Get-ChildItem -LiteralPath $sitePackages -Filter "signaldesk_agent-*.dist-info" `
+    -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+Get-ChildItem -LiteralPath $sitePackages -Filter "*signaldesk*.pth" `
+    -ErrorAction SilentlyContinue | Remove-Item -Force
+$installedPackage = Join-Path $sitePackages "signaldesk"
+if (Test-Path $installedPackage) {
+    Remove-Item -LiteralPath $installedPackage -Recurse -Force
+}
+& .\.venv\Scripts\python.exe -m pip install --upgrade ".[gmail]" "pyinstaller>=6.11,<7"
 if ($LASTEXITCODE -ne 0) {
     throw "Python dependency installation failed with exit code $LASTEXITCODE."
+}
+& .\.venv\Scripts\python.exe -m pip install --force-reinstall --no-deps .
+if ($LASTEXITCODE -ne 0) {
+    throw "SignalDesk service package refresh failed with exit code $LASTEXITCODE."
 }
 
 if (Test-Path $serviceOutput) {
@@ -52,6 +67,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Push-Location $shellRoot
+$localPackageOutput = $null
 try {
     dotnet restore
     if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed with exit code $LASTEXITCODE." }
@@ -65,6 +81,15 @@ try {
         "-p:AppxBundle=Always",
         "-p:AppxBundlePlatforms=x64"
     )
+    if ($shellRoot.StartsWith("\\")) {
+        # SignTool cannot reliably reopen a just-created package through a WSL UNC
+        # path. Keep compilation in place but emit/sign the package on a local
+        # Windows volume, then copy the completed artifacts back to the workspace.
+        $localPackageOutput = Join-Path ([IO.Path]::GetTempPath()) `
+            ("SignalDesk-AppPackages-" + [guid]::NewGuid().ToString("N"))
+        New-Item -ItemType Directory -Force -Path $localPackageOutput | Out-Null
+        $publishArgs += "-p:AppxPackageDir=$localPackageOutput\"
+    }
     if ($CertificateThumbprint) {
         $publishArgs += "-p:AppxPackageSigningEnabled=true"
         $publishArgs += "-p:PackageCertificateThumbprint=$CertificateThumbprint"
@@ -81,8 +106,17 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet publish/MSIX packaging failed with exit code $LASTEXITCODE."
     }
+    if ($localPackageOutput) {
+        $workspacePackages = Join-Path $shellRoot "AppPackages"
+        New-Item -ItemType Directory -Force -Path $workspacePackages | Out-Null
+        Copy-Item -Path (Join-Path $localPackageOutput "*") `
+            -Destination $workspacePackages -Recurse -Force
+    }
 } finally {
     Pop-Location
+    if ($localPackageOutput -and (Test-Path $localPackageOutput)) {
+        Remove-Item -Recurse -Force $localPackageOutput
+    }
 }
 
 Write-Host "SignalDesk Windows package build completed."

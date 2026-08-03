@@ -97,7 +97,10 @@
           "ambiguous_deadline",
           "missing_context",
           "source_resolution_uncertain",
-          "conflicting_information"
+          "conflicting_information",
+          "image_unavailable",
+          "image_analysis_failed",
+          "visual_evidence_unverified"
         ]
       },
       "uniqueItems": true

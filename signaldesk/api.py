@@ -7,6 +7,7 @@ import hmac
 import json
 import os
 import secrets
+import sys
 import time
 import uuid
 from collections import defaultdict, deque
@@ -31,17 +32,20 @@ from .connectors.windows_bridge import WindowsBridgeConnector
 from .database import Database
 from .demo import seed_demo
 from .events import EventBus
+from .media_store import MediaError, MediaStore
 from .model_gateway import build_gateway
 from .models import (
     CardActionRequest,
     RuleCreate,
     UnifiedEvent,
     UserSettingsPatch,
+    VisualAnalysis,
     WindowsNotificationPayload,
 )
 from .normalizer import is_browser_background_notice
 from .pipeline import Pipeline
 from .preference import PreferenceRanker
+from .vision import build_vision_analyzer
 
 DEFAULT_SETTINGS: dict[str, Any] = {
     "theme": "system",
@@ -50,11 +54,12 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "onboarding_complete": False,
     "quiet_start": "23:00",
     "quiet_end": "08:00",
-    "model_residency": "always_on",
+    "model_residency": "on_demand",
     "raw_retention_days": 7,
     "notification_allowlist": ["LINE", "Messenger", "Google Chrome", "Microsoft Edge"],
     "digest_time": "18:00",
     "focus_digest_minutes": 60,
+    "now_window_hours": 6,
 }
 
 
@@ -142,17 +147,44 @@ def create_app(config: Settings | None = None, database: Database | None = None)
     database.ensure_defaults(
         {**DEFAULT_SETTINGS, "quiet_start": config.quiet_start, "quiet_end": config.quiet_end}
     )
+    initial_settings = database.settings()
+    if initial_settings.get("shadow_mode") and not initial_settings.get(
+        "shadow_evaluation_started_at"
+    ):
+        database.update_settings(
+            {"shadow_evaluation_started_at": datetime.now(UTC).isoformat()}
+        )
     database.hide_browser_background_cards()
-    database.reclassify_messenger_browser_cards()
+    repaired_messenger_cards = database.reclassify_messenger_browser_cards()
     database.collapse_duplicate_notification_replays()
     repaired_line_threads = database.normalize_line_notification_identities()
     merged_messenger_threads = database.merge_duplicate_messenger_threads()
     bus = EventBus()
-    gateway = build_gateway(config.model_backend, config.model_endpoint, config.model_id)
+    media_store = MediaStore(config.data_dir / "media")
+    gateway = build_gateway(
+        config.model_backend,
+        config.model_endpoint,
+        config.model_id,
+        media_store=media_store,
+        revision=config.model_revision,
+        quantization=config.model_quantization,
+    )
+    vision = build_vision_analyzer(
+        config.vision_backend,
+        config.ocr_model_id,
+        config.ocr_model_revision,
+        media_store,
+        max_new_tokens=config.ocr_max_new_tokens,
+    )
     preferences = PreferenceRanker(database)
     pipeline = Pipeline(database, config, gateway, bus, preferences)
+    if config.model_backend in {"endpoint", "transformers"}:
+        database.queue_recent_cards_for_model()
     for thread_id in repaired_line_threads:
         pipeline.analyze_thread(thread_id)
+    if repaired_messenger_cards:
+        for thread_id in database.thread_ids_for_source("messenger_notification"):
+            pipeline.analyze_thread(thread_id)
     database.sync_card_event_timestamps(
         database.thread_ids_for_source("line_notification")
     )
@@ -180,6 +212,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             account_id=record["account_id"],
             client_secrets=Path(record["config"].get("credentials_path", default_credentials)),
             draft_scope=bool(record["config"].get("draft_scope", default_draft_scope)),
+            media_store=media_store,
         )
         for record in account_records
     }
@@ -197,7 +230,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             "gmail",
             "not_configured",
             gmail_detail,
-            ["read", *(["create_draft"] if gmail.draft_scope else [])],
+            ["read", "read_images", *(["create_draft"] if gmail.draft_scope else [])],
         )
     windows_health = windows.health()
     database.set_connector_health(
@@ -229,20 +262,126 @@ def create_app(config: Settings | None = None, database: Database | None = None)
         ["receive_webhook"],
     )
 
+    isolate_local_models = (
+        os.name == "nt"
+        and config.model_backend == "transformers"
+        and config.model_isolation
+    )
+
+    async def run_isolated_model_worker(kind: str, *identifiers: str) -> bool:
+        """Run CUDA inference in a disposable process so Windows reclaims its context."""
+        process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-m",
+            "signaldesk.local_model_worker",
+            kind,
+            *identifiers,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        try:
+            return await asyncio.wait_for(process.wait(), timeout=900) == 0
+        except TimeoutError:
+            process.kill()
+            await process.wait()
+            return False
+
     async def background_worker() -> None:
-        ticks = 0
         last_daily_digest: str | None = None
         last_focus_digest = time.monotonic()
+        last_reminder_check = 0.0
+        last_gmail_sync = 0.0
+        last_digest_check = 0.0
+        last_cleanup = 0.0
+        first_cycle = True
         while True:
-            if ticks:
-                await asyncio.sleep(30)
-            for reminder in database.fire_due_reminders():
-                bus.publish("reminder_due", reminder)
-            ticks += 1
-            # Restore connected OAuth sessions immediately after launch, then poll
-            # every 60 seconds. This prevents a healthy account from looking
-            # disconnected during the first minute of every desktop session.
-            if ticks % 2 == 1:
+            if not first_cycle:
+                await asyncio.sleep(2)
+            first_cycle = False
+            monotonic_now = time.monotonic()
+            if monotonic_now - last_reminder_check >= 30:
+                for reminder in database.fire_due_reminders():
+                    bus.publish("reminder_due", reminder)
+                last_reminder_check = monotonic_now
+            # Keep GPU work in a small sequential batch. The original event/card is
+            # already safely persisted, so OCR failure can never lose a notification.
+            processed_vision = False
+            if config.vision_backend != "disabled" and config.vision_auto_analyze:
+                # Poll every two seconds so a newly persisted image starts automatically.
+                # One image per cycle bounds foreground latency and KV-cache growth.
+                media_batch = database.unanalyzed_media(limit=1)
+                if media_batch and not isolate_local_models:
+                    # Never let the general VLM and OCR model coexist on a 16 GB GPU.
+                    await asyncio.to_thread(gateway.release)
+                try:
+                    for media in media_batch:
+                        processed_vision = True
+                        try:
+                            if isolate_local_models:
+                                completed = await run_isolated_model_worker(
+                                    "vision", media.asset_id
+                                )
+                                analysis = database.visual_analysis(media.asset_id)
+                                if not completed or analysis is None:
+                                    raise RuntimeError("isolated vision worker failed")
+                            else:
+                                analysis = await asyncio.to_thread(vision.analyze, media)
+                        except Exception as error:
+                            # A failed model load must not kill the lifelong desktop worker.
+                            # Persist only the exception class; never persist private image text.
+                            analysis = VisualAnalysis(
+                                asset_id=media.asset_id,
+                                asset_sha256=media.sha256,
+                                status="failed",
+                                ocr_model_id=config.ocr_model_id,
+                                ocr_model_revision=config.ocr_model_revision,
+                                error_code=type(error).__name__.lower(),
+                                started_at=datetime.now(UTC),
+                                completed_at=datetime.now(UTC),
+                            )
+                        database.save_visual_analysis(analysis)
+                        for thread_id in database.thread_ids_for_media(media.asset_id):
+                            await asyncio.to_thread(pipeline.analyze_thread, thread_id)
+                finally:
+                    if processed_vision and not isolate_local_models:
+                        await asyncio.to_thread(vision.release)
+            # Qwen runs after the deterministic card is already visible. This keeps
+            # notification ingestion and app startup responsive even when the model
+            # is cold-loading, while still replacing the baseline after validation.
+            # OCR and Qwen never occupy VRAM together. Process a small Qwen batch only
+            # on a cycle without OCR work, then return its weights and KV cache.
+            model_residency = str(
+                database.settings().get("model_residency", "on_demand")
+            )
+            if (
+                not processed_vision
+                and model_residency != "paused"
+                and config.model_backend in {"endpoint", "transformers"}
+            ):
+                model_batch = database.pending_model_thread_ids(limit=8)
+                if isolate_local_models and model_batch:
+                    completed = await run_isolated_model_worker("triage", *model_batch)
+                    if not completed:
+                        database.mark_model_worker_failed(model_batch)
+                    if completed:
+                        for thread_id in model_batch:
+                            card_id = "card_" + hashlib.sha256(thread_id.encode()).hexdigest()[:20]
+                            bus.publish(
+                                "card_updated",
+                                {"card_id": card_id, "thread_id": thread_id},
+                            )
+                else:
+                    for thread_id in model_batch:
+                        await asyncio.to_thread(
+                            lambda value=thread_id: pipeline.analyze_thread(
+                                value, use_model=True
+                            )
+                        )
+                    if model_batch and model_residency != "always_on":
+                        await asyncio.to_thread(gateway.release)
+            # Restore connected OAuth sessions immediately after launch, then poll every minute.
+            if monotonic_now - last_gmail_sync >= 60:
                 records = {
                     item["account_id"]: item for item in database.connector_accounts("gmail")
                 }
@@ -264,30 +403,39 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                             f"Sync failed: {type(error).__name__}",
                             gmail.health().capabilities,
                         )
+                last_gmail_sync = time.monotonic()
 
             current = database.settings()
             local_now = datetime.now(ZoneInfo(config.timezone))
-            digest_at = str(current.get("digest_time", "18:00"))
-            if (
-                local_now.strftime("%H:%M") >= digest_at
-                and last_daily_digest != local_now.date().isoformat()
-            ):
-                digest_payload = database.digest()
-                bus.publish("digest_ready", {"kind": "daily", **digest_payload})
-                last_daily_digest = local_now.date().isoformat()
+            if monotonic_now - last_digest_check >= 30:
+                digest_at = str(current.get("digest_time", "18:00"))
+                if (
+                    local_now.strftime("%H:%M") >= digest_at
+                    and last_daily_digest != local_now.date().isoformat()
+                ):
+                    digest_payload = database.digest()
+                    if digest_payload["analysis"]["pending"] == 0:
+                        bus.publish("digest_ready", {"kind": "daily", **digest_payload})
+                        last_daily_digest = local_now.date().isoformat()
+                last_digest_check = monotonic_now
             focus_minutes = int(current.get("focus_digest_minutes", 60))
             if bool(current.get("focus_mode")):
                 if time.monotonic() - last_focus_digest >= focus_minutes * 60:
-                    bus.publish("digest_ready", {"kind": "focus", **database.digest()})
-                    last_focus_digest = time.monotonic()
+                    digest_payload = database.digest()
+                    if digest_payload["analysis"]["pending"] == 0:
+                        bus.publish("digest_ready", {"kind": "focus", **digest_payload})
+                        last_focus_digest = time.monotonic()
             else:
                 last_focus_digest = time.monotonic()
-            if ticks % 120 == 0:
+            if monotonic_now - last_cleanup >= 60 * 60:
                 database.cleanup_retention(
                     int(current.get("raw_retention_days", config.raw_retention_days)),
                     config.normalized_retention_days,
                     config.summary_retention_days,
                 )
+                for media in database.delete_orphan_media():
+                    media_store.delete(media)
+                last_cleanup = monotonic_now
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -319,6 +467,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
     app.state.auth_token = token
     app.state.windows_connector = windows
     app.state.gmail_connectors = gmail_connectors
+    app.state.media_store = media_store
 
     request_times: dict[str, deque[float]] = defaultdict(deque)
 
@@ -376,7 +525,9 @@ def create_app(config: Settings | None = None, database: Database | None = None)
 
     @app.get("/metrics")
     def metrics() -> Response:
-        counts = database.counts()
+        counts = database.counts(
+            now_window_hours=int(database.settings().get("now_window_hours", 6))
+        )
         body = "\n".join(
             [
                 "# HELP signaldesk_cards Local card counts without message content",
@@ -481,30 +632,45 @@ def create_app(config: Settings | None = None, database: Database | None = None)
 
     @router.get("/bootstrap")
     def bootstrap() -> dict[str, Any]:
+        now_window_hours = int(database.settings().get("now_window_hours", 6))
         return {
             "version": __version__,
-            "cards": database.list_cards(limit=100),
-            "counts": database.counts(),
+            "cards": database.list_cards(
+                view="now", now_window_hours=now_window_hours, limit=100
+            ),
+            "counts": database.counts(now_window_hours=now_window_hours),
             "settings": database.settings(),
             "connectors": database.connectors(),
             "model": {
                 "backend": config.model_backend,
                 "id": config.model_id,
+                "revision": config.model_revision,
+                "quantization": config.model_quantization,
+                "process_isolation": isolate_local_models,
+                "ocr_max_new_tokens": config.ocr_max_new_tokens,
                 "external_inference": False,
                 "status": "available" if config.model_backend != "rule" else "rule_fallback",
+            },
+            "vision": {
+                "backend": vision.backend_name,
+                "ocr_model_id": config.ocr_model_id,
+                "ocr_model_revision": config.ocr_model_revision,
+                "auto_analyze": config.vision_auto_analyze,
+                "status": "available" if config.vision_backend != "disabled" else "disabled",
             },
             "privacy": {"local_only": True, "auto_send": False},
         }
 
     @router.get("/cards")
     def cards(
-        view: str = "now",
+        view: str = "all",
         search: str = "",
         source: str | None = None,
         priority: str | None = None,
         date: str | None = Query(default=None, pattern=r"^(today|7d|30d)?$"),
         limit: int = Query(default=100, ge=1, le=500),
     ) -> dict[str, Any]:
+        now_window_hours = int(database.settings().get("now_window_hours", 6))
         return {
             "items": database.list_cards(
                 view=view,
@@ -513,9 +679,10 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                 priority=priority,
                 date_filter=date,
                 timezone=config.timezone,
+                now_window_hours=now_window_hours,
                 limit=limit,
             ),
-            "counts": database.counts(),
+            "counts": database.counts(now_window_hours=now_window_hours),
         }
 
     @router.get("/cards/{card_id}")
@@ -524,6 +691,99 @@ def create_app(config: Settings | None = None, database: Database | None = None)
         if not detail:
             raise HTTPException(status_code=404, detail="card not found")
         return detail
+
+    @router.get("/media/{asset_id}")
+    def media_content(asset_id: str) -> FileResponse:
+        media = database.media_asset(asset_id)
+        if not media:
+            raise HTTPException(status_code=404, detail="media not found")
+        try:
+            path = media_store.path_for(media)
+        except MediaError as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        return FileResponse(
+            path,
+            media_type=media.mime_type,
+            headers={"Cache-Control": "private, no-store"},
+        )
+
+    @router.get("/media/{asset_id}/thumbnail")
+    def media_thumbnail(asset_id: str) -> FileResponse:
+        media = database.media_asset(asset_id)
+        if not media:
+            raise HTTPException(status_code=404, detail="media not found")
+        try:
+            path = media_store.thumbnail_path_for(media)
+        except MediaError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        return FileResponse(
+            path,
+            media_type="image/png",
+            headers={"Cache-Control": "private, max-age=3600"},
+        )
+
+    @router.get("/media/{asset_id}/analysis")
+    def media_analysis(asset_id: str) -> dict[str, Any]:
+        if not database.media_asset(asset_id):
+            raise HTTPException(status_code=404, detail="media not found")
+        analysis = database.visual_analysis(asset_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="analysis not found")
+        return analysis.model_dump(mode="json")
+
+    @router.post("/media/{asset_id}/analysis")
+    async def analyze_media(asset_id: str) -> dict[str, Any]:
+        media = database.media_asset(asset_id)
+        if not media:
+            raise HTTPException(status_code=404, detail="media not found")
+        if config.vision_backend == "disabled":
+            raise HTTPException(status_code=503, detail="vision analysis is disabled")
+        if isolate_local_models:
+            completed = await run_isolated_model_worker("vision", asset_id)
+            analysis = database.visual_analysis(asset_id)
+            if not completed or analysis is None:
+                raise HTTPException(status_code=503, detail="vision worker failed")
+        else:
+            try:
+                analysis = await asyncio.to_thread(vision.analyze, media)
+                database.save_visual_analysis(analysis)
+            finally:
+                await asyncio.to_thread(vision.release)
+        # This is an explicit user request, so Qwen may inspect the real image even
+        # when OCR found no text. OCR is released first to keep both models disjoint.
+        semantic_status = "disabled"
+        if config.model_backend in {"endpoint", "transformers"}:
+            semantic_status = "rule_fallback"
+            thread_ids = database.thread_ids_for_media(asset_id)
+            if isolate_local_models:
+                completed = await run_isolated_model_worker("triage", *thread_ids)
+                if not completed:
+                    database.mark_model_worker_failed(thread_ids)
+                if completed:
+                    for thread_id in thread_ids:
+                        card_id = "card_" + hashlib.sha256(thread_id.encode()).hexdigest()[:20]
+                        bus.publish(
+                            "card_updated", {"card_id": card_id, "thread_id": thread_id}
+                        )
+            else:
+                try:
+                    for thread_id in thread_ids:
+                        await asyncio.to_thread(
+                            lambda value=thread_id: pipeline.analyze_thread(
+                                value, use_model=True
+                            )
+                        )
+                finally:
+                    await asyncio.to_thread(gateway.release)
+            for thread_id in thread_ids:
+                card_id = "card_" + hashlib.sha256(thread_id.encode()).hexdigest()[:20]
+                detail = database.card_detail(card_id)
+                backend = str(detail.get("model_backend", "")) if detail else ""
+                if backend.startswith("qwen") and "fallback" not in backend:
+                    semantic_status = "completed"
+        payload = analysis.model_dump(mode="json")
+        payload["semantic_status"] = semantic_status
+        return payload
 
     @router.post("/cards/{card_id}/actions")
     def card_action(card_id: str, request: CardActionRequest) -> dict[str, Any]:
@@ -611,6 +871,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                 request.source,
                 request.paths,
                 timezone=config.timezone,
+                media_store=media_store,
             )
         except ChatArchiveError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
@@ -717,7 +978,12 @@ def create_app(config: Settings | None = None, database: Database | None = None)
         credentials = (
             Path(request.credentials_path) if request.credentials_path else default_credentials
         )
-        connector = GmailConnector(request.account_id, credentials, draft_scope=request.draft_scope)
+        connector = GmailConnector(
+            request.account_id,
+            credentials,
+            draft_scope=request.draft_scope,
+            media_store=media_store,
+        )
         gmail_connectors[request.account_id] = connector
         save_gmail_config(connector, connected=False)
         persist_gmail_health(connector)
@@ -822,6 +1088,8 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             # No optional Gmail extra means no usable token exists to revoke.
             pass
         removed = database.delete_source_account_data("gmail", account_id)
+        for media in database.delete_orphan_media():
+            media_store.delete(media)
         save_gmail_config(gmail, connected=False)
         persist_gmail_health(gmail)
         bus.publish(
@@ -864,6 +1132,8 @@ def create_app(config: Settings | None = None, database: Database | None = None)
         return {
             "backend": config.model_backend,
             "model_id": config.model_id,
+            "quantization": config.model_quantization,
+            "ocr_max_new_tokens": config.ocr_max_new_tokens,
             "status": "disabled_rule_mode" if config.model_backend == "rule" else "configured",
             "context_tokens": 512,
             "thinking": False,
@@ -926,9 +1196,13 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             except Exception:
                 pass
         database.delete_all_personal_data()
+        media_store.clear()
         gmail_connectors.clear()
         replacement = GmailConnector(
-            "personal", default_credentials, draft_scope=default_draft_scope
+            "personal",
+            default_credentials,
+            draft_scope=default_draft_scope,
+            media_store=media_store,
         )
         gmail_connectors["personal"] = replacement
         save_gmail_config(replacement, connected=False)

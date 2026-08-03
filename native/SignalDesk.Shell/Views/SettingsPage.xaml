@@ -30,6 +30,9 @@
                         <NumberBox x:Name="FocusDigestBox" Grid.Column="1" Header="專注模式摘要間隔（分鐘）"
                                    Minimum="15" Maximum="240" SpinButtonPlacementMode="Compact" />
                     </Grid>
+                    <NumberBox x:Name="NowWindowBox" Header="「現在」顯示最近幾小時"
+                               Description="預設 6 小時；更早但仍是今天的訊息會保留在「今天」。"
+                               Minimum="1" Maximum="24" SpinButtonPlacementMode="Compact" />
                 </StackPanel>
             </Border>
 
@@ -56,14 +59,16 @@
                         <ComboBoxItem Content="需要時載入（較省資源）" Tag="on_demand" />
                         <ComboBoxItem Content="遊戲／訓練時自動休眠" Tag="auto_sleep" />
                     </ComboBox>
+                    <TextBlock x:Name="ModelRuntimeStatusText" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     <TextBox x:Name="AllowlistBox" Header="允許擷取通知的 App"
                              Description="用逗號分隔，例如 LINE, Messenger, Google Chrome。未列入的通知不會進入 SignalDesk。"
                              TextWrapping="Wrap" />
                     <NumberBox x:Name="RetentionDaysBox" Header="原始內容保存天數"
                                Minimum="1" Maximum="90" SpinButtonPlacementMode="Compact" />
                     <InfoBar IsOpen="True" IsClosable="False" Severity="Informational"
-                             Title="本機優先"
-                             Message="分類、摘要、偏好學習與稽核記錄都在本機完成；不會把私人訊息傳給雲端模型。" />
+                             Title="圖片會在本機自動分析"
+                             Message="偵測到可讀圖片後，PaddleOCR 先擷取文字並釋放 GPU，再由 Qwen 產生語意摘要與分類；不需要手動按鈕。兩個模型不會同時占用 GPU，完成後按需模式會釋放 VRAM，私人內容不會送到雲端。" />
                 </StackPanel>
             </Border>
 

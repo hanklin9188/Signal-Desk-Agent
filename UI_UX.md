@@ -128,3 +128,33 @@ Filter/List | Detail
 - GPU pause when gaming/training。
 - Data export/delete。
 - Personalization reset。
+
+## 10. 圖片與 OCR
+
+### Inbox / Glance
+
+- 只有 `availability=available` 才顯示縮圖。
+- 縮圖固定比例與高度，不讓圖片破壞卡片節奏。
+- Glance 最多顯示一張 72–88 px 縮圖；其餘以 `+N` 表示。
+- metadata-only 使用來源圖示與「來源未提供圖片」文字，不使用假的 placeholder 圖。
+- 圖片卡仍依來源、conversation/sender 分組，不得集中到 LINE/Messenger/Windows 通用卡。
+
+### Detail
+
+```text
+[原圖 / 安全縮圖]       [圖片摘要]
+[放大] [開啟來源]       OCR 文字與可驗證區域
+                        分析狀態 / 模型 / 限制
+```
+
+- 支援縮放、鍵盤操作、螢幕閱讀器名稱與高對比外框。
+- OCR supporting span 可選取並在圖片上顯示對應區域。
+- `分析中`、`分析失敗`、`圖片遺失`、`格式已封鎖` 是不同狀態。
+- 任何未驗證圖片結論顯示黃色 limitation banner，不能偽裝成原文。
+- 提供「重試分析」與「移除本機副本」；不提供來源刪除。
+
+### Settings / Model
+
+- 顯示 Qwen 與 OCR 模型狀態、GPU、residency、最近一次錯誤與 VRAM 峰值。
+- 可暫停圖片分析但保留圖片顯示。
+- Gaming/Training 模式可卸載模型，未處理項目留在安全佇列。

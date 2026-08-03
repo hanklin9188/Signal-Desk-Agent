@@ -19,13 +19,22 @@ signaldesk-agent-service.exe / python
 ├── policy
 ├── validation
 ├── trace
+├── media store / evidence registry
 └── FastAPI localhost
 
 signaldesk-model-service
 ├── Qwen3.5-4B
-├── 512 context
+├── text + image input
+├── 512-token text route
+├── bounded visual-token route
 ├── non-thinking
 ├── JSON output
+└── health / metrics
+
+signaldesk-ocr-service (on demand)
+├── PaddleOCR-VL-1.6
+├── OCR text + layout regions
+├── asset hash binding
 └── health / metrics
 ```
 
@@ -53,6 +62,29 @@ signaldesk-model-service
   "max_output": 128
 }
 ```
+
+Visual requests use OpenAI-compatible multipart message content. The service sends at most one
+validated local image in the real-time route and raises the output budget to 256 tokens. A local
+`data:` URL is created only inside the trusted loopback process; filesystem paths never enter the
+prompt or UI contract.
+
+### Media acquisition → Agent Service
+
+```json
+{
+  "event_id": "gmail_message_x",
+  "media": [{
+    "asset_id": "media_<sha256-prefix>",
+    "kind": "screenshot",
+    "mime_type": "image/png",
+    "availability": "available",
+    "sha256": "<sha256>"
+  }]
+}
+```
+
+The connector imports bytes through the safe media store before ingestion. UI reads use only the
+authenticated `/api/v1/media/{asset_id}` route. Full design: [Multimodal Image Design](MULTIMODAL_DESIGN.md).
 
 ### Agent Service → UI
 
@@ -88,12 +120,16 @@ connector_health
 - traces
 - model_runs
 - connector_cursors
+- media_assets
+- event_media
+- visual_analyses
 
 ### Data lifecycle
 
 ```text
 raw event
 → normalized event
+→ validated media / OCR evidence (when available)
 → grouped thread
 → triage
 → card
@@ -132,3 +168,5 @@ provider:{webhook_event_id}
 - malformed event 放 quarantine。
 - failed model request 可重跑。
 - Gmail history 404 觸發 full sync。
+- unsafe/oversized media is blocked without losing the text event.
+- OCR/VLM failure leaves the original media visible and routes the card to deterministic fallback.

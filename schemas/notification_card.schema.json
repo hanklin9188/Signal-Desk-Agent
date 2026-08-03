@@ -66,6 +66,16 @@
         "type": "string"
       }
     },
+    "media_preview": {
+      "oneOf": [
+        {
+          "$ref": "media_asset.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "created_at": {
       "type": "string",
       "format": "date-time"

@@ -27,6 +27,8 @@
                                Foreground="{StaticResource SignalAccentBrush}" />
                     <TextBlock x:Name="ViewTitle" Text="現在" FontFamily="Segoe UI Variable Display"
                                FontSize="30" FontWeight="SemiBold" />
+                    <TextBlock x:Name="ViewDescription" FontSize="11"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
                 <Border HorizontalAlignment="Right" VerticalAlignment="Bottom"
                         Background="{StaticResource SignalAccentSoftBrush}" CornerRadius="10" Padding="11,6">
@@ -98,6 +100,7 @@
                                     <ColumnDefinition Width="42" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <ui:SourceBadge Source="{x:Bind Source}" BadgeSize="40" />
                                 <StackPanel Grid.Column="1" Spacing="5">
@@ -122,7 +125,29 @@
                                         </Border>
                                     </StackPanel>
                                 </StackPanel>
-                                <StackPanel Grid.Column="2" HorizontalAlignment="Right" Spacing="7">
+                                <Border Grid.Column="2" Width="64" Height="52" Margin="4,0,8,0"
+                                        CornerRadius="10" Background="{StaticResource SignalAccentSoftBrush}"
+                                        Visibility="{x:Bind ThumbnailVisibility, Mode=OneWay}">
+                                    <Image Source="{x:Bind ThumbnailSource, Mode=OneWay}"
+                                           Stretch="UniformToFill" AutomationProperties.Name="訊息圖片縮圖" />
+                                </Border>
+                                <Border Grid.Column="2" Width="64" Height="52" Margin="4,0,8,0"
+                                        CornerRadius="10"
+                                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        Visibility="{x:Bind UnavailableMediaVisibility, Mode=OneWay}">
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                                        <FontIcon Glyph="&#xEB9F;" FontSize="15"
+                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="無預覽" FontSize="8"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    </StackPanel>
+                                    <ToolTipService.ToolTip>
+                                        <ToolTip Content="{x:Bind UnavailableMediaLabel}" />
+                                    </ToolTipService.ToolTip>
+                                </Border>
+                                <StackPanel Grid.Column="3" HorizontalAlignment="Right" Spacing="7">
                                     <TextBlock Text="{x:Bind TimeLabel}" FontSize="10"
                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                     <TextBlock Text="{x:Bind PriorityLabel}" HorizontalAlignment="Right"
@@ -253,8 +278,14 @@
 
                     <Border Style="{StaticResource SignalCardStyle}" Background="{StaticResource SignalAccentSoftBrush}">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="SIGNALDESK 摘要" Style="{StaticResource SignalSectionLabelStyle}"
-                                       Foreground="{StaticResource SignalAccentBrush}" />
+                            <Grid>
+                                <TextBlock Text="SIGNALDESK 摘要" Style="{StaticResource SignalSectionLabelStyle}"
+                                           Foreground="{StaticResource SignalAccentBrush}" />
+                                <Border HorizontalAlignment="Right" Style="{StaticResource SignalChipStyle}">
+                                    <TextBlock Text="{Binding SummaryEngineLabel}" FontSize="10"
+                                               Foreground="{StaticResource SignalMutedBrush}" />
+                                </Border>
+                            </Grid>
                             <TextBlock Text="{Binding Summary}" FontSize="15" TextWrapping="Wrap" LineHeight="24" />
                         </StackPanel>
                     </Border>
@@ -326,8 +357,41 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="models:SourceEvent">
                                         <Expander Header="{x:Bind Sender}" Margin="0,3" IsExpanded="True">
-                                            <TextBlock Text="{x:Bind ContentLabel}" TextWrapping="Wrap" Padding="10"
-                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <StackPanel Padding="10" Spacing="9">
+                                                <TextBlock Text="{x:Bind ContentLabel}" TextWrapping="Wrap"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                <ItemsControl ItemsSource="{x:Bind Media}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="models:MediaAssetData">
+                                                            <Grid ColumnSpacing="8" Margin="0,2,0,0">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <Button Tag="{x:Bind AssetId}" Click="Media_Click"
+                                                                        IsEnabled="{x:Bind IsAvailable}"
+                                                                        HorizontalAlignment="Stretch"
+                                                                        HorizontalContentAlignment="Left">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                                        <FontIcon Glyph="&#xEB9F;" FontSize="14" />
+                                                                        <TextBlock Text="{x:Bind DisplayLabel}"
+                                                                                   TextTrimming="CharacterEllipsis" />
+                                                                    </StackPanel>
+                                                                </Button>
+                                                                <Border Grid.Column="1" Style="{StaticResource SignalChipStyle}"
+                                                                        VerticalAlignment="Center"
+                                                                        Visibility="{x:Bind AnalysisVisibility}">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                                                        <ProgressRing Width="12" Height="12" IsActive="True"
+                                                                                      Visibility="{x:Bind IsAnalysisQueued, Converter={StaticResource BoolVisibility}}" />
+                                                                        <TextBlock Text="{x:Bind AnalysisLabel}" FontSize="10" />
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
                                         </Expander>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

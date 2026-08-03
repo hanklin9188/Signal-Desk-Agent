@@ -11,6 +11,7 @@ ROOT = Path(__file__).parents[1]
 def test_json_examples_match_schemas():
     mapping = {
         "gmail_event.json": "unified_event.schema.json",
+        "gmail_image_event.json": "unified_event.schema.json",
         "line_notification_event.json": "unified_event.schema.json",
         "messenger_notification_event.json": "unified_event.schema.json",
         "grouped_thread.json": "grouped_thread.schema.json",

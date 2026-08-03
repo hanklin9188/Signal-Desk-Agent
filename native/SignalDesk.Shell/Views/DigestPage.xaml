@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="using:SignalDesk.Shell.Controls"
     xmlns:models="using:SignalDesk.Shell.Models">
-    <ScrollViewer Background="Transparent">
+    <ScrollViewer x:Name="DigestScroll" Background="Transparent">
         <StackPanel Padding="42,34,48,72" Spacing="20" MaxWidth="1180" HorizontalAlignment="Center">
             <Grid>
                 <StackPanel Spacing="3">
@@ -18,15 +18,19 @@
                         Click="Refresh_Click" />
             </Grid>
 
+            <InfoBar IsOpen="True" IsClosable="False" Severity="Informational"
+                     Title="Qwen 本機語意分類"
+                     Message="{x:Bind Digest.AnalysisLabel, Mode=OneWay}" />
+
             <Grid ColumnSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition /><ColumnDefinition /><ColumnDefinition /><ColumnDefinition />
                 </Grid.ColumnDefinitions>
                 <Border Style="{StaticResource SignalHeroCardStyle}" Padding="18">
-                    <StackPanel Spacing="3"><TextBlock Text="{x:Bind Digest.Counts.Urgent, Mode=OneWay}" Style="{StaticResource SignalMetricStyle}" Foreground="{StaticResource SignalAccentBrush}" /><TextBlock Text="重要與緊急" FontWeight="SemiBold" /><TextBlock Text="建議優先處理" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" /></StackPanel>
+                    <StackPanel Spacing="3"><TextBlock Text="{x:Bind Digest.Counts.Urgent, Mode=OneWay}" Style="{StaticResource SignalMetricStyle}" Foreground="{StaticResource SignalRedBrush}" /><TextBlock Text="緊急" FontWeight="SemiBold" /><TextBlock Text="需要立即處理" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" /></StackPanel>
                 </Border>
                 <Border Grid.Column="1" Style="{StaticResource SignalCardStyle}">
-                    <StackPanel Spacing="3"><TextBlock Text="{x:Bind Digest.Counts.DueToday, Mode=OneWay}" Style="{StaticResource SignalMetricStyle}" /><TextBlock Text="今天到期" FontWeight="SemiBold" /><TextBlock Text="含明確期限" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" /></StackPanel>
+                    <StackPanel Spacing="3"><TextBlock Text="{x:Bind Digest.Counts.Important, Mode=OneWay}" Style="{StaticResource SignalMetricStyle}" Foreground="{StaticResource SignalAmberBrush}" /><TextBlock Text="重要" FontWeight="SemiBold" /><TextBlock Text="近期行動或期限" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" /></StackPanel>
                 </Border>
                 <Border Grid.Column="2" Style="{StaticResource SignalCardStyle}">
                     <StackPanel Spacing="3"><TextBlock Text="{x:Bind Digest.Counts.NeedsReply, Mode=OneWay}" Style="{StaticResource SignalMetricStyle}" /><TextBlock Text="需要回覆" FontWeight="SemiBold" /><TextBlock Text="等待你的下一步" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}" /></StackPanel>
@@ -38,11 +42,22 @@
 
             <Border Style="{StaticResource SignalCardStyle}">
                 <StackPanel Spacing="10">
-                    <TextBlock Text="優先處理" Style="{StaticResource SignalCardTitleStyle}" />
+                    <TextBlock Text="緊急" Style="{StaticResource SignalCardTitleStyle}" />
                     <TextBlock x:Name="UrgentEmpty" Text="目前沒有需要立即處理的訊息。"
                                Style="{StaticResource SignalBodySecondaryStyle}" />
                     <ListView x:Name="UrgentList" ItemsSource="{x:Bind Digest.Urgent, Mode=OneWay}" IsItemClickEnabled="True"
                               ItemClick="DigestItem_Click" SelectionMode="None">
+                        <ListView.ItemTemplate><DataTemplate x:DataType="models:CardItem"><Grid Padding="7" ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="36" /><ColumnDefinition Width="165" /><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><ui:SourceBadge Source="{x:Bind Source}" BadgeSize="34" /><TextBlock Grid.Column="1" Text="{x:Bind SenderLabel}" FontWeight="SemiBold" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Text="{x:Bind Summary}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" /><TextBlock Grid.Column="3" Text="{x:Bind TimeLabel}" VerticalAlignment="Center" /></Grid></DataTemplate></ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource SignalCardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="重要" Style="{StaticResource SignalCardTitleStyle}" />
+                    <TextBlock x:Name="ImportantEmpty" Text="目前沒有重要但不緊急的訊息。"
+                               Style="{StaticResource SignalBodySecondaryStyle}" />
+                    <ListView x:Name="ImportantList" ItemsSource="{x:Bind Digest.Important, Mode=OneWay}"
+                              IsItemClickEnabled="True" ItemClick="DigestItem_Click" SelectionMode="None">
                         <ListView.ItemTemplate><DataTemplate x:DataType="models:CardItem"><Grid Padding="7" ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="36" /><ColumnDefinition Width="165" /><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><ui:SourceBadge Source="{x:Bind Source}" BadgeSize="34" /><TextBlock Grid.Column="1" Text="{x:Bind SenderLabel}" FontWeight="SemiBold" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Text="{x:Bind Summary}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" /><TextBlock Grid.Column="3" Text="{x:Bind TimeLabel}" VerticalAlignment="Center" /></Grid></DataTemplate></ListView.ItemTemplate>
                     </ListView>
                 </StackPanel>
@@ -56,6 +71,17 @@
                     <StackPanel Spacing="10"><TextBlock Text="需要回覆" Style="{StaticResource SignalCardTitleStyle}" /><TextBlock x:Name="ReplyEmpty" Text="目前沒有等待回覆的訊息。" Style="{StaticResource SignalBodySecondaryStyle}" /><ListView x:Name="ReplyList" ItemsSource="{x:Bind Digest.NeedsReply, Mode=OneWay}" IsItemClickEnabled="True" ItemClick="DigestItem_Click" SelectionMode="None"><ListView.ItemTemplate><DataTemplate x:DataType="models:CardItem"><Grid Padding="7" ColumnSpacing="10"><Grid.ColumnDefinitions><ColumnDefinition Width="36" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><ui:SourceBadge Source="{x:Bind Source}" BadgeSize="34" /><StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="{x:Bind SenderLabel}" FontWeight="SemiBold" /><TextBlock Text="{x:Bind Summary}" MaxLines="2" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" /></StackPanel></Grid></DataTemplate></ListView.ItemTemplate></ListView></StackPanel>
                 </Border>
             </Grid>
+            <Border Style="{StaticResource SignalCardStyle}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="一般資訊" Style="{StaticResource SignalCardTitleStyle}" />
+                    <TextBlock x:Name="InformationEmpty" Text="今天沒有一般資訊。"
+                               Style="{StaticResource SignalBodySecondaryStyle}" />
+                    <ListView x:Name="InformationList" ItemsSource="{x:Bind Digest.ForInformation, Mode=OneWay}"
+                              IsItemClickEnabled="True" ItemClick="DigestItem_Click" SelectionMode="None">
+                        <ListView.ItemTemplate><DataTemplate x:DataType="models:CardItem"><Grid Padding="7" ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="36" /><ColumnDefinition Width="165" /><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><ui:SourceBadge Source="{x:Bind Source}" BadgeSize="34" /><TextBlock Grid.Column="1" Text="{x:Bind SenderLabel}" FontWeight="SemiBold" VerticalAlignment="Center" /><TextBlock Grid.Column="2" Text="{x:Bind Summary}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" /><TextBlock Grid.Column="3" Text="{x:Bind TimeLabel}" VerticalAlignment="Center" /></Grid></DataTemplate></ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -24,6 +24,7 @@ data/*.db
 data/*.db-*
 data/.auth-token
 data/exports/
+data/multimodal-reviews.jsonl
 credentials.json
 client_secret_*.json
 oauth-client*.json

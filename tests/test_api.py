@@ -1,12 +1,21 @@
 from __future__ import annotations
 
+import base64
 import time
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
 
 from signaldesk.api import create_app
+from signaldesk.media_store import MediaStore
+from signaldesk.model_gateway import ModelResult
+from signaldesk.models import UnifiedEvent, VisualAnalysis
+
+PNG_1X1 = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+)
 
 
 def test_api_requires_local_session(test_config, database):
@@ -17,6 +26,84 @@ def test_api_requires_local_session(test_config, database):
         response = client.get("/api/v1/bootstrap")
         assert response.status_code == 200
         assert response.json()["privacy"]["auto_send"] is False
+
+
+def test_bootstrap_reports_local_model_quantization(test_config, database):
+    config = replace(test_config, model_quantization="nf4")
+    with TestClient(create_app(config, database)) as client:
+        client.get("/")
+        model = client.get("/api/v1/bootstrap").json()["model"]
+
+    assert model["quantization"] == "nf4"
+    assert model["ocr_max_new_tokens"] == 384
+
+
+def test_explicit_image_analysis_releases_ocr_before_qwen(
+    test_config, database, monkeypatch
+):
+    calls: list[str] = []
+
+    class Vision:
+        backend_name = "fake-ocr"
+
+        def analyze(self, media):
+            calls.append("ocr")
+            return VisualAnalysis(
+                asset_id=media.asset_id,
+                asset_sha256=media.sha256,
+                status="failed",
+                ocr_model_id="fake-ocr",
+                error_code="NoText",
+                started_at=datetime.now(UTC),
+                completed_at=datetime.now(UTC),
+            )
+
+        def release(self):
+            calls.append("ocr_release")
+
+    class Gateway:
+        backend_name = "qwen-transformers"
+
+        def analyze(self, thread, signals, visual_analyses=None):
+            calls.append("qwen")
+            return ModelResult(
+                triage=None, backend=self.backend_name, error="simulated"
+            )
+
+        def release(self):
+            calls.append("qwen_release")
+
+    monkeypatch.setattr("signaldesk.api.build_vision_analyzer", lambda *a, **k: Vision())
+    monkeypatch.setattr("signaldesk.api.build_gateway", lambda *a, **k: Gateway())
+    config = replace(
+        test_config,
+        model_backend="transformers",
+        vision_backend="paddleocr-vl",
+    )
+    media = MediaStore(config.data_dir / "media").import_bytes(
+        PNG_1X1, declared_mime="image/png"
+    )
+    image_event = UnifiedEvent(
+        event_id="api-image-analysis",
+        source="gmail",
+        account_id="test",
+        sender="example@example.test",
+        content="Attached image",
+        content_completeness="full",
+        received_at=datetime.now(UTC),
+        media=[media],
+    )
+
+    with TestClient(create_app(config, database)) as client:
+        client.get("/")
+        assert client.post(
+            "/api/v1/events", json=image_event.model_dump(mode="json")
+        ).status_code == 201
+        response = client.post(f"/api/v1/media/{media.asset_id}/analysis")
+
+    assert response.status_code == 200
+    assert response.json()["semantic_status"] == "rule_fallback"
+    assert calls == ["ocr", "ocr_release", "qwen", "qwen_release"]
 
 
 def test_windows_bridge_and_no_send_endpoint(test_config, database):
@@ -224,6 +311,60 @@ def test_today_filter_converts_utc_card_time_to_local_date(test_config, database
             params={"source": "line_notification", "date": "today"},
         ).json()["items"]
         assert [item["card_id"] for item in items] == [card_id]
+
+
+def test_now_is_recent_window_while_today_starts_at_local_midnight(
+    test_config, database
+):
+    local_now = datetime.now(ZoneInfo(test_config.timezone))
+    recent = local_now - timedelta(minutes=1)
+    historical = local_now - timedelta(hours=7)
+
+    with TestClient(create_app(test_config, database)) as client:
+        client.get("/")
+        recent_result = client.post(
+            "/api/v1/connectors/windows/notifications",
+            json={
+                "notification_id": "recent-now-window",
+                "app_id": "LINE",
+                "app_name": "LINE",
+                "title": "近期訊息",
+                "body": "兩小時內的訊息",
+                "received_at": recent.isoformat(),
+            },
+        ).json()
+        historical_result = client.post(
+            "/api/v1/connectors/windows/notifications",
+            json={
+                "notification_id": "older-today-window",
+                "app_id": "Messenger",
+                "app_name": "Messenger",
+                "title": "今日稍早訊息",
+                "body": "今天但超過六小時的訊息",
+                "received_at": historical.isoformat(),
+            },
+        ).json()
+
+        now_ids = {
+            item["card_id"]
+            for item in client.get("/api/v1/cards", params={"view": "now"}).json()[
+                "items"
+            ]
+        }
+        today_ids = {
+            item["card_id"]
+            for item in client.get("/api/v1/cards", params={"view": "today"}).json()[
+                "items"
+            ]
+        }
+
+    assert recent_result["card_id"] in now_ids
+    assert historical_result["card_id"] not in now_ids
+    assert recent_result["card_id"] in today_ids
+    if historical.date() == local_now.date():
+        assert historical_result["card_id"] in today_ids
+    else:
+        assert historical_result["card_id"] not in today_ids
 
 
 def test_reconciled_and_live_line_snapshots_are_deduplicated(
