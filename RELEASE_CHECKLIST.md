@@ -14,7 +14,7 @@
 - [ ] installer/uninstaller test
 - [x] Qwen and PaddleOCR model revisions pinned
 - [x] synthetic dataset manifest
-- [ ] GitHub Actions green for 0.1.0.45 (pending this change)
+- [x] GitHub Actions green for 0.1.0.45 (`cbabf04`)
 - [x] demo uses fictional messages only
 - [x] production signing script rejects development identity and unmet release gates
 - [ ] production publisher certificate supplied and clean-machine upgrade/rollback exercised
