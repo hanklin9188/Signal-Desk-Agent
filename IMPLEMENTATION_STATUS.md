@@ -33,7 +33,7 @@ because it has a design document.
 | Attention policy | Complete | Focus, quiet hours, VIP/mute, uncertainty penalty, preference score, interruption budget, Shadow Mode |
 | Actions | Complete | Open source, snooze, done, local reminder, editable draft; no auto-send route |
 | Privacy controls | Complete | Retention worker, safe export, preference reset, confirmed private-data deletion |
-| Validation | Passing | 49 tests, Ruff clean, 300 locked scenarios / 1,800 checks; native compile pending Windows verification for 0.1.0.39 |
+| Validation | Passing | 49 tests, Ruff clean, 300 locked scenarios / 1,800 checks, GitHub Windows native build passing for 0.1.0.39; installed-app image exercise remains |
 | Media foundation | In progress | Safe media contract/store/API and multimodal model request path implemented; connector/UI/OCR work remains |
 
 ## Deliberate product boundaries
