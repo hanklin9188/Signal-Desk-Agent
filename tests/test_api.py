@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import time
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -8,6 +9,13 @@ from zoneinfo import ZoneInfo
 from fastapi.testclient import TestClient
 
 from signaldesk.api import create_app
+from signaldesk.media_store import MediaStore
+from signaldesk.model_gateway import ModelResult
+from signaldesk.models import UnifiedEvent, VisualAnalysis
+
+PNG_1X1 = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+)
 
 
 def test_api_requires_local_session(test_config, database):
@@ -28,6 +36,74 @@ def test_bootstrap_reports_local_model_quantization(test_config, database):
 
     assert model["quantization"] == "nf4"
     assert model["ocr_max_new_tokens"] == 384
+
+
+def test_explicit_image_analysis_releases_ocr_before_qwen(
+    test_config, database, monkeypatch
+):
+    calls: list[str] = []
+
+    class Vision:
+        backend_name = "fake-ocr"
+
+        def analyze(self, media):
+            calls.append("ocr")
+            return VisualAnalysis(
+                asset_id=media.asset_id,
+                asset_sha256=media.sha256,
+                status="failed",
+                ocr_model_id="fake-ocr",
+                error_code="NoText",
+                started_at=datetime.now(UTC),
+                completed_at=datetime.now(UTC),
+            )
+
+        def release(self):
+            calls.append("ocr_release")
+
+    class Gateway:
+        backend_name = "qwen-transformers"
+
+        def analyze(self, thread, signals, visual_analyses=None):
+            calls.append("qwen")
+            return ModelResult(
+                triage=None, backend=self.backend_name, error="simulated"
+            )
+
+        def release(self):
+            calls.append("qwen_release")
+
+    monkeypatch.setattr("signaldesk.api.build_vision_analyzer", lambda *a, **k: Vision())
+    monkeypatch.setattr("signaldesk.api.build_gateway", lambda *a, **k: Gateway())
+    config = replace(
+        test_config,
+        model_backend="transformers",
+        vision_backend="paddleocr-vl",
+    )
+    media = MediaStore(config.data_dir / "media").import_bytes(
+        PNG_1X1, declared_mime="image/png"
+    )
+    image_event = UnifiedEvent(
+        event_id="api-image-analysis",
+        source="gmail",
+        account_id="test",
+        sender="example@example.test",
+        content="Attached image",
+        content_completeness="full",
+        received_at=datetime.now(UTC),
+        media=[media],
+    )
+
+    with TestClient(create_app(config, database)) as client:
+        client.get("/")
+        assert client.post(
+            "/api/v1/events", json=image_event.model_dump(mode="json")
+        ).status_code == 201
+        response = client.post(f"/api/v1/media/{media.asset_id}/analysis")
+
+    assert response.status_code == 200
+    assert response.json()["semantic_status"] == "rule_fallback"
+    assert calls == ["ocr", "ocr_release", "qwen", "qwen_release"]
 
 
 def test_windows_bridge_and_no_send_endpoint(test_config, database):

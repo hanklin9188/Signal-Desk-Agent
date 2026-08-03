@@ -1,7 +1,7 @@
 # Multimodal Image Design
 
 Status: thumbnail, OCR/evidence, local model and audit tooling implemented in development build
-`0.1.0.44`; real human review, field observation and production signing remain release gates.
+`0.1.0.45`; real human review, field observation and production signing remain release gates.
 
 ## 1. Product outcome
 
@@ -31,7 +31,8 @@ pixels from the phrase “sent a photo”. Acquisition must happen before displa
 
 The primary route is local and non-thinking. External inference remains disabled. Qwen runs on the
 RTX 4080 SUPER in NF4 4-bit mode; WinUI composition can remain on the AMD integrated GPU. Thumbnails
-do not wake a model. PaddleOCR starts only after the user selects “擷取圖片文字”; Qwen runs afterward.
+do not wake a model. After the user selects “分析圖片”, PaddleOCR runs first and releases; Qwen then
+interprets the real image even when OCR found no text.
 Both use bounded output, never coexist on the GPU, and are released afterward.
 
 ## 3. Source capability matrix
@@ -214,7 +215,7 @@ collapse into a generic LINE, Messenger, browser or Windows card.
 - Qwen3.5-4B multimodal gateway plus a BF16/INT8/NF4 GPU benchmark command.
 - Hash- and coordinate-bound OCR evidence validator.
 - Persisted analysis API and automatic thread re-analysis after successful OCR.
-- Revision pinning, NF4 Qwen, explicit user-triggered OCR, bounded output, sequential OCR/Qwen scheduling and release are implemented.
+- Revision pinning, NF4 Qwen, explicit user-triggered image analysis, bounded output, sequential OCR/Qwen scheduling and release are implemented.
 
 ### M5 — Audit and release (tooling implemented; real gates not yet satisfied)
 

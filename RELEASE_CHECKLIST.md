@@ -14,7 +14,7 @@
 - [ ] installer/uninstaller test
 - [x] Qwen and PaddleOCR model revisions pinned
 - [x] synthetic dataset manifest
-- [x] GitHub Actions green for 0.1.0.44 (`b67135d`)
+- [ ] GitHub Actions green for 0.1.0.45 (pending this change)
 - [x] demo uses fictional messages only
 - [x] production signing script rejects development identity and unmet release gates
 - [ ] production publisher certificate supplied and clean-machine upgrade/rollback exercised

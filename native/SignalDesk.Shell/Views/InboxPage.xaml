@@ -367,7 +367,7 @@
                                                                 </Button>
                                                                 <Button Tag="{x:Bind AssetId}" Click="AnalyzeMedia_Click"
                                                                         IsEnabled="{x:Bind IsAvailable}"
-                                                                        Content="擷取圖片文字" />
+                                                                        Content="分析圖片" />
                                                             </StackPanel>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>

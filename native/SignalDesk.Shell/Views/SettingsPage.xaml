@@ -65,7 +65,7 @@
                                Minimum="1" Maximum="90" SpinButtonPlacementMode="Compact" />
                     <InfoBar IsOpen="True" IsClosable="False" Severity="Informational"
                              Title="模型只負責理解，不負責下載圖片"
-                             Message="縮圖不需要模型。你按下訊息裡的「擷取圖片文字」後，PaddleOCR 才會暫時啟動；完成後 Qwen 再整理語意與待辦。兩者不會同時佔用 GPU，私人訊息也不會送到雲端模型。" />
+                             Message="縮圖不需要模型。你按下訊息裡的「分析圖片」後，PaddleOCR 先擷取文字並釋放，Qwen 再理解照片／文件語意與待辦。兩者不會同時佔用 GPU，私人訊息也不會送到雲端模型。" />
                 </StackPanel>
             </Border>
 

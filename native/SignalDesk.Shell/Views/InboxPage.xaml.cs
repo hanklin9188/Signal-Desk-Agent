@@ -244,16 +244,23 @@ public sealed partial class InboxPage : UserControl, IAsyncPage
         var cardId = Detail.CardId;
         button.IsEnabled = false;
         ShowMessage(
-            "正在擷取圖片文字",
-            "PaddleOCR 只在這次操作期間使用 GPU；完成後會釋放，Qwen 再於背景整理語意。",
+            "正在分析圖片",
+            "PaddleOCR 先擷取文字並釋放 GPU，接著由 Qwen 理解照片或文件語意。",
             InfoBarSeverity.Informational);
         try
         {
             var result = await _state.Api.AnalyzeMediaAsync(assetId);
-            var status = result.TryGetProperty("status", out var value) ? value.GetString() : null;
-            if (status != "completed")
-                throw new InvalidOperationException("圖片文字沒有成功擷取，請稍後重試。");
-            ShowMessage("圖片文字已擷取", "GPU 已釋放；語意摘要會在下一個背景週期更新。");
+            var semantic = result.TryGetProperty("semantic_status", out var value)
+                ? value.GetString() : null;
+            if (semantic != "completed")
+                throw new InvalidOperationException("圖片語意模型沒有成功完成，已保留原圖可供查看。");
+            var ocr = result.TryGetProperty("status", out var ocrValue)
+                ? ocrValue.GetString() : null;
+            ShowMessage(
+                "圖片分析完成",
+                ocr == "completed"
+                    ? "已擷取可驗證文字並更新語意摘要；模型已釋放 GPU。"
+                    : "圖片沒有可擷取文字，已完成照片語意摘要；模型已釋放 GPU。");
             var card = Cards.FirstOrDefault(item => item.CardId == cardId);
             if (card is not null) await ShowCardDetailAsync(card);
         }

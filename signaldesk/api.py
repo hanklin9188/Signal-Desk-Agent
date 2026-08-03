@@ -658,12 +658,30 @@ def create_app(config: Settings | None = None, database: Database | None = None)
         try:
             analysis = await asyncio.to_thread(vision.analyze, media)
             database.save_visual_analysis(analysis)
-            if analysis.status == "completed":
-                for thread_id in database.thread_ids_for_media(asset_id):
-                    await asyncio.to_thread(pipeline.analyze_thread, thread_id)
-            return analysis.model_dump(mode="json")
         finally:
             await asyncio.to_thread(vision.release)
+        # This is an explicit user request, so Qwen may inspect the real image even
+        # when OCR found no text. OCR is released first to keep both models disjoint.
+        semantic_status = "disabled"
+        if config.model_backend in {"endpoint", "transformers"}:
+            semantic_status = "rule_fallback"
+            try:
+                for thread_id in database.thread_ids_for_media(asset_id):
+                    result = await asyncio.to_thread(
+                        lambda value=thread_id: pipeline.analyze_thread(
+                            value, use_model=True
+                        )
+                    )
+                    if result.card_id:
+                        detail = database.card_detail(result.card_id)
+                        backend = str(detail.get("model_backend", "")) if detail else ""
+                        if backend.startswith("qwen") and "fallback" not in backend:
+                            semantic_status = "completed"
+            finally:
+                await asyncio.to_thread(gateway.release)
+        payload = analysis.model_dump(mode="json")
+        payload["semantic_status"] = semantic_status
+        return payload
 
     @router.post("/cards/{card_id}/actions")
     def card_action(card_id: str, request: CardActionRequest) -> dict[str, Any]:
