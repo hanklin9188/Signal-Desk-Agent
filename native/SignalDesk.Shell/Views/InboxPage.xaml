@@ -1,0 +1,355 @@
+<UserControl
+    x:Class="SignalDesk.Shell.Views.InboxPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="using:SignalDesk.Shell.Controls"
+    xmlns:models="using:SignalDesk.Shell.Models"
+    SizeChanged="InboxPage_SizeChanged">
+
+    <Grid Background="Transparent">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="ListColumn" Width="460" MinWidth="380" />
+            <ColumnDefinition x:Name="DetailColumn" Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid x:Name="ListPane" Background="{ThemeResource SignalInsetBrush}"
+              BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,1,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid Padding="26,26,24,18">
+                <StackPanel Spacing="2">
+                    <TextBlock x:Name="ViewEyebrow" Text="INBOX CENTER"
+                               Style="{StaticResource SignalSectionLabelStyle}"
+                               Foreground="{StaticResource SignalAccentBrush}" />
+                    <TextBlock x:Name="ViewTitle" Text="現在" FontFamily="Segoe UI Variable Display"
+                               FontSize="30" FontWeight="SemiBold" />
+                </StackPanel>
+                <Border HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                        Background="{StaticResource SignalAccentSoftBrush}" CornerRadius="10" Padding="11,6">
+                    <TextBlock x:Name="ViewCount" Text="0" FontWeight="SemiBold"
+                               Foreground="{StaticResource SignalAccentBrush}" />
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="1" Padding="20,0,20,14" ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ComboBox x:Name="PriorityFilter" Header="優先級" SelectedIndex="0"
+                          SelectionChanged="Filter_SelectionChanged">
+                    <ComboBoxItem Content="全部" Tag="" />
+                    <ComboBoxItem Content="緊急" Tag="urgent" />
+                    <ComboBoxItem Content="重要" Tag="high" />
+                    <ComboBoxItem Content="一般" Tag="normal" />
+                </ComboBox>
+                <ComboBox x:Name="SourceFilter" Grid.Column="1" Header="來源" SelectedIndex="0"
+                          SelectionChanged="Filter_SelectionChanged">
+                    <ComboBoxItem Content="所有來源" Tag="" />
+                    <ComboBoxItem Content="Gmail" Tag="gmail" />
+                    <ComboBoxItem Content="LINE" Tag="line_notification" />
+                    <ComboBoxItem Content="Messenger" Tag="messenger_notification" />
+                    <ComboBoxItem Content="Windows" Tag="windows_notification" />
+                </ComboBox>
+                <ComboBox x:Name="DateFilter" Grid.Column="2" Header="時間" SelectedIndex="0"
+                          SelectionChanged="Filter_SelectionChanged">
+                    <ComboBoxItem Content="不限" Tag="" />
+                    <ComboBoxItem Content="今天" Tag="today" />
+                    <ComboBoxItem Content="7 天" Tag="7d" />
+                    <ComboBoxItem Content="30 天" Tag="30d" />
+                </ComboBox>
+            </Grid>
+
+            <CommandBar x:Name="BulkBar" Grid.Row="2" DefaultLabelPosition="Right" IsOpen="False"
+                        Margin="12,0,12,4" Background="Transparent">
+                <AppBarToggleButton x:Name="BulkToggle" Label="批次選取"
+                                    Checked="BulkToggle_Changed" Unchecked="BulkToggle_Changed">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon Glyph="&#xE762;" />
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarButton Icon="Accept" Label="完成" Click="BulkDone_Click" />
+                <AppBarButton Icon="Clock" Label="稍後 1 小時" Click="BulkSnooze_Click" />
+            </CommandBar>
+
+            <Grid Grid.Row="3" Margin="12,0,12,14">
+                <ListView x:Name="CardList"
+                          ItemsSource="{x:Bind Cards}" SelectionChanged="CardList_SelectionChanged"
+                          ItemClick="CardList_ItemClick"
+                          IsItemClickEnabled="True" SingleSelectionFollowsFocus="True">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0,3" />
+                            <Setter Property="CornerRadius" Value="13" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:CardItem">
+                            <Border Style="{StaticResource SignalListCardStyle}" Margin="0,0,0,6">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="42" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:SourceBadge Source="{x:Bind Source}" BadgeSize="40" />
+                                <StackPanel Grid.Column="1" Spacing="5">
+                                    <TextBlock Text="{x:Bind SenderLabel}" FontWeight="SemiBold"
+                                               FontSize="14" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind Summary}" FontSize="12" MaxLines="2" LineHeight="18"
+                                               TextWrapping="WrapWholeWords" TextTrimming="CharacterEllipsis"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <Border Style="{StaticResource SignalChipStyle}"
+                                                Visibility="{x:Bind NeedsReply, Converter={StaticResource BoolVisibility}}">
+                                            <TextBlock Text="需回覆" FontSize="9" Foreground="{StaticResource SignalAccentBrush}" />
+                                        </Border>
+                                        <Border Style="{StaticResource SignalChipStyle}"
+                                                Visibility="{x:Bind HasDeadline, Converter={StaticResource BoolVisibility}}">
+                                            <TextBlock Text="{x:Bind DeadlineText}" FontSize="9"
+                                                       Foreground="{StaticResource SignalAmberBrush}" />
+                                        </Border>
+                                        <Border Style="{StaticResource SignalChipStyle}"
+                                                Visibility="{x:Bind HasLimitation, Converter={StaticResource BoolVisibility}}">
+                                            <TextBlock Text="預覽限制" FontSize="9" />
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Right" Spacing="7">
+                                    <TextBlock Text="{x:Bind TimeLabel}" FontSize="10"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    <TextBlock Text="{x:Bind PriorityLabel}" HorizontalAlignment="Right"
+                                               FontSize="10" FontWeight="SemiBold"
+                                               Foreground="{StaticResource SignalAmberBrush}" />
+                                </StackPanel>
+                            </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+
+                <StackPanel x:Name="ListEmptyState" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Spacing="8" MaxWidth="270" IsHitTestVisible="False"
+                            Visibility="Collapsed">
+                    <Border Width="44" Height="44" CornerRadius="14"
+                            Background="{StaticResource SignalAccentSoftBrush}">
+                        <FontIcon Glyph="&#xE8A5;" FontSize="18" Foreground="{StaticResource SignalAccentBrush}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="收件匣已整理完成" FontSize="15" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="新訊息會依重要性安靜地出現在這裡。" Style="{StaticResource SignalBodySecondaryStyle}"
+                               TextAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+
+        <Grid x:Name="DetailPane" Grid.Column="1">
+            <Border x:Name="EmptyState" Style="{StaticResource SignalHeroCardStyle}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Margin="42" MaxWidth="560">
+                <StackPanel Spacing="14">
+                    <Border Width="72" Height="72" CornerRadius="24"
+                            Background="{StaticResource SignalAccentSoftBrush}"
+                            HorizontalAlignment="Center">
+                        <FontIcon Glyph="&#xE735;" FontSize="27" Foreground="{StaticResource SignalAccentBrush}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock x:Name="EmptyTitle" Text="選擇一則訊息"
+                               FontFamily="Segoe UI Variable Display" FontSize="24" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" />
+                    <TextBlock x:Name="EmptyMessage" Text="查看摘要、原文證據、待辦與安全的下一步。"
+                               Style="{StaticResource SignalBodySecondaryStyle}"
+                               TextAlignment="Center" HorizontalAlignment="Center" MaxWidth="430" />
+                    <Grid Margin="0,8,0,0" ColumnSpacing="18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                            <FontIcon Glyph="&#xE890;" Foreground="{StaticResource SignalAccentBrush}" />
+                            <TextBlock Text="可檢查摘要" FontSize="11" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="6" HorizontalAlignment="Center">
+                            <FontIcon Glyph="&#xE9D5;" Foreground="{StaticResource SignalAccentBrush}" />
+                            <TextBlock Text="擷取待辦" FontSize="11" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="6" HorizontalAlignment="Center">
+                            <SymbolIcon Symbol="ProtectedDocument" Foreground="{StaticResource SignalGreenBrush}" />
+                            <TextBlock Text="本機處理" FontSize="11" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <ScrollViewer x:Name="DetailScroll" Visibility="Collapsed"
+                          HorizontalContentAlignment="Stretch"
+                          HorizontalScrollMode="Disabled"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="DetailContent" Padding="38,32,42,68" Spacing="16" MaxWidth="920"
+                            HorizontalAlignment="Stretch" DataContext="{x:Bind Detail, Mode=OneWay}">
+                    <Button x:Name="BackToListButton" Content="← 返回訊息清單"
+                            Visibility="Collapsed" HorizontalAlignment="Left"
+                            Click="BackToList_Click" />
+                    <Grid>
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <Border Style="{StaticResource SignalChipStyle}">
+                                <TextBlock Text="{Binding SourceLabel}" FontSize="10" />
+                            </Border>
+                            <Border Style="{StaticResource SignalChipStyle}">
+                                <TextBlock Text="{Binding PriorityLabel}" FontSize="10" FontWeight="SemiBold" />
+                            </Border>
+                            <Border Style="{StaticResource SignalChipStyle}">
+                                <TextBlock Text="{Binding CompletenessLabel}" FontSize="10" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="{Binding TimeLabel}" HorizontalAlignment="Right" FontSize="10"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    </Grid>
+                    <Grid ColumnSpacing="14" Margin="0,4,0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="52" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SourceBadge Source="{Binding Source}" BadgeSize="50" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding SenderLabel}" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource SignalMutedBrush}" />
+                            <TextBlock Text="{Binding TitleLabel}" Style="{StaticResource SignalPageTitleStyle}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnSpacing="8" RowSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Button x:Name="OpenButton" Content="開啟來源" Style="{StaticResource AccentButtonStyle}"
+                                Tag="open" Click="CardAction_Click" HorizontalAlignment="Stretch" />
+                        <Button x:Name="DraftButton" Grid.Column="1" Content="建立草稿" Tag="draft_reply"
+                                Click="CardAction_Click" HorizontalAlignment="Stretch" />
+                        <Button x:Name="ReminderButton" Grid.Column="2" Content="建立提醒" Tag="create_reminder"
+                                Click="CardAction_Click" HorizontalAlignment="Stretch" />
+                        <Button x:Name="SnoozeButton" Grid.Row="1" Content="稍後提醒" Tag="snooze"
+                                Click="CardAction_Click" HorizontalAlignment="Stretch" />
+                        <Button x:Name="DoneButton" Grid.Row="1" Grid.Column="1" Content="標示完成" Tag="mark_done"
+                                Click="CardAction_Click" HorizontalAlignment="Stretch" />
+                        <Button Grid.Row="1" Grid.Column="2" Content="更多" Click="MoreButton_Click"
+                                HorizontalAlignment="Stretch" />
+                    </Grid>
+
+                    <Border Style="{StaticResource SignalCardStyle}" Background="{StaticResource SignalAccentSoftBrush}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="SIGNALDESK 摘要" Style="{StaticResource SignalSectionLabelStyle}"
+                                       Foreground="{StaticResource SignalAccentBrush}" />
+                            <TextBlock Text="{Binding Summary}" FontSize="15" TextWrapping="Wrap" LineHeight="24" />
+                        </StackPanel>
+                    </Border>
+
+                    <InfoBar x:Name="LimitationBar" IsOpen="True" IsClosable="False"
+                             Severity="Warning" Title="這是通知預覽，可能缺少上下文"
+                             Message="SignalDesk 只使用 Windows 實際顯示的文字，沒有讀取完整私人對話，也不會猜測圖片或貼圖內容。" />
+
+                    <Grid ColumnSpacing="10">
+                        <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource SignalCardStyle}">
+                            <StackPanel Spacing="9">
+                                <TextBlock Text="待辦事項" Style="{StaticResource SignalSectionLabelStyle}" />
+                                <ItemsControl ItemsSource="{Binding ActionItems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:ActionItemData">
+                                            <StackPanel Margin="0,4" Spacing="5">
+                                                <TextBlock Text="{x:Bind Text}" TextWrapping="Wrap" />
+                                                <Border Background="{StaticResource SignalGreenSoftBrush}" CornerRadius="5" Padding="7,4">
+                                                    <TextBlock Text="{x:Bind SupportingSpan}" FontSize="10"
+                                                               Foreground="{StaticResource SignalGreenBrush}" TextWrapping="Wrap" />
+                                                </Border>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock x:Name="NoActionsText" Text="沒有擷取到具體、可驗證的待辦。"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Style="{StaticResource SignalCardStyle}">
+                            <StackPanel Spacing="9">
+                                <TextBlock Text="期限" Style="{StaticResource SignalSectionLabelStyle}" />
+                                <ItemsControl ItemsSource="{Binding Deadlines}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:DeadlineData">
+                                            <StackPanel Margin="0,4" Spacing="3">
+                                                <TextBlock Text="{x:Bind OriginalText}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{x:Bind DisplayTime}" FontSize="11"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock x:Name="NoDeadlinesText" Text="原文沒有明確期限。"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <Border Style="{StaticResource SignalCardStyle}">
+                        <StackPanel Spacing="9">
+                            <TextBlock Text="為什麼顯示" Style="{StaticResource SignalSectionLabelStyle}" />
+                            <ItemsControl ItemsSource="{Binding WhyShown}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><ItemsWrapGrid Orientation="Horizontal" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate><Border Style="{StaticResource SignalChipStyle}" Margin="0,0,6,6"><TextBlock Text="{Binding}" FontSize="10" /></Border></DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource SignalCardStyle}">
+                        <StackPanel Spacing="7">
+                            <TextBlock Text="來源內容" Style="{StaticResource SignalSectionLabelStyle}" />
+                            <ItemsControl ItemsSource="{Binding Events}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:SourceEvent">
+                                        <Expander Header="{x:Bind Sender}" Margin="0,3" IsExpanded="True">
+                                            <TextBlock Text="{x:Bind ContentLabel}" TextWrapping="Wrap" Padding="10"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </Expander>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Expander Header="Developer trace">
+                        <ItemsControl ItemsSource="{Binding Traces}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:TraceData">
+                                    <Grid Padding="6" ColumnSpacing="10">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="140" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Bind Stage}" FontWeight="SemiBold" />
+                                        <TextBlock Grid.Column="1" Text="{x:Bind Status}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Expander>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "signaldesk-agent"
+version = "0.1.0.37"
+description = "Local-first unified message triage agent for Windows"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+  "fastapi>=0.116,<1",
+  "pydantic>=2.11,<3",
+  "PyYAML>=6.0,<7",
+  "tzdata>=2025.2",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.optional-dependencies]
+gmail = [
+  "google-api-python-client>=2.176,<3",
+  "google-auth-oauthlib>=1.2,<2",
+  "keyring>=25.6,<26",
+]
+model = [
+  "torch>=2.7",
+  "transformers>=4.53",
+  "accelerate>=1.9",
+]
+dev = [
+  "httpx>=0.28,<1",
+  "pytest>=8.4,<9",
+  "pytest-cov>=6.2,<7",
+  "jsonschema>=4.24,<5",
+  "ruff>=0.12,<1",
+]
+
+[project.scripts]
+signaldesk = "signaldesk.main:run"
+signaldesk-benchmark = "signaldesk.benchmark:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["signaldesk"]
+artifacts = ["signaldesk/static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

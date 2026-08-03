@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UnifiedEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "source",
+    "account_id",
+    "sender",
+    "content",
+    "content_completeness",
+    "received_at",
+    "privacy_class"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "enum": [
+        "gmail",
+        "line_notification",
+        "messenger_notification",
+        "windows_notification",
+        "line_official_webhook",
+        "messenger_page_webhook"
+      ]
+    },
+    "source_app_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "account_id": {
+      "type": "string"
+    },
+    "sender": {
+      "type": "string"
+    },
+    "conversation_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "content": {
+      "type": "string"
+    },
+    "content_completeness": {
+      "enum": [
+        "full",
+        "thread_delta",
+        "notification_preview",
+        "metadata_only"
+      ]
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_url": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "raw_notification_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "privacy_class": {
+      "enum": [
+        "private",
+        "sensitive",
+        "normal"
+      ]
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "checksum": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

@@ -1,0 +1,180 @@
+<UserControl
+    x:Class="SignalDesk.Shell.Views.RulesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:SignalDesk.Shell.Models">
+    <ScrollViewer Background="Transparent">
+        <StackPanel Padding="44,38,50,76" Spacing="22" MaxWidth="1160" HorizontalAlignment="Center">
+            <Grid>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="ATTENTION POLICY" Style="{StaticResource SignalSectionLabelStyle}"
+                               Foreground="{StaticResource SignalAccentBrush}" />
+                    <TextBlock Text="規則與注意力邊界" Style="{StaticResource SignalPageTitleStyle}" />
+                    <TextBlock Text="用清楚、可檢查、可撤回的規則決定什麼值得打斷你。"
+                               Style="{StaticResource SignalBodySecondaryStyle}" />
+                </StackPanel>
+            </Grid>
+
+            <Border Style="{StaticResource SignalHeroCardStyle}">
+                <Grid ColumnSpacing="28">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.2*" />
+                        <ColumnDefinition Width="1.5*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid ColumnSpacing="16" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="62" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="58" Height="58" CornerRadius="19"
+                                Background="{StaticResource SignalGreenSoftBrush}">
+                            <FontIcon Glyph="&#xEA18;" FontSize="24"
+                                      Foreground="{StaticResource SignalGreenBrush}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Text="本機安全規則引擎" FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Text="每個決策都能說明原因；不會自動回覆、刪除或傳送訊息。"
+                                       Style="{StaticResource SignalBodySecondaryStyle}" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid Grid.Column="1" ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition /><ColumnDefinition /><ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Border Style="{StaticResource SignalCardStyle}" Padding="14">
+                            <StackPanel Spacing="5">
+                                <FontIcon Glyph="&#xE8D7;" Foreground="{StaticResource SignalAccentBrush}"
+                                          HorizontalAlignment="Left" />
+                                <TextBlock Text="可解釋" FontWeight="SemiBold" />
+                                <TextBlock Text="顯示排序原因" FontSize="10"
+                                           Foreground="{ThemeResource SignalMutedBrush}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Style="{StaticResource SignalCardStyle}" Padding="14">
+                            <StackPanel Spacing="5">
+                                <FontIcon Glyph="&#xE72E;" Foreground="{StaticResource SignalCyanBrush}"
+                                          HorizontalAlignment="Left" />
+                                <TextBlock Text="可撤回" FontWeight="SemiBold" />
+                                <TextBlock Text="規則隨時刪除" FontSize="10"
+                                           Foreground="{ThemeResource SignalMutedBrush}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Style="{StaticResource SignalCardStyle}" Padding="14">
+                            <StackPanel Spacing="5">
+                                <FontIcon Glyph="&#xE74E;" Foreground="{StaticResource SignalGreenBrush}"
+                                          HorizontalAlignment="Left" />
+                                <TextBlock Text="本機執行" FontWeight="SemiBold" />
+                                <TextBlock Text="私人資料不上雲" FontSize="10"
+                                           Foreground="{ThemeResource SignalMutedBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Grid ColumnSpacing="18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="360" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Style="{StaticResource SignalCardStyle}">
+                    <StackPanel Spacing="14">
+                        <Grid>
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="NEW RULE" Style="{StaticResource SignalSectionLabelStyle}"
+                                           Foreground="{StaticResource SignalAccentBrush}" />
+                                <TextBlock Text="新增個人規則" Style="{StaticResource SignalCardTitleStyle}" />
+                            </StackPanel>
+                            <Border HorizontalAlignment="Right" Width="38" Height="38" CornerRadius="12"
+                                    Background="{StaticResource SignalAccentSoftBrush}">
+                                <SymbolIcon Symbol="Add" Foreground="{StaticResource SignalAccentBrush}"
+                                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
+                        <TextBlock Text="規則只影響排序與提醒方式，不會更動來源中的訊息。"
+                                   Style="{StaticResource SignalBodySecondaryStyle}" />
+                        <ComboBox x:Name="RuleKind" Header="規則類型" SelectedIndex="0"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="重要寄件者" Tag="vip_sender" />
+                            <ComboBoxItem Content="靜音寄件者" Tag="mute_sender" />
+                            <ComboBoxItem Content="靜音類別" Tag="mute_category" />
+                            <ComboBoxItem Content="提高寄件者優先級" Tag="priority_sender" />
+                        </ComboBox>
+                        <TextBox x:Name="RulePattern" Header="寄件者或類別"
+                                 PlaceholderText="professor@example.edu" />
+                        <Button Content="新增規則" Style="{StaticResource AccentButtonStyle}"
+                                Height="42" Click="Create_Click" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource SignalCardStyle}">
+                    <StackPanel Spacing="14">
+                        <Grid>
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="ACTIVE POLICY" Style="{StaticResource SignalSectionLabelStyle}" />
+                                <TextBlock Text="目前套用的規則" Style="{StaticResource SignalCardTitleStyle}" />
+                            </StackPanel>
+                            <Border HorizontalAlignment="Right" Style="{StaticResource SignalChipStyle}"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="所有變更立即生效" FontSize="10" />
+                            </Border>
+                        </Grid>
+                        <Grid MinHeight="300">
+                            <ListView x:Name="RuleList" ItemsSource="{x:Bind Rules}">
+                                <ListView.ItemContainerStyle>
+                                    <Style TargetType="ListViewItem">
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        <Setter Property="Padding" Value="0" />
+                                        <Setter Property="Margin" Value="0,3" />
+                                        <Setter Property="CornerRadius" Value="13" />
+                                    </Style>
+                                </ListView.ItemContainerStyle>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="models:RuleItem">
+                                        <Border Style="{StaticResource SignalListCardStyle}" Margin="0,0,0,5">
+                                            <Grid ColumnSpacing="13">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="42" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Width="40" Height="40" CornerRadius="13"
+                                                        Background="{StaticResource SignalAccentSoftBrush}">
+                                                    <SymbolIcon Symbol="Filter" Foreground="{StaticResource SignalAccentBrush}"
+                                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                                    <TextBlock Text="{x:Bind Pattern}" FontWeight="SemiBold" />
+                                                    <TextBlock Text="{x:Bind KindLabel}" FontSize="11"
+                                                               Foreground="{ThemeResource SignalMutedBrush}" />
+                                                </StackPanel>
+                                                <Button Grid.Column="2" Content="刪除" Tag="{x:Bind RuleId}"
+                                                        Click="Delete_Click" VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                            <StackPanel x:Name="RuleEmptyState" HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" Spacing="9">
+                                <Border Width="56" Height="56" CornerRadius="18"
+                                        Background="{StaticResource SignalAccentSoftBrush}">
+                                    <FontIcon Glyph="&#xE8EF;" FontSize="21"
+                                              Foreground="{StaticResource SignalAccentBrush}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <TextBlock Text="尚未建立個人規則" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="先使用安全預設；需要時再增加例外。"
+                                           Style="{StaticResource SignalBodySecondaryStyle}"
+                                           TextAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

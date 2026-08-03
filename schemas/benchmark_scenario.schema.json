@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BenchmarkScenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "scenario_id",
+    "events",
+    "expected",
+    "tags"
+  ],
+  "properties": {
+    "scenario_id": {
+      "type": "string"
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "unified_event.schema.json"
+      },
+      "minItems": 1
+    },
+    "expected": {
+      "type": "object",
+      "required": [
+        "priority",
+        "requires_reply",
+        "display_mode"
+      ],
+      "properties": {
+        "priority": {
+          "type": "string"
+        },
+        "requires_reply": {
+          "type": "string"
+        },
+        "display_mode": {
+          "type": "string"
+        },
+        "action_items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deadline_texts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "must_include_limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

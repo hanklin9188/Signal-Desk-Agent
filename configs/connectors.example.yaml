@@ -1,0 +1,21 @@
+connectors:
+  gmail:
+    enabled: true
+    readonly: true
+    draft_scope_enabled: false
+    poll_interval_seconds: 60
+
+  windows_notifications:
+    enabled: true
+    allowed_apps:
+      - LINE
+      - Messenger
+      - Google Chrome
+      - Microsoft Edge
+    reconcile_interval_seconds: 30
+
+  line_official_webhook:
+    enabled: false
+
+  messenger_page_webhook:
+    enabled: false

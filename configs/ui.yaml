@@ -1,0 +1,13 @@
+ui:
+  theme: system
+  backdrop:
+    main_window: mica
+    floating_panel: acrylic
+  orb:
+    enabled: true
+    size_px: 44
+    auto_hide: false
+  glance:
+    max_cards: 3
+  developer_mode: false
+  animations: system

@@ -1,0 +1,2294 @@
+{
+  "files": [
+    {
+      "path": ".env.example",
+      "bytes": 861,
+      "sha256": "888415879b67adce7d95f580969f999c3b2ef2885ddf951549b1cfdd4d1a9804"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug.yml",
+      "bytes": 495,
+      "sha256": "03729f5eaf608211be977e1dbbaa57bee4f11630b75a3f9a43daeb5cd6ee9149"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature.yml",
+      "bytes": 629,
+      "sha256": "fdab1aa4437eedc8d8a4724b742d57bb00983ba0ade9cdd4b26229df24fad72d"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "bytes": 473,
+      "sha256": "d1b49fc49e6213d47941a8e5d73a4a93e3988f05b4aeb117545fb2574448b334"
+    },
+    {
+      "path": ".github/workflows/spec-validation.yml",
+      "bytes": 1451,
+      "sha256": "5e1864f0b9aeb435310ef39b6a2ef0ac4025ef23d930ad58ba26ad85316abf44"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 420,
+      "sha256": "3c6117b75b7816c557be32d0a3e820a30abdf0328a74d2c1dfcb33b54510bb94"
+    },
+    {
+      "path": "AGENT.md",
+      "bytes": 2737,
+      "sha256": "8f421cc28e4a09a684effe7a2279ad824f0cf6580d2d83e0b958b99e50128000"
+    },
+    {
+      "path": "ANNOTATION_GUIDELINES.md",
+      "bytes": 1849,
+      "sha256": "9ec9064122a0470a35499b404b6529df42c372f75d0ebb5d0c0bd52452101671"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "bytes": 2070,
+      "sha256": "7e30e6bb961220237dc52e6d8f81f5a158049704cbe752d74ee556a97ed5644d"
+    },
+    {
+      "path": "CONNECTORS.md",
+      "bytes": 2824,
+      "sha256": "6de09a6926232f8e2f5a6aee6b8a6f118c381bc5ab60df11af188103b4b691a1"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "bytes": 1190,
+      "sha256": "8049135eb59796273711d783c33fa44c4e243961e7565df527400a6850636f03"
+    },
+    {
+      "path": "DATASETS.md",
+      "bytes": 2789,
+      "sha256": "3c14b3c53fed0d97d448d3ab29b57f2af5f6612b79a4aaa41c86051f3366cd5d"
+    },
+    {
+      "path": "DATASET_CARD_TEMPLATE.md",
+      "bytes": 219,
+      "sha256": "f3d92e73bb41cb3791c96f95d976dc3569b8c8139da2397164ba3ce1fde7a644"
+    },
+    {
+      "path": "DEPLOYMENT.md",
+      "bytes": 3440,
+      "sha256": "cf200715d1604b764ee4d643469004e23e21783ecba0a41e945ed34fcd44c474"
+    },
+    {
+      "path": "DESIGN.md",
+      "bytes": 18084,
+      "sha256": "4e0b73ce8ede612be44ed1c41896f989fa3b8d6db987404a19ac0430db667f54"
+    },
+    {
+      "path": "GITHUB_SETUP.md",
+      "bytes": 1792,
+      "sha256": "181602adc9a5766523e0ac426b114aee1c8c5bd37c4d4b092052f507384257d4"
+    },
+    {
+      "path": "IMPLEMENTATION_PLAN.md",
+      "bytes": 2289,
+      "sha256": "0de9bc6b788dd7bdb08825d7cc8ad499b9bc71a02934a2b60f16e6efc7da38df"
+    },
+    {
+      "path": "IMPLEMENTATION_STATUS.md",
+      "bytes": 3449,
+      "sha256": "a798a1328c03ea0b826b2e75a550d959ba64f34ec807df253aa4750040703dd4"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1080,
+      "sha256": "5cccf4a0b6ab4d331a3cfd28017aa2b23d73fcec3ac769c4b4d3410b685bd4b4"
+    },
+    {
+      "path": "MIGRATION_FROM_RESEARCH_AGENT.md",
+      "bytes": 1133,
+      "sha256": "6cfb27e8ab4c270c2663f51392a14ceef36280070ce56f5fd283cfd1e7a9a5d6"
+    },
+    {
+      "path": "MODEL_CARD_TEMPLATE.md",
+      "bytes": 288,
+      "sha256": "2df91b5ccfa4704b9bad3964d08e1cd88c65e6a2c8243b52a4138dab4f4c0a8d"
+    },
+    {
+      "path": "PRODUCT_REQUIREMENTS.md",
+      "bytes": 2747,
+      "sha256": "d71a84b71b6bdfa1b0f30733c47cf92380ed9aeccb9f93af00f09d48226a87bd"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8628,
+      "sha256": "02f903ac870d4bad068bae93944530e4dc308cea489d4dd2d6d1d2bcf8c55f06"
+    },
+    {
+      "path": "REFERENCES.md",
+      "bytes": 1896,
+      "sha256": "e64e51f6ce0742b8e46387651995a223d24b321d5666f2c4cb86e3d916e6af79"
+    },
+    {
+      "path": "RELEASE_CHECKLIST.md",
+      "bytes": 524,
+      "sha256": "5500f44eef8f02811690aac20e779eb1cb80020e013b7f0261f8e401dc7643ba"
+    },
+    {
+      "path": "ROADMAP.md",
+      "bytes": 1200,
+      "sha256": "9e75bfd7f3dec84691435c1324977e52ebb54e61d21e7e9db86f299abd3d7652"
+    },
+    {
+      "path": "SECURITY.md",
+      "bytes": 312,
+      "sha256": "6b47122fcca398cc40c950303278901e03d35ea1698f4d0e8c419c176cf38623"
+    },
+    {
+      "path": "SECURITY_PRIVACY.md",
+      "bytes": 1994,
+      "sha256": "c55fc869731f08778e77129d7c30e989dfaa9f09a7e91ec9bf31b68d962a2c3e"
+    },
+    {
+      "path": "TRAINING.md",
+      "bytes": 2872,
+      "sha256": "83f0afec92919c631fa3f627e948c79f4f912ea05fceb2b1c948ea68334243ca"
+    },
+    {
+      "path": "UI_UX.md",
+      "bytes": 2358,
+      "sha256": "3191ce16bbb377ca75945c45dc74b3d4312e881508c6860d1c38b79d1ee67af9"
+    },
+    {
+      "path": "USER_INPUT_CHECKLIST.md",
+      "bytes": 5232,
+      "sha256": "6fbe26037ef342485ae33797840ff9870c7cb2e4215ae1f0e11821d8cd1df4fe"
+    },
+    {
+      "path": "VALIDATION.md",
+      "bytes": 4628,
+      "sha256": "5c26e5033bcea2985ec237855365e760333c76ac2c2bf427463c1c8ec02eef4b"
+    },
+    {
+      "path": "WINDOWS_GMAIL_SETUP.md",
+      "bytes": 5357,
+      "sha256": "9bbbb3119fca67df495cba055dd0d659570421f3da684f516084a4f7baced10b"
+    },
+    {
+      "path": "benchmarks/locked/gmail_000.yaml",
+      "bytes": 710,
+      "sha256": "42e998a5fe256c0374e6b95aa0d2383fbaef6d5fd6929419459da758f2d8e0bd"
+    },
+    {
+      "path": "benchmarks/locked/gmail_001.yaml",
+      "bytes": 710,
+      "sha256": "5b738e906e0223a2583af9537ff0d552c37bbe2779df098c2068e10dddda0eb2"
+    },
+    {
+      "path": "benchmarks/locked/gmail_002.yaml",
+      "bytes": 710,
+      "sha256": "ce7f3060c10b3ee9a580e3dd8b8ddc46c78281480d035d48bc5f6921f3b60c8f"
+    },
+    {
+      "path": "benchmarks/locked/gmail_003.yaml",
+      "bytes": 710,
+      "sha256": "3e073f2d3a72cb6e1ac9a92b1ddf84d3d8cae116d8e226388bca41ccc6175eb2"
+    },
+    {
+      "path": "benchmarks/locked/gmail_004.yaml",
+      "bytes": 710,
+      "sha256": "3f514c0d79e3e63e398d3f049d798ef30a5f830bd36b9fc553367a4b9da85099"
+    },
+    {
+      "path": "benchmarks/locked/gmail_005.yaml",
+      "bytes": 710,
+      "sha256": "000c26e1f037d0b2d8f41af38eb2d6018d057d0f7db60f7cad4bc03bc9243893"
+    },
+    {
+      "path": "benchmarks/locked/gmail_006.yaml",
+      "bytes": 710,
+      "sha256": "e7b9700a01db2e06f4a43cf0ef86ba1e4f52837e25883efbae49328ed331e887"
+    },
+    {
+      "path": "benchmarks/locked/gmail_007.yaml",
+      "bytes": 710,
+      "sha256": "e2838d0b2e759e52a93ea940ba05888538e53e1c6688e86c4380e0427d2f9e62"
+    },
+    {
+      "path": "benchmarks/locked/gmail_008.yaml",
+      "bytes": 710,
+      "sha256": "ab0a60ef9cff4dc0aceea530b4f761b20291409caa08101bc90ff21afed39d3a"
+    },
+    {
+      "path": "benchmarks/locked/gmail_009.yaml",
+      "bytes": 710,
+      "sha256": "284afcfb7caa6785228cde7fe5414155b562d8789246ec989af2344fcc68709f"
+    },
+    {
+      "path": "benchmarks/locked/gmail_010.yaml",
+      "bytes": 713,
+      "sha256": "3c60222397402df8dfb8a2a108b16d61953fec9339abb4cc3c39897fcbf25fc9"
+    },
+    {
+      "path": "benchmarks/locked/gmail_011.yaml",
+      "bytes": 713,
+      "sha256": "01dc26c2fda4810ab05802b4edab4bc2e6fab379124887e83389a27d366afa80"
+    },
+    {
+      "path": "benchmarks/locked/gmail_012.yaml",
+      "bytes": 713,
+      "sha256": "9a1c587c58d8b3315ae971e73e23a38f30820dcb7057fd3471ebe5d60756115a"
+    },
+    {
+      "path": "benchmarks/locked/gmail_013.yaml",
+      "bytes": 713,
+      "sha256": "48aaae065a0e8c7a1c7c30eb9501b380b7b7a7afed514e9aa1b8337675579434"
+    },
+    {
+      "path": "benchmarks/locked/gmail_014.yaml",
+      "bytes": 713,
+      "sha256": "bb77e27ce793388184c464aacd964483369f3712561f47c1a9ade3b1144c4979"
+    },
+    {
+      "path": "benchmarks/locked/gmail_015.yaml",
+      "bytes": 713,
+      "sha256": "e466edd94e92a26914d6c9ca96c7ca6242e2beffcc234a59e62acd967b18f607"
+    },
+    {
+      "path": "benchmarks/locked/gmail_016.yaml",
+      "bytes": 713,
+      "sha256": "f279960b78851a4db3bd6eda9ca3591594c84bc6405158da4fcf0780dc43535f"
+    },
+    {
+      "path": "benchmarks/locked/gmail_017.yaml",
+      "bytes": 713,
+      "sha256": "84fed159dd073f86c0ba5a25018002adaec08dbb6bafac25a1e1247f7e58edb0"
+    },
+    {
+      "path": "benchmarks/locked/gmail_018.yaml",
+      "bytes": 713,
+      "sha256": "d31330e38da5b269319d7343449a50862423ea41ebc73ff499eba5bdf7a2e725"
+    },
+    {
+      "path": "benchmarks/locked/gmail_019.yaml",
+      "bytes": 713,
+      "sha256": "c1c972f292c4bbb954d17204d30829f59a3f1eb7a835fcbbb853d46ce23deef9"
+    },
+    {
+      "path": "benchmarks/locked/gmail_020.yaml",
+      "bytes": 713,
+      "sha256": "cbcb2336c27a82a0f1e93b2b99190532a8c338f4ba2847af06afe6e9e5321533"
+    },
+    {
+      "path": "benchmarks/locked/gmail_021.yaml",
+      "bytes": 713,
+      "sha256": "f8d6f3911fb92e1c53f97df9d6f6c5a7a177a5ea7503362943daf9394d9b3cd9"
+    },
+    {
+      "path": "benchmarks/locked/gmail_022.yaml",
+      "bytes": 713,
+      "sha256": "1d71ee527225d63ea464610cc41c219a0a53c7db0fd23a147728f43df3e4bfb3"
+    },
+    {
+      "path": "benchmarks/locked/gmail_023.yaml",
+      "bytes": 713,
+      "sha256": "86b2f92c134f985c9eca72a33276b439f0e4941047fb2319083b094667bb75e7"
+    },
+    {
+      "path": "benchmarks/locked/gmail_024.yaml",
+      "bytes": 713,
+      "sha256": "63c8f65aae6d4fa8f15bf47613382eb09410626df4596efb527f9bdef312619a"
+    },
+    {
+      "path": "benchmarks/locked/gmail_025.yaml",
+      "bytes": 713,
+      "sha256": "6c44a52902bd4edd166b7b09cefda9cbd5020b19ee6181b38fa978e124591f05"
+    },
+    {
+      "path": "benchmarks/locked/gmail_026.yaml",
+      "bytes": 713,
+      "sha256": "d8ca6ba19cf0fd9ed4ad86a2db909d1ef3ef9b340cf217751afdaff5ae15e14c"
+    },
+    {
+      "path": "benchmarks/locked/gmail_027.yaml",
+      "bytes": 713,
+      "sha256": "c46b8374a02585b28ad209701fadd1a45c97ac60fa8349117c425398d43387c5"
+    },
+    {
+      "path": "benchmarks/locked/gmail_028.yaml",
+      "bytes": 713,
+      "sha256": "9656d5be1301130d3333615352146754b1f004abb0cbe1151c6345d05bdd37bb"
+    },
+    {
+      "path": "benchmarks/locked/gmail_029.yaml",
+      "bytes": 713,
+      "sha256": "b83923b3a4a8909cdda0c70943f4beca476296b0e121a5ff0bd11c108acc85ff"
+    },
+    {
+      "path": "benchmarks/locked/gmail_030.yaml",
+      "bytes": 713,
+      "sha256": "2aa7bf9652fb7451ef367d25367401cfe3ace130b0e5c8e04b96eede0b9e826b"
+    },
+    {
+      "path": "benchmarks/locked/gmail_031.yaml",
+      "bytes": 713,
+      "sha256": "6b312a82340c7ac6f746c0ae0faaf534e122b930d13aca220d6b19a0f6682a70"
+    },
+    {
+      "path": "benchmarks/locked/gmail_032.yaml",
+      "bytes": 713,
+      "sha256": "cc295e6e714dc29315293c147b69e985487c6613f87e984a8f57910d38c02d9a"
+    },
+    {
+      "path": "benchmarks/locked/gmail_033.yaml",
+      "bytes": 713,
+      "sha256": "079135028396d5836808696832aef6f2b938558fa77b5d3612b21832b2129f00"
+    },
+    {
+      "path": "benchmarks/locked/gmail_034.yaml",
+      "bytes": 713,
+      "sha256": "7bfb9da9f0c5fbdc109fd8d4b1a78a9e0b0292bffe6c0bb65a68914a055d191c"
+    },
+    {
+      "path": "benchmarks/locked/gmail_035.yaml",
+      "bytes": 713,
+      "sha256": "7f0078b6fbedc92673963f5b94f457c0257e2c9bffe8211be4fd301814b1dfcc"
+    },
+    {
+      "path": "benchmarks/locked/gmail_036.yaml",
+      "bytes": 713,
+      "sha256": "594124cd95c2e4d8343ffd85a1b5f55602517388beb7cfb4245f9a38a0596773"
+    },
+    {
+      "path": "benchmarks/locked/gmail_037.yaml",
+      "bytes": 713,
+      "sha256": "d36b0f84fd1657bfe6e3fb542bfce9c305400ee15ca9cbc8e7baffb0e8727735"
+    },
+    {
+      "path": "benchmarks/locked/gmail_038.yaml",
+      "bytes": 713,
+      "sha256": "27e98a96d77d0feef7f2736cd6665d4d3c84ba6ad9708ba8bf34efad66f8b2a7"
+    },
+    {
+      "path": "benchmarks/locked/gmail_039.yaml",
+      "bytes": 713,
+      "sha256": "0f1e18e921d14c1565b66c8d4219aa2245a4592e9300bb9f84fbdc326a5ee179"
+    },
+    {
+      "path": "benchmarks/locked/gmail_040.yaml",
+      "bytes": 713,
+      "sha256": "da417c6627c27d9e0344595bcffe74929f85a313d6140ab830f954896df6cee5"
+    },
+    {
+      "path": "benchmarks/locked/gmail_041.yaml",
+      "bytes": 713,
+      "sha256": "bcbfffb785f98567db3e80d6b2fa2170521316d0a3084ac9cd15e527b864c769"
+    },
+    {
+      "path": "benchmarks/locked/gmail_042.yaml",
+      "bytes": 713,
+      "sha256": "45051e8a6879177fb4af39f902dce7fc07a2c9c107b54efefe38002323ecea3e"
+    },
+    {
+      "path": "benchmarks/locked/gmail_043.yaml",
+      "bytes": 713,
+      "sha256": "33cb0ed0e61aa401995b7e0f50384214aac731a0223e73798f6f380a85467be2"
+    },
+    {
+      "path": "benchmarks/locked/gmail_044.yaml",
+      "bytes": 713,
+      "sha256": "09ad3662619cf60a34e3f7062b87f4f76d64aba6fb8d1b6bf0035d7925b1273c"
+    },
+    {
+      "path": "benchmarks/locked/gmail_045.yaml",
+      "bytes": 713,
+      "sha256": "3c8b6ce4cc871cd203c3f379591e129bf374ca6f41a4a3d52e87e73f63205225"
+    },
+    {
+      "path": "benchmarks/locked/gmail_046.yaml",
+      "bytes": 713,
+      "sha256": "14af651a0fc6359e14624c36620eb2a5f721d968bd9b5157a1c236b66b71b9d3"
+    },
+    {
+      "path": "benchmarks/locked/gmail_047.yaml",
+      "bytes": 713,
+      "sha256": "030012d67f9f78bf396d26363057878b05528a5853066e211c233fc46902de72"
+    },
+    {
+      "path": "benchmarks/locked/gmail_048.yaml",
+      "bytes": 713,
+      "sha256": "ea38621347e1692a8f4d29ab48028bf10995b02b85e739a0a0b41eb4dccf1dd1"
+    },
+    {
+      "path": "benchmarks/locked/gmail_049.yaml",
+      "bytes": 713,
+      "sha256": "536e0b6195c4605032354dd84e2e7aba05153c270195c4d64c26fa03ab6eaf87"
+    },
+    {
+      "path": "benchmarks/locked/gmail_050.yaml",
+      "bytes": 713,
+      "sha256": "fd6e700d92e3bee19268ee2ca9e110b30d78036faecd9c54ca6fe9e7f1556337"
+    },
+    {
+      "path": "benchmarks/locked/gmail_051.yaml",
+      "bytes": 713,
+      "sha256": "5e0bedfedbcadffb86457b6e3f19ac7b6a6247aa7a829ec211d014e56deefcae"
+    },
+    {
+      "path": "benchmarks/locked/gmail_052.yaml",
+      "bytes": 713,
+      "sha256": "3f8825eba885b9f85bdba5e213bd5b46fb4c5b149153a57f290d3093cc518ea2"
+    },
+    {
+      "path": "benchmarks/locked/gmail_053.yaml",
+      "bytes": 713,
+      "sha256": "fd18ff920d9cae1ba8c6432caec935d8c4df6968df556582471b1f043a22e95d"
+    },
+    {
+      "path": "benchmarks/locked/gmail_054.yaml",
+      "bytes": 713,
+      "sha256": "33f8d2d6feca5dda35ac29cb8c495aeef11fbcc167519d0349b8c778e87196ef"
+    },
+    {
+      "path": "benchmarks/locked/gmail_055.yaml",
+      "bytes": 713,
+      "sha256": "d7c577e7a01e30bc31714dabc1193f4d94f05deca87e90ce4fe1a38946b7a089"
+    },
+    {
+      "path": "benchmarks/locked/gmail_056.yaml",
+      "bytes": 713,
+      "sha256": "e9b31d242f71eabaaf6559d405707ae19505ec2257c5a6f24f52ecc45684ac7b"
+    },
+    {
+      "path": "benchmarks/locked/gmail_057.yaml",
+      "bytes": 713,
+      "sha256": "022bf4e2f4e6c3a1a2c360daa8ad5c91506cda095d806ff18c5972319fb8a554"
+    },
+    {
+      "path": "benchmarks/locked/gmail_058.yaml",
+      "bytes": 713,
+      "sha256": "7a65bbe2b1d8714d2771009b08684475e7e081ec80c1d482b13ada053560035b"
+    },
+    {
+      "path": "benchmarks/locked/gmail_059.yaml",
+      "bytes": 713,
+      "sha256": "dbade5909c08dad4a2ccedb93be999c31111093e7e0a9162fc932ebfe0442bbf"
+    },
+    {
+      "path": "benchmarks/locked/gmail_060.yaml",
+      "bytes": 713,
+      "sha256": "981a8429fcb8ac1462c3e11270ec6b038c15358eb0540d3465310f7a390be63d"
+    },
+    {
+      "path": "benchmarks/locked/gmail_061.yaml",
+      "bytes": 713,
+      "sha256": "df110e035e3e56e45f9c1af6b2d29a1756937450432b7fa2fa4ab0c52a644578"
+    },
+    {
+      "path": "benchmarks/locked/gmail_062.yaml",
+      "bytes": 713,
+      "sha256": "033f82f5b2cbecefba5a29cdddd6e1a78b9be7aa4c6a7e35e3d107c21ee85eee"
+    },
+    {
+      "path": "benchmarks/locked/gmail_063.yaml",
+      "bytes": 713,
+      "sha256": "319afc000fe8765ecc4a630f6fce53adf8402a9da8b1cd00b13b500e589dc0f5"
+    },
+    {
+      "path": "benchmarks/locked/gmail_064.yaml",
+      "bytes": 713,
+      "sha256": "54f974b3413e3bf6bdc30e8f953cc2b3152171a25fa5e289a66495f590fe22c1"
+    },
+    {
+      "path": "benchmarks/locked/gmail_065.yaml",
+      "bytes": 713,
+      "sha256": "467f0695fb909a237083dbd131ab2137bf98429723bc157c5edfdcd9b5b7dc0b"
+    },
+    {
+      "path": "benchmarks/locked/gmail_066.yaml",
+      "bytes": 713,
+      "sha256": "6c6ba36501a4672b5242a4242558a6be8fa524b477f93c57876ea1c3de06fa1d"
+    },
+    {
+      "path": "benchmarks/locked/gmail_067.yaml",
+      "bytes": 713,
+      "sha256": "aacd1b6e6b9ed3713703abcbec3c3273b0f7e7dd261fd7a5e39bebe1bfda6ee7"
+    },
+    {
+      "path": "benchmarks/locked/gmail_068.yaml",
+      "bytes": 713,
+      "sha256": "912a5483cc0325e3e28ce2a346775290df231ba7e941cbcb3d5a30e760d74428"
+    },
+    {
+      "path": "benchmarks/locked/gmail_069.yaml",
+      "bytes": 713,
+      "sha256": "96e4a4570e7e49f7cde688c5bfe4543c01f60c2f151617dfe53467b26f67596b"
+    },
+    {
+      "path": "benchmarks/locked/gmail_070.yaml",
+      "bytes": 713,
+      "sha256": "c32b1dbd0d86aaecfc259ed049affd2df5c9d50f1261679a55ec0920fd8f51e2"
+    },
+    {
+      "path": "benchmarks/locked/gmail_071.yaml",
+      "bytes": 713,
+      "sha256": "1568d11c88e9be22a6fcf0ee5cfbc117d8e64874cb646494d61c2055b6f795c5"
+    },
+    {
+      "path": "benchmarks/locked/gmail_072.yaml",
+      "bytes": 713,
+      "sha256": "2179445760a56f4e69c9e920953f1b5e28b7522e167fcf8f80e900bea6bb2dd3"
+    },
+    {
+      "path": "benchmarks/locked/gmail_073.yaml",
+      "bytes": 713,
+      "sha256": "1880016bc0608104c529a1afe46530762176868e3220a0ae0b341f2adfd5c786"
+    },
+    {
+      "path": "benchmarks/locked/gmail_074.yaml",
+      "bytes": 713,
+      "sha256": "e1fe59fce18684a4a8bc460335cce233d1a95d2942b6a1135dec8031f4c07496"
+    },
+    {
+      "path": "benchmarks/locked/gmail_075.yaml",
+      "bytes": 713,
+      "sha256": "f91822f4041ed788060e213c3658066be680ecdd94bb328a96976a7bf2f34c21"
+    },
+    {
+      "path": "benchmarks/locked/gmail_076.yaml",
+      "bytes": 713,
+      "sha256": "74757a0eb67756b4dee65edd199faeaedf9d62483812f03b13b32983ee7598b7"
+    },
+    {
+      "path": "benchmarks/locked/gmail_077.yaml",
+      "bytes": 713,
+      "sha256": "b3cc0358343eb338039fa0f504b40897177a40878d8f4c1e98b6d119d50313dc"
+    },
+    {
+      "path": "benchmarks/locked/gmail_078.yaml",
+      "bytes": 713,
+      "sha256": "bbf117101aac713e1192f849f8cbd9ec8ec5868883be529ed2a2d3239327371f"
+    },
+    {
+      "path": "benchmarks/locked/gmail_079.yaml",
+      "bytes": 713,
+      "sha256": "9523bb12a037cdac269307a229d3816d280a4adab998905e8a20736aecff92fe"
+    },
+    {
+      "path": "benchmarks/locked/gmail_080.yaml",
+      "bytes": 713,
+      "sha256": "9c2b08895ff90de2b8dee8c7ee2af9d9eeaf251ebfd61b24901e6f69d2c4b74e"
+    },
+    {
+      "path": "benchmarks/locked/gmail_081.yaml",
+      "bytes": 713,
+      "sha256": "8d70130b86e772c22b81c96561518224eac7328d4296948b44081a62666e9712"
+    },
+    {
+      "path": "benchmarks/locked/gmail_082.yaml",
+      "bytes": 713,
+      "sha256": "803e2f69f08f03fb476f615c91d107beafd9133e9527eafc1738699eb0ded794"
+    },
+    {
+      "path": "benchmarks/locked/gmail_083.yaml",
+      "bytes": 713,
+      "sha256": "4394f5b252d3c3ce8a6c3f80eba89f79aeb75924fc02ba77a8c1d8d01f9fc807"
+    },
+    {
+      "path": "benchmarks/locked/gmail_084.yaml",
+      "bytes": 713,
+      "sha256": "13228ac0aaacf0e37b7b698006ea75a512e6545d4cf244793faa753b07d26d6b"
+    },
+    {
+      "path": "benchmarks/locked/gmail_085.yaml",
+      "bytes": 713,
+      "sha256": "db933b7a9fb10090640c5fe88b0eefaefbc6287bd2a3cf8d454570fc237de53e"
+    },
+    {
+      "path": "benchmarks/locked/gmail_086.yaml",
+      "bytes": 713,
+      "sha256": "4403c60c5244ac3948bfb5cb7d6a2252d4360d3308e836cd1a21a2c568b73e84"
+    },
+    {
+      "path": "benchmarks/locked/gmail_087.yaml",
+      "bytes": 713,
+      "sha256": "9e2315528f9d1502a15db39a4dbf08091f81d312a1c6e8bfd6f8a2f6b0904e31"
+    },
+    {
+      "path": "benchmarks/locked/gmail_088.yaml",
+      "bytes": 713,
+      "sha256": "4c357f3e2b49862f18a9e5167a437d25f5360093f6f028e028b0064ce0afb2d5"
+    },
+    {
+      "path": "benchmarks/locked/gmail_089.yaml",
+      "bytes": 713,
+      "sha256": "83c82fe8d20e6957cb9dc127ec9a7bfa70f8519ea232d6546f3733332e7be978"
+    },
+    {
+      "path": "benchmarks/locked/gmail_090.yaml",
+      "bytes": 713,
+      "sha256": "8940699895d1be4cdf3186f21de0f2588f2a508c56f19834bd44e5f119a65930"
+    },
+    {
+      "path": "benchmarks/locked/gmail_091.yaml",
+      "bytes": 713,
+      "sha256": "b463539162f633106109891a69e878a6c0b6bee5a0416e3518deff93d29d7bcb"
+    },
+    {
+      "path": "benchmarks/locked/gmail_092.yaml",
+      "bytes": 713,
+      "sha256": "ec5bdbb363e146423ead860efd0553bc57c92305360cd90c7393127d88ffd043"
+    },
+    {
+      "path": "benchmarks/locked/gmail_093.yaml",
+      "bytes": 713,
+      "sha256": "f5b62317e20f66755d53fe3a646fae569d2249f7490f39f46801b1a827628310"
+    },
+    {
+      "path": "benchmarks/locked/gmail_094.yaml",
+      "bytes": 713,
+      "sha256": "d74028a8b114d77aab596c00eaf08524a878bda443831b29c9a8a66fa2107869"
+    },
+    {
+      "path": "benchmarks/locked/gmail_095.yaml",
+      "bytes": 713,
+      "sha256": "0c42bc83fae0ea78750e9fa6052e5d7706293cec197f30d9a2d9ef5922af3999"
+    },
+    {
+      "path": "benchmarks/locked/gmail_096.yaml",
+      "bytes": 713,
+      "sha256": "05f1b95354343d3b392c0d7aa3e97f940fc137e4d7f8cf1eb8200fd101d65fe0"
+    },
+    {
+      "path": "benchmarks/locked/gmail_097.yaml",
+      "bytes": 713,
+      "sha256": "489ae0dbba78a4518899264e602e9325ed233da4a1238d41f8d75845fca0e986"
+    },
+    {
+      "path": "benchmarks/locked/gmail_098.yaml",
+      "bytes": 713,
+      "sha256": "94ef1b559a0caf3c5cb4f949308044ae974c3e9eec68be140a1aef4df6467d9f"
+    },
+    {
+      "path": "benchmarks/locked/gmail_099.yaml",
+      "bytes": 713,
+      "sha256": "1338f822f1cdf0351ee76628d9069742b1cf0b500caae82099727335124ecab2"
+    },
+    {
+      "path": "benchmarks/locked/line_000.yaml",
+      "bytes": 1215,
+      "sha256": "6dcfc7f6908e1aa28a992e3aa00d5e4ca44711f5d51631868dffc0fc19e40ea7"
+    },
+    {
+      "path": "benchmarks/locked/line_001.yaml",
+      "bytes": 1215,
+      "sha256": "b30dc3ac632db2c077460b61e43ca9f442ec479dd019b421e6b5473bc604824c"
+    },
+    {
+      "path": "benchmarks/locked/line_002.yaml",
+      "bytes": 1215,
+      "sha256": "3ffa9932a59b3a00d4858de7189c89f646da5c86ca73e81ab920700f7fed27a4"
+    },
+    {
+      "path": "benchmarks/locked/line_003.yaml",
+      "bytes": 1215,
+      "sha256": "89a6c29f23df72b73a646c404263d32b28d3fc432cc4490218cd2c6c45660ee4"
+    },
+    {
+      "path": "benchmarks/locked/line_004.yaml",
+      "bytes": 1215,
+      "sha256": "4aa408e3fa2447055dec54991ad2204dae4f32a42c1f5c80d84c2a6108ed1c6b"
+    },
+    {
+      "path": "benchmarks/locked/line_005.yaml",
+      "bytes": 1215,
+      "sha256": "cea8d5d902f6fc816641478ea23584ce404421a2512e28ee4ce7665c5b1e53ec"
+    },
+    {
+      "path": "benchmarks/locked/line_006.yaml",
+      "bytes": 1215,
+      "sha256": "262a5cf764f5606f28ccf958ed62d3afe8a0ac99b74622d657fcb8e1bb857de0"
+    },
+    {
+      "path": "benchmarks/locked/line_007.yaml",
+      "bytes": 1215,
+      "sha256": "a67987b310199b7964a1f445f0b8fb1de94d900ce7c8a3add0df3609c3705e8d"
+    },
+    {
+      "path": "benchmarks/locked/line_008.yaml",
+      "bytes": 1215,
+      "sha256": "076ffbd16aa5dda65af2bf8bb28f67ccb2a085872bf3bddafeb0a378137cea6e"
+    },
+    {
+      "path": "benchmarks/locked/line_009.yaml",
+      "bytes": 1215,
+      "sha256": "5f4e0b5ba4ed7034faf3e58275a9c9efc2a5b1cfe44e7f8268e7677e4a551e6c"
+    },
+    {
+      "path": "benchmarks/locked/line_010.yaml",
+      "bytes": 1223,
+      "sha256": "42a115b746d69d2ed5958a3a694097eed9c8ce9e258a0f0a5c721846c767c0d7"
+    },
+    {
+      "path": "benchmarks/locked/line_011.yaml",
+      "bytes": 1223,
+      "sha256": "ea80a65b2f615a254389ef5654af49b8f4aeb688d4371c2b5cbd08e3c84da7ff"
+    },
+    {
+      "path": "benchmarks/locked/line_012.yaml",
+      "bytes": 1223,
+      "sha256": "592b085bf2f362b0684169cc02012c0969a7423332a53668a09f7f57cf228b2a"
+    },
+    {
+      "path": "benchmarks/locked/line_013.yaml",
+      "bytes": 1223,
+      "sha256": "40d8f708f43d0eb7d1d81d565cd0ec693b7c6cec241fe1afddad7ab32388c6da"
+    },
+    {
+      "path": "benchmarks/locked/line_014.yaml",
+      "bytes": 1223,
+      "sha256": "8e0c1033a1f30b081b85adde6faab2a81af482eaf98cf4a4d2ce49fabc0efb01"
+    },
+    {
+      "path": "benchmarks/locked/line_015.yaml",
+      "bytes": 1223,
+      "sha256": "4532b218804eeb6bde3d6ddfbdc3082c49eaba16014cf38b804350290d86f509"
+    },
+    {
+      "path": "benchmarks/locked/line_016.yaml",
+      "bytes": 1223,
+      "sha256": "9a08c7d8927d4dba4318e3bb5014b96946abffe20c75484027df0c2dc9dab08e"
+    },
+    {
+      "path": "benchmarks/locked/line_017.yaml",
+      "bytes": 1223,
+      "sha256": "e7d093ac8f063267bef1043adf994401bdc540541d10250118b2b81a7fbab9d4"
+    },
+    {
+      "path": "benchmarks/locked/line_018.yaml",
+      "bytes": 1223,
+      "sha256": "c2a16ee0ded6401809b5fbf6c36fcb099b3edf6e734b98ef0338c0d10c1f2333"
+    },
+    {
+      "path": "benchmarks/locked/line_019.yaml",
+      "bytes": 1223,
+      "sha256": "d4fdd80098a88d48a22e209c7b00867b7b97ab0dd6b5b317de499b14f056b4fc"
+    },
+    {
+      "path": "benchmarks/locked/line_020.yaml",
+      "bytes": 1223,
+      "sha256": "d1d4137a3516d99ae0bec1398792981bd400c235a99d2c7f01b3c903127f5d4d"
+    },
+    {
+      "path": "benchmarks/locked/line_021.yaml",
+      "bytes": 1223,
+      "sha256": "e674c0ebb88f61c27eb287d6b3171fbc472cca9698818e89f0d667a38fb58278"
+    },
+    {
+      "path": "benchmarks/locked/line_022.yaml",
+      "bytes": 1223,
+      "sha256": "1f490333921bfb224376fa02bc99d3c79731c3fddcaaab3f2f4ea4f8a1b3d133"
+    },
+    {
+      "path": "benchmarks/locked/line_023.yaml",
+      "bytes": 1223,
+      "sha256": "ba90e411ca383f46ff02688c7b7d260b5fbd3980fe0a4d15073a2af684e9a79b"
+    },
+    {
+      "path": "benchmarks/locked/line_024.yaml",
+      "bytes": 1223,
+      "sha256": "a82945cf94ce85f182749ac61b7b2cb730f9115c51ff3004ab8c11b3cadaaf0f"
+    },
+    {
+      "path": "benchmarks/locked/line_025.yaml",
+      "bytes": 1223,
+      "sha256": "c18b79c1129d4d464c69902ca728d9837e46d7fcaa2f546a913e8f44c20a8df7"
+    },
+    {
+      "path": "benchmarks/locked/line_026.yaml",
+      "bytes": 1223,
+      "sha256": "7c57dafc2e5e52b5d96f51e249252acdfb576baedd947f9741f946a9abcdf8ed"
+    },
+    {
+      "path": "benchmarks/locked/line_027.yaml",
+      "bytes": 1223,
+      "sha256": "73ec0d9123b4b349034137f2dcd5912edee6902538a8a1c0352886ca28545e56"
+    },
+    {
+      "path": "benchmarks/locked/line_028.yaml",
+      "bytes": 1223,
+      "sha256": "484ff2a57c233f7379c3367fa0c4d9a239f6cdeeb6c344235ad954c833fe2bda"
+    },
+    {
+      "path": "benchmarks/locked/line_029.yaml",
+      "bytes": 1223,
+      "sha256": "a9f0b6df4378eee486d77520b0297ca373d7a4da7495021dfbdb363cbf96d608"
+    },
+    {
+      "path": "benchmarks/locked/line_030.yaml",
+      "bytes": 1223,
+      "sha256": "15d7c63bd8ab2b2ada1ffc5ac0745bab7348f537f62a58581d18f2e9c9d99885"
+    },
+    {
+      "path": "benchmarks/locked/line_031.yaml",
+      "bytes": 1223,
+      "sha256": "b2340200f9b3fb7a957e4ac6586bd8f34e18d5d5c0309b8140149e15c2e9a836"
+    },
+    {
+      "path": "benchmarks/locked/line_032.yaml",
+      "bytes": 1223,
+      "sha256": "572aef75ee0999e9b43744c0ad66e44777d080d52a5df73e03afeff27a620347"
+    },
+    {
+      "path": "benchmarks/locked/line_033.yaml",
+      "bytes": 1223,
+      "sha256": "ed4d1292efbb5a901ea3af8b67cc67ebb8774f63e44725a577a53433936dd7b9"
+    },
+    {
+      "path": "benchmarks/locked/line_034.yaml",
+      "bytes": 1223,
+      "sha256": "3f4b0346db3c6e0a071638f14d08771b5d1943897795d8fd3065dbc8c53af127"
+    },
+    {
+      "path": "benchmarks/locked/line_035.yaml",
+      "bytes": 1223,
+      "sha256": "dd582010014cb28711b12481c6c1f7fe64d59b2b9a995e14569ac2b2b0ca0b15"
+    },
+    {
+      "path": "benchmarks/locked/line_036.yaml",
+      "bytes": 1223,
+      "sha256": "157fc8e9836430f8914f7dc342b78c06556882cf90c2434e0674f22d5dfeb704"
+    },
+    {
+      "path": "benchmarks/locked/line_037.yaml",
+      "bytes": 1223,
+      "sha256": "d693df2e7b1ab5f962bb9c3c3df3d9a9340700943fbc4674fc63834fcc33d179"
+    },
+    {
+      "path": "benchmarks/locked/line_038.yaml",
+      "bytes": 1223,
+      "sha256": "b7e566df1a4ed52d56b37574f2347a4a10f6aed7c4eff0679ba94040a37018ff"
+    },
+    {
+      "path": "benchmarks/locked/line_039.yaml",
+      "bytes": 1223,
+      "sha256": "07ff4369f8b440af19597c8b1d38f2c5d358deb1e6f17aeae6c8f96ed44b3664"
+    },
+    {
+      "path": "benchmarks/locked/line_040.yaml",
+      "bytes": 1223,
+      "sha256": "f2c18748f3a03c2fd9d3d7fd3eb8fbafdd62fcaead486c724dae3147a0c7e6b6"
+    },
+    {
+      "path": "benchmarks/locked/line_041.yaml",
+      "bytes": 1223,
+      "sha256": "262b4c8fa693f9e89b0d227af95ba806237233bff48730a836183f6c321e1c37"
+    },
+    {
+      "path": "benchmarks/locked/line_042.yaml",
+      "bytes": 1223,
+      "sha256": "1c218d15278a5ecdb8493228e2abe374306f52776f93e77bd27972ce4f25fc9f"
+    },
+    {
+      "path": "benchmarks/locked/line_043.yaml",
+      "bytes": 1223,
+      "sha256": "79f30c0334a3482d69c23e2ee2c0016d0597e9104ef30acbd4996a8631da4903"
+    },
+    {
+      "path": "benchmarks/locked/line_044.yaml",
+      "bytes": 1223,
+      "sha256": "286fcb5b7feefe9539020e4112641fc5e432b6608b63ffc642b3e86f9faf47ff"
+    },
+    {
+      "path": "benchmarks/locked/line_045.yaml",
+      "bytes": 1223,
+      "sha256": "4cee1c80653f47ee883546a84bf1b5b003784345e5ef1fe55cdb0c3eb11592b5"
+    },
+    {
+      "path": "benchmarks/locked/line_046.yaml",
+      "bytes": 1223,
+      "sha256": "74ae662ac163e6ea81ee1a0f741e30c492d86919199af491b2d5369108be68cc"
+    },
+    {
+      "path": "benchmarks/locked/line_047.yaml",
+      "bytes": 1223,
+      "sha256": "9f40b4e6c4ba600c1595b674d1ca65520df5629458fb2f9e0179326aac0bda15"
+    },
+    {
+      "path": "benchmarks/locked/line_048.yaml",
+      "bytes": 1223,
+      "sha256": "f0a11349fc882a8913342ccf693c090e0ef355167b22fe238b1aec4cdf28a5af"
+    },
+    {
+      "path": "benchmarks/locked/line_049.yaml",
+      "bytes": 1223,
+      "sha256": "a96c6a99f589f695c92f3f01ff477883da74310ba2d211ae2bba89b909eb6956"
+    },
+    {
+      "path": "benchmarks/locked/line_050.yaml",
+      "bytes": 1223,
+      "sha256": "6a8ac6d144eefe9e6f36aecdc1f1c2462dffea83be4138d2f31a039934da5581"
+    },
+    {
+      "path": "benchmarks/locked/line_051.yaml",
+      "bytes": 1223,
+      "sha256": "55edfdf25c6c85725261b6256b4b9e955932b157f6fcbb93d1ed5354bf976274"
+    },
+    {
+      "path": "benchmarks/locked/line_052.yaml",
+      "bytes": 1223,
+      "sha256": "5ecff81ad0dfc89cf21f33fa37164b0438d3bfdf4766bec2c3b4c67cc082dca7"
+    },
+    {
+      "path": "benchmarks/locked/line_053.yaml",
+      "bytes": 1223,
+      "sha256": "7f0a2810b000a779b235d3b96d5aa1b5af3fce8f126f5f1a42d6c33e3d9218b4"
+    },
+    {
+      "path": "benchmarks/locked/line_054.yaml",
+      "bytes": 1223,
+      "sha256": "7bd4441a4c534ad0915a5da40fe18f430c5c1196495960166da50fabd214cd04"
+    },
+    {
+      "path": "benchmarks/locked/line_055.yaml",
+      "bytes": 1223,
+      "sha256": "50d31df3ece8756edb63071a866a166c913841f044b610f48d55a7e696416961"
+    },
+    {
+      "path": "benchmarks/locked/line_056.yaml",
+      "bytes": 1223,
+      "sha256": "b2eb7cf6e451d49e4ac323a0a4872621cf604128f362217fef1429af2c6cc05d"
+    },
+    {
+      "path": "benchmarks/locked/line_057.yaml",
+      "bytes": 1223,
+      "sha256": "dafe5e140132408f4c96da13fef50e2248760da8da499a4216e9862beb73f096"
+    },
+    {
+      "path": "benchmarks/locked/line_058.yaml",
+      "bytes": 1223,
+      "sha256": "5e2e4bff5937f52d1c4df077f7aadc63a85bb91742c968a4cf099a216b687b2e"
+    },
+    {
+      "path": "benchmarks/locked/line_059.yaml",
+      "bytes": 1223,
+      "sha256": "1f09b60c6e133042daa4713958d086347266ea6f4d0e0a175f1870845b348aa6"
+    },
+    {
+      "path": "benchmarks/locked/line_060.yaml",
+      "bytes": 1223,
+      "sha256": "26b0f97ba2b4d6738e72bef20c54c1c184a6ed204d7202b7d3d0ac255cf40c8f"
+    },
+    {
+      "path": "benchmarks/locked/line_061.yaml",
+      "bytes": 1223,
+      "sha256": "b2286644b97c28311d542dbcb1f118e84dec92d29af262f28418432185cd1ae2"
+    },
+    {
+      "path": "benchmarks/locked/line_062.yaml",
+      "bytes": 1223,
+      "sha256": "948c95830b12f85c75b6174d3687f1c308c8ab0dac38b306df660ce53e554919"
+    },
+    {
+      "path": "benchmarks/locked/line_063.yaml",
+      "bytes": 1223,
+      "sha256": "f47f563d561be28f579fb52e1dce548c71e03e41a94cbda2ba1a07aace5fa02c"
+    },
+    {
+      "path": "benchmarks/locked/line_064.yaml",
+      "bytes": 1223,
+      "sha256": "e3f5601ac62d3081e720fb2eef1ef2cd985c28aa8ba3674275521f1d667ebc20"
+    },
+    {
+      "path": "benchmarks/locked/line_065.yaml",
+      "bytes": 1223,
+      "sha256": "a0d65aea03a30828bdda5af23458b804c488a5e4c13a0be4dad184517af7903f"
+    },
+    {
+      "path": "benchmarks/locked/line_066.yaml",
+      "bytes": 1223,
+      "sha256": "c0b4667390b3074898aab467f4f99cdf6c978e787e280de755129f591079fe0a"
+    },
+    {
+      "path": "benchmarks/locked/line_067.yaml",
+      "bytes": 1223,
+      "sha256": "d6a0cf00c2e5dade97627e76d0d36685f941c54cdd6d1d9bca5c99fe8450211d"
+    },
+    {
+      "path": "benchmarks/locked/line_068.yaml",
+      "bytes": 1223,
+      "sha256": "2a61e164ce847254fe9a28466ec07e496c20793598315e4bce9d5a1148453096"
+    },
+    {
+      "path": "benchmarks/locked/line_069.yaml",
+      "bytes": 1223,
+      "sha256": "85c44db68eae71533ad42ebfaa1787f6c0d8451f2de926443a9efc249dd757b0"
+    },
+    {
+      "path": "benchmarks/locked/line_070.yaml",
+      "bytes": 1223,
+      "sha256": "ef1a62c4846c4bda4f4b2605ca25b87ab4492246bd8ce83875899ea685344e18"
+    },
+    {
+      "path": "benchmarks/locked/line_071.yaml",
+      "bytes": 1223,
+      "sha256": "5406c286c486ee76566d4011b52199d7c516c865c46965f2cda7e447634e8c6f"
+    },
+    {
+      "path": "benchmarks/locked/line_072.yaml",
+      "bytes": 1223,
+      "sha256": "b312a7d83fbc07d92d8aef0423e5556d6127a001f87cd8a25b4f25ec84b25b54"
+    },
+    {
+      "path": "benchmarks/locked/line_073.yaml",
+      "bytes": 1223,
+      "sha256": "eea0c49e7f46451275c18d53c11a517df9e6df7822c114a4c0d8249d739368ef"
+    },
+    {
+      "path": "benchmarks/locked/line_074.yaml",
+      "bytes": 1223,
+      "sha256": "53f927175a8c8a198a766144e43e3511ccf04f15ad32dcfabfbfe0be949c6594"
+    },
+    {
+      "path": "benchmarks/locked/line_075.yaml",
+      "bytes": 1223,
+      "sha256": "4158c72fb4da0b8b58a4ec52c311b7e06cdca5a2c2dd64b1a68387642a15e049"
+    },
+    {
+      "path": "benchmarks/locked/line_076.yaml",
+      "bytes": 1223,
+      "sha256": "8c2b37a8b1bd9e4975baa135cac7faabe9abbddedbd829e3f763fcb7c6102c30"
+    },
+    {
+      "path": "benchmarks/locked/line_077.yaml",
+      "bytes": 1223,
+      "sha256": "2fadc6ac00b52887444e2728c17ee8ed78c59406ab33f341876202978b31ef86"
+    },
+    {
+      "path": "benchmarks/locked/line_078.yaml",
+      "bytes": 1223,
+      "sha256": "e57bd0645989cc88a55d7550995d0c0870560382648e968d05ccf116a887c5ac"
+    },
+    {
+      "path": "benchmarks/locked/line_079.yaml",
+      "bytes": 1223,
+      "sha256": "f5e79647ddb78b6e449e12f1e3f4cfd63b1ae494153f0b28b9eb445d84e5dc39"
+    },
+    {
+      "path": "benchmarks/locked/line_080.yaml",
+      "bytes": 1223,
+      "sha256": "baf5a9520ba9e5ec7babb06ad1011f9b89c82c1b22eb43e3624b4cab0640856c"
+    },
+    {
+      "path": "benchmarks/locked/line_081.yaml",
+      "bytes": 1223,
+      "sha256": "3fd5c8c5fb2da5c7b6226f035f81730f1139e113a38fa931fb8e24114225e8b5"
+    },
+    {
+      "path": "benchmarks/locked/line_082.yaml",
+      "bytes": 1223,
+      "sha256": "39a2c3fcdcf6d3c95bf05e244a536c40f1c02395d3f67e7bc70da85f641bbed6"
+    },
+    {
+      "path": "benchmarks/locked/line_083.yaml",
+      "bytes": 1223,
+      "sha256": "d8de2f41b8b70f3a61bbad327275967eb68084d7d5cb7c05bb20ea1e05875ba7"
+    },
+    {
+      "path": "benchmarks/locked/line_084.yaml",
+      "bytes": 1223,
+      "sha256": "1213f31286271218e30dded946c0a9862d660877ccd9a5decfcbe273a2c36aa0"
+    },
+    {
+      "path": "benchmarks/locked/line_085.yaml",
+      "bytes": 1223,
+      "sha256": "d0ed1938d297a9b2e37471d4bd2e43be3ab16ebea1a5e7ef3e218f87be698b3f"
+    },
+    {
+      "path": "benchmarks/locked/line_086.yaml",
+      "bytes": 1223,
+      "sha256": "20565a365c949e3a1888b5445f3d5e14bb6fa66c7ba7d89332dfd33e732c6a4a"
+    },
+    {
+      "path": "benchmarks/locked/line_087.yaml",
+      "bytes": 1223,
+      "sha256": "291d7daa59434949bf74a7711fb89dec58546f6253d2bcfef8f6ca5e90167c7e"
+    },
+    {
+      "path": "benchmarks/locked/line_088.yaml",
+      "bytes": 1223,
+      "sha256": "ffebc5640705abfdf95dae651e97d79ed144e5d67a95811550721400a2776c72"
+    },
+    {
+      "path": "benchmarks/locked/line_089.yaml",
+      "bytes": 1223,
+      "sha256": "54b9daf468adcd39f09532f6da66e0945ccb6a0629bd23e5cc93785db88f5324"
+    },
+    {
+      "path": "benchmarks/locked/line_090.yaml",
+      "bytes": 1223,
+      "sha256": "72ddeef993bb23cd6440abb5cd6724e87d910745c1bba8260882e0ade4dfc724"
+    },
+    {
+      "path": "benchmarks/locked/line_091.yaml",
+      "bytes": 1223,
+      "sha256": "f82a7cbbb1bf9a9b59b0de6df5ab6905d07b2a600229c02bf24946e40fc8da85"
+    },
+    {
+      "path": "benchmarks/locked/line_092.yaml",
+      "bytes": 1223,
+      "sha256": "17c825adae63c1f433e6eaeb01d7b05f46b66f6d39f52a5da0044d4d2f87ea0e"
+    },
+    {
+      "path": "benchmarks/locked/line_093.yaml",
+      "bytes": 1223,
+      "sha256": "202ab6adb1c36c356ed2cebae2985f2119ce158839f57fce65cb43c07d649291"
+    },
+    {
+      "path": "benchmarks/locked/line_094.yaml",
+      "bytes": 1223,
+      "sha256": "7193d2c0afdacc0ec2fdd67afc7d390e79d6c4afdb51f0707d1b38635c135444"
+    },
+    {
+      "path": "benchmarks/locked/line_095.yaml",
+      "bytes": 1223,
+      "sha256": "6ed16b3dcb6268abcb24ec29d0e01bac0437fff7871238c8dc1843c473715d01"
+    },
+    {
+      "path": "benchmarks/locked/line_096.yaml",
+      "bytes": 1223,
+      "sha256": "c4eeb05c7fc4fbf9a23d5743c414793b7feff2287dd7ba2d72318a3dfdf272fb"
+    },
+    {
+      "path": "benchmarks/locked/line_097.yaml",
+      "bytes": 1223,
+      "sha256": "f7524c1585fb88927cc1fcee70b3cf06ea4be839e729157c794fd48cc1b92483"
+    },
+    {
+      "path": "benchmarks/locked/line_098.yaml",
+      "bytes": 1223,
+      "sha256": "c6f2c0b0bf37c1b95638794a968cb8f56ef956b58924377e52352d2ecec66dee"
+    },
+    {
+      "path": "benchmarks/locked/line_099.yaml",
+      "bytes": 1223,
+      "sha256": "33523609929c22ccd43a4b8356a5e2640cccd6112dc558c0dc36ff0e89718087"
+    },
+    {
+      "path": "benchmarks/locked/messenger_000.yaml",
+      "bytes": 758,
+      "sha256": "4a7f6b4f485e2801bee844af44bc69612436aa557bdc3586a0290f6a26e029fe"
+    },
+    {
+      "path": "benchmarks/locked/messenger_001.yaml",
+      "bytes": 758,
+      "sha256": "6ba07fef44dfad1edb5a08a9b9993c246f7d663e94209a70d1fe7e4dbfd767c6"
+    },
+    {
+      "path": "benchmarks/locked/messenger_002.yaml",
+      "bytes": 758,
+      "sha256": "79d83ec865e156f6a29f8a00992d907b9dcea14f5713ea2ddcc26b8778705fb6"
+    },
+    {
+      "path": "benchmarks/locked/messenger_003.yaml",
+      "bytes": 758,
+      "sha256": "ff98bc2626fa9165a716114e078a15a98e4a564948c214301db80ff7ced4e1b2"
+    },
+    {
+      "path": "benchmarks/locked/messenger_004.yaml",
+      "bytes": 758,
+      "sha256": "bb924d153deec04537e7bec2c80febb404ec42c5976bd4be244a106479805cf4"
+    },
+    {
+      "path": "benchmarks/locked/messenger_005.yaml",
+      "bytes": 758,
+      "sha256": "86558f15c507332d7f210ec3690f30c3d73558b42735052518d3f56a85783669"
+    },
+    {
+      "path": "benchmarks/locked/messenger_006.yaml",
+      "bytes": 758,
+      "sha256": "786c0605cbfb9dda5fa99b5a1f05e62a8ee6a1681a21bffe6faeb013545c84e9"
+    },
+    {
+      "path": "benchmarks/locked/messenger_007.yaml",
+      "bytes": 758,
+      "sha256": "02ac32f61913687c68575f5856e598e141e9e45f983dbf1362ce617a8087e480"
+    },
+    {
+      "path": "benchmarks/locked/messenger_008.yaml",
+      "bytes": 758,
+      "sha256": "3bb82b4f7e3132c194921b8e86c5b383f3311607e96bb00a6eb310d6fa4c661b"
+    },
+    {
+      "path": "benchmarks/locked/messenger_009.yaml",
+      "bytes": 758,
+      "sha256": "a9064c1d2bf4200294a742614e964c762c398b31d04558c029f141e734f26e0a"
+    },
+    {
+      "path": "benchmarks/locked/messenger_010.yaml",
+      "bytes": 762,
+      "sha256": "095e52299ef0b9c832e0791d7d99506942e0d4ef2cbf395750b16ab8fe09d2cc"
+    },
+    {
+      "path": "benchmarks/locked/messenger_011.yaml",
+      "bytes": 762,
+      "sha256": "a6ca9497608223e7b9a57235e2edb29300b1eebf3d915a0428ed9cb58aa4b796"
+    },
+    {
+      "path": "benchmarks/locked/messenger_012.yaml",
+      "bytes": 762,
+      "sha256": "70d99ff69e40418562a17c03f77fb496ed6ce10028286171a3151d585783cc1c"
+    },
+    {
+      "path": "benchmarks/locked/messenger_013.yaml",
+      "bytes": 762,
+      "sha256": "47cd585207a7f1f4ede62007505cc14535fa8cb16d93891669da3c0507d4dd95"
+    },
+    {
+      "path": "benchmarks/locked/messenger_014.yaml",
+      "bytes": 762,
+      "sha256": "f80a9c411bbccec5184140f0164b31e10194136b13df3e734411e944281d2aba"
+    },
+    {
+      "path": "benchmarks/locked/messenger_015.yaml",
+      "bytes": 762,
+      "sha256": "9deb7723b0b92ac1be1cf6343a871ef86d6d5a07454bd61cc473e9449465f85b"
+    },
+    {
+      "path": "benchmarks/locked/messenger_016.yaml",
+      "bytes": 762,
+      "sha256": "524cb1b3260080e713a452479fda714a97431f21ea7efdf81d4748c8194bb0c1"
+    },
+    {
+      "path": "benchmarks/locked/messenger_017.yaml",
+      "bytes": 762,
+      "sha256": "3a96a7333319b8f9cd7790f9018803a9df3bd2b03fc567048683975771ae5f67"
+    },
+    {
+      "path": "benchmarks/locked/messenger_018.yaml",
+      "bytes": 762,
+      "sha256": "1fb51cd05a1969ae4d4d8f3f9281d3e9abf3b2d715ef314a389504840e8ac8a4"
+    },
+    {
+      "path": "benchmarks/locked/messenger_019.yaml",
+      "bytes": 762,
+      "sha256": "055b4191c89ff4d7f7e4eee4bf1902eb5660923fc9c5c274d778e00a95835579"
+    },
+    {
+      "path": "benchmarks/locked/messenger_020.yaml",
+      "bytes": 762,
+      "sha256": "c09567e900da5fdf9e6944948733b8949eecbfdeecbbfee8de0c5f4cd25e6429"
+    },
+    {
+      "path": "benchmarks/locked/messenger_021.yaml",
+      "bytes": 762,
+      "sha256": "4a8e25ec28774750d93757172d6412279513bcd8525c7e72e635eb265e2f9ffd"
+    },
+    {
+      "path": "benchmarks/locked/messenger_022.yaml",
+      "bytes": 762,
+      "sha256": "e5ce29b6221bd4d0b34b016657b07c68557055e354f8ba525f7fc1d7263606f5"
+    },
+    {
+      "path": "benchmarks/locked/messenger_023.yaml",
+      "bytes": 762,
+      "sha256": "e3b0cd38aabf495693f8677ddab670e3d69120d591857da06fd026e0a142a9c6"
+    },
+    {
+      "path": "benchmarks/locked/messenger_024.yaml",
+      "bytes": 762,
+      "sha256": "39ce77a18dd48d630d95b68611f677d07732227a7e3e14a9970bb6fa84315b6d"
+    },
+    {
+      "path": "benchmarks/locked/messenger_025.yaml",
+      "bytes": 762,
+      "sha256": "eb552466b1f19985f12d54a043a8105ce79fa362c77726d777fcc2408b8f7d1d"
+    },
+    {
+      "path": "benchmarks/locked/messenger_026.yaml",
+      "bytes": 762,
+      "sha256": "dda3682aa0bf948e1ddc6809273bda07a9c6526b4ba6bb0ec597634479730bf2"
+    },
+    {
+      "path": "benchmarks/locked/messenger_027.yaml",
+      "bytes": 762,
+      "sha256": "508f66acc49efa3eb617cc173ffa06301f3e96a9fc8ed339fc4a96b5e0035993"
+    },
+    {
+      "path": "benchmarks/locked/messenger_028.yaml",
+      "bytes": 762,
+      "sha256": "acd0d9e32e05900a74d214999d987451f718535cb382e6a9690b71d56233c003"
+    },
+    {
+      "path": "benchmarks/locked/messenger_029.yaml",
+      "bytes": 762,
+      "sha256": "12ebcba4288a609c3759a5c6db802712abe85c383dbada98f486ca52e0e1ed79"
+    },
+    {
+      "path": "benchmarks/locked/messenger_030.yaml",
+      "bytes": 762,
+      "sha256": "877d16939bc0dedda62baadb35309bc22d739af727e70ffe34bcf5b86296d800"
+    },
+    {
+      "path": "benchmarks/locked/messenger_031.yaml",
+      "bytes": 762,
+      "sha256": "f2687065ccb70d28e5b724d0d33ac7667b7c8ffff04e925706bd797643762485"
+    },
+    {
+      "path": "benchmarks/locked/messenger_032.yaml",
+      "bytes": 762,
+      "sha256": "046ef59ac5003cb3d1b47a89e6006c9ab9695a400ae9b91691733037e5bfc34b"
+    },
+    {
+      "path": "benchmarks/locked/messenger_033.yaml",
+      "bytes": 762,
+      "sha256": "81ff93d2f98384994c77c3518fca81bd71d17658606de43dde69b1fedee786ba"
+    },
+    {
+      "path": "benchmarks/locked/messenger_034.yaml",
+      "bytes": 762,
+      "sha256": "59789d86060c96185d79cd0782a6e8c3f0f7863a95ddedc5449c0e799c2c3d2e"
+    },
+    {
+      "path": "benchmarks/locked/messenger_035.yaml",
+      "bytes": 762,
+      "sha256": "141265a5a444b311099ac27dc692feb318bac72a2865505b4b469f6120e2419d"
+    },
+    {
+      "path": "benchmarks/locked/messenger_036.yaml",
+      "bytes": 762,
+      "sha256": "e5ae0d937b5078057c45b5ef789028fc6681a2a8f43f96836aca6cc7df213051"
+    },
+    {
+      "path": "benchmarks/locked/messenger_037.yaml",
+      "bytes": 762,
+      "sha256": "a7514f34c124b2fe1bb8decfe49c1b4f7d3b516123d109f28b8ac672baf81be0"
+    },
+    {
+      "path": "benchmarks/locked/messenger_038.yaml",
+      "bytes": 762,
+      "sha256": "2ad5779bfd431a4afa8d58f95574db9d119fef4f1b872e19f3aae40a54f4077b"
+    },
+    {
+      "path": "benchmarks/locked/messenger_039.yaml",
+      "bytes": 762,
+      "sha256": "02acd0b2e1c28c7d8e6c66721f6b1872a44bb002c8e252323245382763605118"
+    },
+    {
+      "path": "benchmarks/locked/messenger_040.yaml",
+      "bytes": 762,
+      "sha256": "8dab5843722217b883def63107ae1bc6b356d41607813f1ed668f80c50c56a05"
+    },
+    {
+      "path": "benchmarks/locked/messenger_041.yaml",
+      "bytes": 762,
+      "sha256": "768756da38a68436c549fd6fcf1dc60f96679650634298d2695765cc615bb5e3"
+    },
+    {
+      "path": "benchmarks/locked/messenger_042.yaml",
+      "bytes": 762,
+      "sha256": "853867d883b64699d93cfdc75f573ee89f44dd16aa495bf395ae645ec644b517"
+    },
+    {
+      "path": "benchmarks/locked/messenger_043.yaml",
+      "bytes": 762,
+      "sha256": "cdde1734755ff4de10d7de44296d578282425fcf8362c6b077c14149628857af"
+    },
+    {
+      "path": "benchmarks/locked/messenger_044.yaml",
+      "bytes": 762,
+      "sha256": "c19d702595c1311a35367ffee45e04c3eca1275fd32ca3fecda57ab8a609375c"
+    },
+    {
+      "path": "benchmarks/locked/messenger_045.yaml",
+      "bytes": 762,
+      "sha256": "03e1f13723016bdd21ca2e30cb8066c4e39cb6664d75e12cc3df4fa89bb1a475"
+    },
+    {
+      "path": "benchmarks/locked/messenger_046.yaml",
+      "bytes": 762,
+      "sha256": "005f33e20eee3d62e01a59fced19914d662cc7e8564b120c2721ef72d8669499"
+    },
+    {
+      "path": "benchmarks/locked/messenger_047.yaml",
+      "bytes": 762,
+      "sha256": "da11bd5945579eea87d4194798242f36f404ee7e87c6e47763d61faf916ba82e"
+    },
+    {
+      "path": "benchmarks/locked/messenger_048.yaml",
+      "bytes": 762,
+      "sha256": "d9ef557f7f865093be61281666942b3a8fc2a299ed468f762edab8334e3e02b6"
+    },
+    {
+      "path": "benchmarks/locked/messenger_049.yaml",
+      "bytes": 762,
+      "sha256": "8cc8712ce08bf6e1796e1bcf8f2cef264b7996af123c75b371a29d49453ec375"
+    },
+    {
+      "path": "benchmarks/locked/messenger_050.yaml",
+      "bytes": 762,
+      "sha256": "e9b6b7fc6c2f2626a2dcde933c6cb954306ab3007edda4a5ff8e8f290b2dba1d"
+    },
+    {
+      "path": "benchmarks/locked/messenger_051.yaml",
+      "bytes": 762,
+      "sha256": "20545b46cb40953e2a879edec9f3af42a2fb046c00a194da8096e68a2d1c8a7d"
+    },
+    {
+      "path": "benchmarks/locked/messenger_052.yaml",
+      "bytes": 762,
+      "sha256": "7ed7acff9bb4aa3e210289e20c0f4e80543664acbc96dac0d639ee3d63a743be"
+    },
+    {
+      "path": "benchmarks/locked/messenger_053.yaml",
+      "bytes": 762,
+      "sha256": "6712d331afc3c5eef10874c940d925eda8db5f87ee95adef9307376eb32e33d0"
+    },
+    {
+      "path": "benchmarks/locked/messenger_054.yaml",
+      "bytes": 762,
+      "sha256": "70de137a9787a22fc013453b8e39f2b1ec82b8cd47ff9d05f00c761578f1949b"
+    },
+    {
+      "path": "benchmarks/locked/messenger_055.yaml",
+      "bytes": 762,
+      "sha256": "8c0224756597fc543a8720057ed51a7a9f34b8795be9399f736f1829ee92f136"
+    },
+    {
+      "path": "benchmarks/locked/messenger_056.yaml",
+      "bytes": 762,
+      "sha256": "b93927e6d5419c7ff88cac3c01abd5455eebf63218ddb9af2ce167f23e9aaaea"
+    },
+    {
+      "path": "benchmarks/locked/messenger_057.yaml",
+      "bytes": 762,
+      "sha256": "02d89cf79bebad50577456d5db07e4846d0ec2ca5ac885f620e3d70d0fec770d"
+    },
+    {
+      "path": "benchmarks/locked/messenger_058.yaml",
+      "bytes": 762,
+      "sha256": "fa5793a6a77e0f8c3253954ad4fd69bf60ff86089a708e9be4457c8b511bb4d5"
+    },
+    {
+      "path": "benchmarks/locked/messenger_059.yaml",
+      "bytes": 762,
+      "sha256": "f45a69ce9fac0ef679ef00addeaa9e8983a9349bc63cdc1142a87dc952baa9e7"
+    },
+    {
+      "path": "benchmarks/locked/messenger_060.yaml",
+      "bytes": 762,
+      "sha256": "00906438c63f2f8c0f61324f002af747b390b0eb617ebad1570989e26ad99634"
+    },
+    {
+      "path": "benchmarks/locked/messenger_061.yaml",
+      "bytes": 762,
+      "sha256": "faf9eca845968a40a27b709f9271611769ab44809bccc9fbcb25401818a6bba5"
+    },
+    {
+      "path": "benchmarks/locked/messenger_062.yaml",
+      "bytes": 762,
+      "sha256": "d7495335f183985dc12036b80a7dd90ecad90b80eebe293546957a357126bda0"
+    },
+    {
+      "path": "benchmarks/locked/messenger_063.yaml",
+      "bytes": 762,
+      "sha256": "6b415d3ecc9136309a753d9415654be80b8f83225c6bd8d2cd962c77857b8592"
+    },
+    {
+      "path": "benchmarks/locked/messenger_064.yaml",
+      "bytes": 762,
+      "sha256": "e918163460c3cae0238b071b301986ddc4c5d1b43e82d9a85488927c28241767"
+    },
+    {
+      "path": "benchmarks/locked/messenger_065.yaml",
+      "bytes": 762,
+      "sha256": "7c7a63fc39c43daa07a94677b476aa6513b6c1501261ae3bcc672a1170848e1c"
+    },
+    {
+      "path": "benchmarks/locked/messenger_066.yaml",
+      "bytes": 762,
+      "sha256": "9ad5a3bea90d4e50709a04593552c41704f5b9a6cbdc2dbb9ed4e3bfc06445a4"
+    },
+    {
+      "path": "benchmarks/locked/messenger_067.yaml",
+      "bytes": 762,
+      "sha256": "d76dc3cc69134aa1c6c3be70df5e250d2bbc56a4d8c6a68ab8bad75878571e48"
+    },
+    {
+      "path": "benchmarks/locked/messenger_068.yaml",
+      "bytes": 762,
+      "sha256": "fb063841d01ab582799fa8bb4d6eab908e58ad60f117bb8d4f0e50cf7f0b6e14"
+    },
+    {
+      "path": "benchmarks/locked/messenger_069.yaml",
+      "bytes": 762,
+      "sha256": "6389ee20303f0f83e0b1c0400c76d6eeb6640258872e0a0536f0ebdc2c0ed394"
+    },
+    {
+      "path": "benchmarks/locked/messenger_070.yaml",
+      "bytes": 762,
+      "sha256": "fb691a0399764a3761a7d4a27533f62eaf68e97a56849d90a9a4d2115646a2e7"
+    },
+    {
+      "path": "benchmarks/locked/messenger_071.yaml",
+      "bytes": 762,
+      "sha256": "b5f027d973c6c2bfdc988fd5e9433020682a9a3d20c7378b4fc27093b6352408"
+    },
+    {
+      "path": "benchmarks/locked/messenger_072.yaml",
+      "bytes": 762,
+      "sha256": "b346205cde389864e27da14f884be354307aa3123c97ffae686b104a2f149b4f"
+    },
+    {
+      "path": "benchmarks/locked/messenger_073.yaml",
+      "bytes": 762,
+      "sha256": "1eb2c4b492113526c9fbfea2cafe9a38beacf79a4c0cdbf65c960b3d963b48cc"
+    },
+    {
+      "path": "benchmarks/locked/messenger_074.yaml",
+      "bytes": 762,
+      "sha256": "ed6f4f33b629f5f30585b6bcff77bf43592d8db6f2d151aa6af846be115288ad"
+    },
+    {
+      "path": "benchmarks/locked/messenger_075.yaml",
+      "bytes": 762,
+      "sha256": "d2caad570c90749f5e43d4dde1d02824734c19838ddacb0c28f812522964a14b"
+    },
+    {
+      "path": "benchmarks/locked/messenger_076.yaml",
+      "bytes": 762,
+      "sha256": "8ce766c4d82df853901033c2f6314b0c5511e1c5ba6c3766e23ce3bd588aa853"
+    },
+    {
+      "path": "benchmarks/locked/messenger_077.yaml",
+      "bytes": 762,
+      "sha256": "0d3f0e7aa83a5f7d4226a26abf9925bda46f4a7effccdc5174601e2c25c673dd"
+    },
+    {
+      "path": "benchmarks/locked/messenger_078.yaml",
+      "bytes": 762,
+      "sha256": "01dcb29e70a30aa4dbeabcff7b7639bd724a3a48e5ac86745d36fb382a83a4ae"
+    },
+    {
+      "path": "benchmarks/locked/messenger_079.yaml",
+      "bytes": 762,
+      "sha256": "1dc75be4ac046d0686678b751fc607cdaecf0054e175c12d031e8e9e46734458"
+    },
+    {
+      "path": "benchmarks/locked/messenger_080.yaml",
+      "bytes": 762,
+      "sha256": "2de4a57fbf69c7424e9ef11d5ec07e751372071998584d0e734c5a4ee3f504a1"
+    },
+    {
+      "path": "benchmarks/locked/messenger_081.yaml",
+      "bytes": 762,
+      "sha256": "bbc462dad8d34468576bc9fe24bc9e294e4910653ae00e586b38c31df7f3706b"
+    },
+    {
+      "path": "benchmarks/locked/messenger_082.yaml",
+      "bytes": 762,
+      "sha256": "c579fb9dab07fabc1787ff6fd2a129cef0879be213a27613b220fab9b95dab62"
+    },
+    {
+      "path": "benchmarks/locked/messenger_083.yaml",
+      "bytes": 762,
+      "sha256": "d9ca03e9357229fd8a3799776606f37b9b5412331012ec44d2561da8808f8d7f"
+    },
+    {
+      "path": "benchmarks/locked/messenger_084.yaml",
+      "bytes": 762,
+      "sha256": "f2346483058db4cbbd2ae6bb99bea421741b11e0df95885d16289286a4a4b8ed"
+    },
+    {
+      "path": "benchmarks/locked/messenger_085.yaml",
+      "bytes": 762,
+      "sha256": "b3c0fd42854952bda400f0d3be5736a004d4b7c4a1b48433cba43993a2a9b9a4"
+    },
+    {
+      "path": "benchmarks/locked/messenger_086.yaml",
+      "bytes": 762,
+      "sha256": "e92f1c8964c00fe718f8440b6207b2d72fed45fd3c40b27a7c56b15cebfb9950"
+    },
+    {
+      "path": "benchmarks/locked/messenger_087.yaml",
+      "bytes": 762,
+      "sha256": "0f8e26547ad46deeae6ab52ed951856e903963d7bee9da747e7707f4c1727f16"
+    },
+    {
+      "path": "benchmarks/locked/messenger_088.yaml",
+      "bytes": 762,
+      "sha256": "370dea8d2b2a82e07f37df9ba570d5b1d1ef611a56e51f0dfe7251e9f198e6fd"
+    },
+    {
+      "path": "benchmarks/locked/messenger_089.yaml",
+      "bytes": 762,
+      "sha256": "d2ba948027129997a528b4675c7b8b6059e8c90c0bf48a0fdc6d630c70c6a529"
+    },
+    {
+      "path": "benchmarks/locked/messenger_090.yaml",
+      "bytes": 762,
+      "sha256": "a1be75ae83e75cd45921d704c97f9b9d8d57827b8ee42d570dbae04cc74126aa"
+    },
+    {
+      "path": "benchmarks/locked/messenger_091.yaml",
+      "bytes": 762,
+      "sha256": "5e2f1456b511f3f31b47a805271b749eea601e77d784287bb7421cc96d350fa5"
+    },
+    {
+      "path": "benchmarks/locked/messenger_092.yaml",
+      "bytes": 762,
+      "sha256": "8c3025af8bf9d73b8c0972f67cc3bc79a4e0f6a5baa31dee449d66aba544bc20"
+    },
+    {
+      "path": "benchmarks/locked/messenger_093.yaml",
+      "bytes": 762,
+      "sha256": "96fa2c73971fbf8dfac8634ca6a27a8fbb0af0559635be5f4e0aa4181ccacaaf"
+    },
+    {
+      "path": "benchmarks/locked/messenger_094.yaml",
+      "bytes": 762,
+      "sha256": "ba25d4ffcaff4f4dde25a8dc8d48feafe28c450aa2a19924d64496cc2865cd1d"
+    },
+    {
+      "path": "benchmarks/locked/messenger_095.yaml",
+      "bytes": 762,
+      "sha256": "332b80259d689e2a35f51d76c862b845b72cb0a588db4b21fe2104f28ff63574"
+    },
+    {
+      "path": "benchmarks/locked/messenger_096.yaml",
+      "bytes": 762,
+      "sha256": "4508ec1316efc12010bce5a0335044d584cc35a62889b5bb778eef64dc5bc821"
+    },
+    {
+      "path": "benchmarks/locked/messenger_097.yaml",
+      "bytes": 762,
+      "sha256": "2e8c11b106ea765e5eadf0f9bc75ab4756cf6a539d3c3d872e87ce1bd7277266"
+    },
+    {
+      "path": "benchmarks/locked/messenger_098.yaml",
+      "bytes": 762,
+      "sha256": "4cb3cbe991804544abfff8ea459bc7b3445a559769acd80cc6c59726d61584db"
+    },
+    {
+      "path": "benchmarks/locked/messenger_099.yaml",
+      "bytes": 762,
+      "sha256": "4eea767b8a84cacb345ee71a38c5052097046bf6518ebeea42877277ce4ca54a"
+    },
+    {
+      "path": "configs/agent.yaml",
+      "bytes": 467,
+      "sha256": "697e7dea46b20a0c7cd4d63cc2e660d679091bf58b1b255463a46b621f22f949"
+    },
+    {
+      "path": "configs/connectors.example.yaml",
+      "bytes": 383,
+      "sha256": "db910690dea6c6361aa3759252e14eddddca9c922f62fcd3aa89cdec8e05ebd2"
+    },
+    {
+      "path": "configs/model_512.yaml",
+      "bytes": 456,
+      "sha256": "eb821a2a108f22c034ead8524feed20cd895b4ea64cd5bc43021f1680dab05ce"
+    },
+    {
+      "path": "configs/privacy.yaml",
+      "bytes": 295,
+      "sha256": "3fb47cdb945a2b532f46ce497fd6094d577c04168ff5eaf1ec94a2ff9784a6c2"
+    },
+    {
+      "path": "configs/ui.yaml",
+      "bytes": 216,
+      "sha256": "e8abde1f56f9469d4bb0949ad2f5f1271ccc64054139b310bddde82248989903"
+    },
+    {
+      "path": "docs/DEVELOPMENT.md",
+      "bytes": 1564,
+      "sha256": "2a0924e773b23bf683906f6670a02617f135f2de1ba3e7f3c58aa13f240c31f8"
+    },
+    {
+      "path": "docs/PROJECT_STRUCTURE.md",
+      "bytes": 6424,
+      "sha256": "ba9c0e3fe52e32d3700cc204cac16508ed8f768a6accaef2b28ad25d5d768002"
+    },
+    {
+      "path": "docs/screenshots/signaldesk-rules.png",
+      "bytes": 111089,
+      "sha256": "2db80799933a06ce91b6e11da92fde6a16f15d79e7a83a2cc3832c8ee232a108"
+    },
+    {
+      "path": "examples/gmail_event.json",
+      "bytes": 654,
+      "sha256": "6a4e74516736df3f95fb038d630767fd36a5c9515898bf7e93c2a144d3309de8"
+    },
+    {
+      "path": "examples/grouped_thread.json",
+      "bytes": 569,
+      "sha256": "4e3bdf1f4d37be852e2dd3337593a367f3f771c424dd5c3a5b04420a6672f498"
+    },
+    {
+      "path": "examples/line_notification_event.json",
+      "bytes": 567,
+      "sha256": "0e98a7d14e06ddcbb8bcb8bab7648d5a5d3694b81793ae896238de02b983a003"
+    },
+    {
+      "path": "examples/messenger_notification_event.json",
+      "bytes": 578,
+      "sha256": "868275bdaba6620cb728d0ee7b53eeb3a50674d8c3daae190c543f87eb736360"
+    },
+    {
+      "path": "examples/notification_card.json",
+      "bytes": 531,
+      "sha256": "a1b24a7584298104ad7555e10aaf466096ae1dce6f8d285a30487bc52e61a0cc"
+    },
+    {
+      "path": "examples/scenarios/gmail_deadline.yaml",
+      "bytes": 715,
+      "sha256": "54265d8af26a2843162e44ed015067c4ee61b61613d839b78baa863cdc81a678"
+    },
+    {
+      "path": "examples/scenarios/line_group_burst.yaml",
+      "bytes": 1196,
+      "sha256": "42446f5e6c4ba6b231454f6f6ce02cb2dca684e11ca71b8b9d8f39102466f731"
+    },
+    {
+      "path": "examples/scenarios/messenger_image_only.yaml",
+      "bytes": 740,
+      "sha256": "d778c7a744bd9410e2761802b3e8dcdc2a17b34183a909875cc5c7d5450f49f5"
+    },
+    {
+      "path": "examples/triage_result.json",
+      "bytes": 974,
+      "sha256": "d5cee230ca30cdfa4396e6c6e4d9c646ba743f43ec0c08f9a1353940ee7e9b12"
+    },
+    {
+      "path": "native/SignalDesk.Shell/App.xaml",
+      "bytes": 850,
+      "sha256": "47ed41264e848409c77c6eb4664151f83dad1f44cdbd2ebcbea9e3be011424da"
+    },
+    {
+      "path": "native/SignalDesk.Shell/App.xaml.cs",
+      "bytes": 6504,
+      "sha256": "3b63a86bba26d2b7012ed5f6dceff5a02db43e852cf9e6a8a2148a74872973f2"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Assets/Square150x150Logo.png",
+      "bytes": 2137,
+      "sha256": "48ca70f89746bd4448cc4d265e56503ebef89ce278f5fe98a745662c4431b16c"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Assets/Square44x44Logo.png",
+      "bytes": 958,
+      "sha256": "c140a69eed902fb5afbc33586c489e4524ae1c647008963209fef8edc37f5fa2"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Assets/Square71x71Logo.png",
+      "bytes": 1417,
+      "sha256": "405120633f57c46c096627cc33021a28df83a4fdce29a0c2ff51da45c0c30b14"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Assets/StoreLogo.png",
+      "bytes": 1077,
+      "sha256": "f67216d8588a1ef300f33025d0b15ccefe688ab095117874e6fd5f34a94166ab"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Assets/Wide310x150Logo.png",
+      "bytes": 2927,
+      "sha256": "f784177da56ec595ee9900f416d8ea85629d465253b6c9e956593947ccf785cb"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Controls/SourceBadge.xaml",
+      "bytes": 440,
+      "sha256": "5ee5c72f0080d81d9398c679d483ef6e98b77eb882ed56c28e85f4341fad71b3"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Controls/SourceBadge.xaml.cs",
+      "bytes": 2702,
+      "sha256": "703a469018233760b989e2e9a3c4558a0ffed7d5a3fe0f66eada47eca08b5d6f"
+    },
+    {
+      "path": "native/SignalDesk.Shell/GenerateAssets.ps1",
+      "bytes": 1749,
+      "sha256": "5b2d2531105aca4e7666fbbcf0b3e76d2ffc0f2c61a234186993817720a7cf69"
+    },
+    {
+      "path": "native/SignalDesk.Shell/GlanceWindow.xaml",
+      "bytes": 8627,
+      "sha256": "27b2e461cbcd7964fc91772cbeefe3037d8251d061578e44e334b6ec6812828d"
+    },
+    {
+      "path": "native/SignalDesk.Shell/GlanceWindow.xaml.cs",
+      "bytes": 6156,
+      "sha256": "72c829ebbc744742e61c74dbfb96b06985e25737e773b7aa0ee2f882181c829a"
+    },
+    {
+      "path": "native/SignalDesk.Shell/MainWindow.xaml",
+      "bytes": 10493,
+      "sha256": "ac071c231e977ba59758f9750f635ef91b2710f9b92bcd98253f9ee0284719d2"
+    },
+    {
+      "path": "native/SignalDesk.Shell/MainWindow.xaml.cs",
+      "bytes": 12077,
+      "sha256": "6f8245ce332c8715f764e04096262665c841ab9115137db48c6cade807432d8e"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Models/ApiModels.cs",
+      "bytes": 15985,
+      "sha256": "141c32feb1891a09b018faa35458385e83a9a18bbbcab7c8072c383059d854a5"
+    },
+    {
+      "path": "native/SignalDesk.Shell/OrbWindow.xaml",
+      "bytes": 1621,
+      "sha256": "ec2b4e420f09b7989af8738f8be0488579745d15acb136b55009b0229e79232e"
+    },
+    {
+      "path": "native/SignalDesk.Shell/OrbWindow.xaml.cs",
+      "bytes": 2792,
+      "sha256": "1e600d436732e2383a5f9b559656f39526f0aa51e68319b7e4c888e3914d0a51"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Package.appxmanifest",
+      "bytes": 2198,
+      "sha256": "8e84ffbf7a03a38f1b92498959e156af7e583369968e3a794d287d97536a69b2"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Services/AppState.cs",
+      "bytes": 4239,
+      "sha256": "4f713720b3412c4a8c2a5561c9291bca06b40215ca3f96af7cecd21eccec5c5b"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Services/Converters.cs",
+      "bytes": 1301,
+      "sha256": "7696a027d32dbb0b7409e45f8c1ffc9cbc09ce877a5c62a4c70e2803556543df"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Services/LocalApiClient.cs",
+      "bytes": 10325,
+      "sha256": "f16970017ee9b97edabcef6c7b789de42ae16d09f43e1d85339a142919bd6c6d"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Services/LocalServiceManager.cs",
+      "bytes": 2541,
+      "sha256": "46e21d678e83c236a0c4721f326f7e66afd93c0db3bd492b20e6b57e79838a63"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Services/NotificationBridge.cs",
+      "bytes": 6139,
+      "sha256": "5765c72d678bc32cf1bd60074e9ec20940d4f7a8207d0c9f64ba8240c9f4891e"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Services/TrayIcon.cs",
+      "bytes": 5940,
+      "sha256": "3412529a752930ba4acb917258159cafe1b43569b6e08a32eb46858131b88860"
+    },
+    {
+      "path": "native/SignalDesk.Shell/SignalDesk.Shell.csproj",
+      "bytes": 1385,
+      "sha256": "8927933d7604b30382157e9d8d11cd555a6288344b0351a68b1ed8711fb213ce"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Styles.xaml",
+      "bytes": 6168,
+      "sha256": "9f402c701929223757e3a9f56cc9f0d89f7b58b02f0adb879ef1094adbe2fa3b"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/DigestPage.xaml",
+      "bytes": 6996,
+      "sha256": "cafa5286d21673337f1c8007ec04451677f78ce348dd31526559c9f006000c99"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/DigestPage.xaml.cs",
+      "bytes": 1467,
+      "sha256": "b34c0c4ad418ea5a145c6e4e870de67eafe772041c42ef0c2c10d5fe8f292977"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/IAsyncPage.cs",
+      "bytes": 89,
+      "sha256": "9ced887151c807ec6ffa89e36bf62c57ad7f19607b8c031650a4cc56ce77934e"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/InboxPage.xaml",
+      "bytes": 23930,
+      "sha256": "048ec2f7ec1155d2daf167b60e84c5ea1c73febde4be3b167a6182f73ad73e7e"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/InboxPage.xaml.cs",
+      "bytes": 14872,
+      "sha256": "40b73a8d2a6ca722af31776a940c01de5a24d9b1989df2feb29a4f9c16321309"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/RulesPage.xaml",
+      "bytes": 12315,
+      "sha256": "a445c11738224fe7da2e4ce7151d55c09da552c7c9467a92e4d76cee27d3c11d"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/RulesPage.xaml.cs",
+      "bytes": 1691,
+      "sha256": "55a191a352bb41b5127effd34b98f041133aafd41a56675c1cf6b2099ccc0b3d"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/SettingsPage.xaml",
+      "bytes": 6473,
+      "sha256": "077174c97efba191bee11a2a5f35183a172fb363eee66359a6d0c96df66b6f19"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/SettingsPage.xaml.cs",
+      "bytes": 7939,
+      "sha256": "54fcd27030a063f9eef34488187e5aa6094e94b87bd4d6f354bf706413a07a52"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/SourcesPage.xaml",
+      "bytes": 12875,
+      "sha256": "54c2f8442110f112f59480122bb4be30935ef790d7c3b423458456f62a5f7136"
+    },
+    {
+      "path": "native/SignalDesk.Shell/Views/SourcesPage.xaml.cs",
+      "bytes": 19245,
+      "sha256": "119524411a4349ea2fa1732f149d1a864a871d0c467a6fb5239b717f30353b74"
+    },
+    {
+      "path": "native/SignalDesk.Shell/app.manifest",
+      "bytes": 659,
+      "sha256": "58c6c571f6e3a89bc2ab8d10d09d4ac55f476f0ac1de476cce7757fc92a73ca4"
+    },
+    {
+      "path": "pyproject.toml",
+      "bytes": 1127,
+      "sha256": "93c8570f1f58a642c79041013e9ece8e02ff0f2e9b89ea634af1484dffadc614"
+    },
+    {
+      "path": "schemas/action_item.schema.json",
+      "bytes": 809,
+      "sha256": "469eb3ee07833617cb0f7a0fcc4962e82eaf0141051ed54f95dd0f8622a69022"
+    },
+    {
+      "path": "schemas/agent_decision.schema.json",
+      "bytes": 740,
+      "sha256": "178b55fb90bb76d794e42c26df75693bc4578a86a8b89d58b3189132b2b0298b"
+    },
+    {
+      "path": "schemas/benchmark_scenario.schema.json",
+      "bytes": 1291,
+      "sha256": "cb466a1d3cefb085b486ccd14bb53e8e710542e23705c1152af61dba7c239604"
+    },
+    {
+      "path": "schemas/deadline.schema.json",
+      "bytes": 805,
+      "sha256": "87a7e356b25c0b155885f2ecf6f2c07117832d1148c2a9eb55d28dd0d4ab6910"
+    },
+    {
+      "path": "schemas/feedback_event.schema.json",
+      "bytes": 730,
+      "sha256": "35d0d1dc8f956b67d843339b1bf835cd475d626895353b734f2b35347024ce25"
+    },
+    {
+      "path": "schemas/grouped_thread.schema.json",
+      "bytes": 1686,
+      "sha256": "728869f862fbc55e9dede1af0c15b0d31bdf9a2753e3e4645200695dedfc0bb4"
+    },
+    {
+      "path": "schemas/notification_card.schema.json",
+      "bytes": 1221,
+      "sha256": "1c804a50ecc89b0299b5f8b3beb036d2288ecd3b77f1063e48da773716f0320c"
+    },
+    {
+      "path": "schemas/triage_result.schema.json",
+      "bytes": 2015,
+      "sha256": "29e25af43c80b0f48f97e9a816db33ac912bca648d1b6a3fe5ba8b620d5d4ca5"
+    },
+    {
+      "path": "schemas/unified_event.schema.json",
+      "bytes": 1753,
+      "sha256": "74b19109cafd8cd51766132c6e2a6898d94fb8ae2ff526bcf347ab10d67d975a"
+    },
+    {
+      "path": "scripts/build-windows.ps1",
+      "bytes": 3232,
+      "sha256": "7ede16eea0bd4ab82fd035faa9080cef489acfe56a2dddb20fe9727ef66fad98"
+    },
+    {
+      "path": "scripts/build_manifest.py",
+      "bytes": 1392,
+      "sha256": "c70a38fe227b03e0090f0b92a60bacfb0e405fdf40687eeddfa2faf1a3e6543d"
+    },
+    {
+      "path": "scripts/capture-signaldesk-window.ps1",
+      "bytes": 2824,
+      "sha256": "3620ce147a2002a48bfa1ed8df05c2f3b68fd59876c3066eebc03c4cb41f1b2b"
+    },
+    {
+      "path": "scripts/cleanup_gmail_legacy.py",
+      "bytes": 1826,
+      "sha256": "22ba561357d1d20d6912d1417872e0ac82e1eb42a99d241870f43b472b45ff52"
+    },
+    {
+      "path": "scripts/dev.ps1",
+      "bytes": 305,
+      "sha256": "acdeeb60f9bd87e6f6db4206aa5cf961f219bfaccf6199f648188b1a83bc6849"
+    },
+    {
+      "path": "scripts/dev.sh",
+      "bytes": 266,
+      "sha256": "5ad4e6e069387910eaa19319f1a43aac615f3269857a48ae54c73ae4478a2022"
+    },
+    {
+      "path": "scripts/generate_locked_scenarios.py",
+      "bytes": 4590,
+      "sha256": "cfe21a2e145d08f350e063b80ccf22ec845f466e363bff912f2106d6d0831865"
+    },
+    {
+      "path": "scripts/install-windows-package.ps1",
+      "bytes": 4253,
+      "sha256": "12f9986a335e8d316fe5db08bcbbd6334820a7079996fbb05fbe3c711bf03e1d"
+    },
+    {
+      "path": "scripts/new-development-certificate.ps1",
+      "bytes": 2407,
+      "sha256": "1e12366c12b491fc646b871010de71ce4f2d7a998fa1c2741670f19b5c0b65be"
+    },
+    {
+      "path": "scripts/prepare-gmail-oauth.ps1",
+      "bytes": 3062,
+      "sha256": "76ee89ddc789cbbab86c6b57263b85bf7e0f637fd9f0461421402322cf355362"
+    },
+    {
+      "path": "scripts/setup-windows-prerequisites.ps1",
+      "bytes": 3144,
+      "sha256": "969cca87bb86eca01c68ba7d39b5792ae1ab84c55055b565ea76226b4c94066c"
+    },
+    {
+      "path": "scripts/verify.sh",
+      "bytes": 214,
+      "sha256": "8d32f6e899af41cc2da54141f174703c054623fe6e298636f73465b067d7e5db"
+    },
+    {
+      "path": "scripts/windows_service_entry.py",
+      "bytes": 70,
+      "sha256": "deb2b4288886a2dd8802a4933d2943272835467d2c2a65072adc6ec994ecac6b"
+    },
+    {
+      "path": "signaldesk/__init__.py",
+      "bytes": 79,
+      "sha256": "0fb64655f23e4df19106e39a7cb8aecac1fdba6a781f2cd20e698a7362a7c92a"
+    },
+    {
+      "path": "signaldesk/actions.py",
+      "bytes": 5024,
+      "sha256": "eea58c4f9e6d99a4d19fabbf6754d8f0bf3ad5a52088a236fbbabcee0f765edc"
+    },
+    {
+      "path": "signaldesk/api.py",
+      "bytes": 39508,
+      "sha256": "57d67d9e04a94a9ccbfb812951c821ded9c85b3c399f1f2c99e6c023fb1311f6"
+    },
+    {
+      "path": "signaldesk/benchmark.py",
+      "bytes": 6990,
+      "sha256": "a699041a95658db6989a9a9a1a328d66e5deff1f824c2b68831ee1c6d1a943a4"
+    },
+    {
+      "path": "signaldesk/config.py",
+      "bytes": 3149,
+      "sha256": "d1f9f5fc29281038d279db313ef87cf7234e542a7acfcdad8c101d518f7102b7"
+    },
+    {
+      "path": "signaldesk/connectors/__init__.py",
+      "bytes": 113,
+      "sha256": "760ee874759ffb8ddfee3999268b8d38547eb6cff20dbddbd3c236afe024488d"
+    },
+    {
+      "path": "signaldesk/connectors/base.py",
+      "bytes": 807,
+      "sha256": "8000bbd8f7bb6f2347e6091895102e83a60bc9a6d72be31dde3ef1d8c3a5788e"
+    },
+    {
+      "path": "signaldesk/connectors/chat_archive.py",
+      "bytes": 16866,
+      "sha256": "9fddb43c7bccc268c8986583d6aad79223ce51b707a491ca46af6b57b89fd0bf"
+    },
+    {
+      "path": "signaldesk/connectors/gmail.py",
+      "bytes": 10012,
+      "sha256": "c997c0d5383cb966e88874274a5d8d0165fccca689183c38ff89ae9a8014c2f6"
+    },
+    {
+      "path": "signaldesk/connectors/windows_bridge.py",
+      "bytes": 2100,
+      "sha256": "b6cf22c22fc2a711fb9d0c794b27854096006292e6c4814dcd82e9d47f313e9b"
+    },
+    {
+      "path": "signaldesk/database.py",
+      "bytes": 80833,
+      "sha256": "8ae19d63de30b01454c30b610599cd670e3529dc394bc6109920b4d5fbdc0d33"
+    },
+    {
+      "path": "signaldesk/deadlines.py",
+      "bytes": 4406,
+      "sha256": "e49cc615af6f23a0962b96fd05b6d0d975aa1ade69523a2b4a5973bd3ba3d51a"
+    },
+    {
+      "path": "signaldesk/demo.py",
+      "bytes": 4273,
+      "sha256": "67e358c185ebe888f071bf66832bb1f371f8287603e654638aab60a7799796e3"
+    },
+    {
+      "path": "signaldesk/events.py",
+      "bytes": 1053,
+      "sha256": "6049f91dcf92b52dbc25f255051e4365e9f8678005e6b85de82a9966d1eb5acd"
+    },
+    {
+      "path": "signaldesk/grouping.py",
+      "bytes": 1336,
+      "sha256": "0615830f28dc01c7bb4a3c616b235baa008b76a279ebf9c7535bcb2ff331de84"
+    },
+    {
+      "path": "signaldesk/main.py",
+      "bytes": 474,
+      "sha256": "a6b968fe3b7b16ef6a81dc73f9417b67e7f4bcf63d2256aac72dafb9c052c3f9"
+    },
+    {
+      "path": "signaldesk/model_gateway.py",
+      "bytes": 7386,
+      "sha256": "8e5c582c8cc9b8a4094b7fbde8020a79a7227ef7e879aae267f164dda3227877"
+    },
+    {
+      "path": "signaldesk/models.py",
+      "bytes": 7059,
+      "sha256": "7b8134b08feb316eacbc195e75ef7a3a225f3768b21bc2a5a0bd358f07fd4c60"
+    },
+    {
+      "path": "signaldesk/normalizer.py",
+      "bytes": 9261,
+      "sha256": "1c59577a85fb735c544d68291cfcd70c2043d0c42b9571613abaa1bfe72de2c9"
+    },
+    {
+      "path": "signaldesk/pipeline.py",
+      "bytes": 11449,
+      "sha256": "1c5ceaf23f0f027d0b85af197b759651fa7f6b31f4387e2c2845792b8edcbe75"
+    },
+    {
+      "path": "signaldesk/policy.py",
+      "bytes": 4622,
+      "sha256": "36b9eb9f06bb6d3cd2d5befb4efc3f131f63d806778c455d344bceee2b69b80e"
+    },
+    {
+      "path": "signaldesk/preference.py",
+      "bytes": 4312,
+      "sha256": "e420be42a9b42a3fc14a10088b69d0cdd7d5538d88a07c417a35a55c1c5b887b"
+    },
+    {
+      "path": "signaldesk/rules.py",
+      "bytes": 9217,
+      "sha256": "30cebdd842821356ff93da47057776eab8376a58c43e44d66e045d82aa545967"
+    },
+    {
+      "path": "signaldesk/static/app.js",
+      "bytes": 37371,
+      "sha256": "f6e18b2bfca10464dce6856f9b0937436328fac75b8540693158db3578975cd4"
+    },
+    {
+      "path": "signaldesk/static/favicon.svg",
+      "bytes": 482,
+      "sha256": "d2447fbdcafacbf90baa70984a09aa748bb578dd87b96e45d6c4a5563169d681"
+    },
+    {
+      "path": "signaldesk/static/index.html",
+      "bytes": 7770,
+      "sha256": "5f7988ef501d6e208fe6926898c566c0a3692713e1394a30489d90e9fe921845"
+    },
+    {
+      "path": "signaldesk/static/styles.css",
+      "bytes": 33436,
+      "sha256": "8b3a931a7649b472a41a4119b77305d8ce900df96b53a8715207c8d309e3daf6"
+    },
+    {
+      "path": "signaldesk/validator.py",
+      "bytes": 4031,
+      "sha256": "142345160d5cc01a443c18576433d4fee737a7a7e6da149a8cbe19c13247dd4f"
+    },
+    {
+      "path": "skills/SKILLS_INDEX.md",
+      "bytes": 747,
+      "sha256": "8ebf3419fd85421af31ac4b1cccb0f41eafdc351a87db560e29b707c07375645"
+    },
+    {
+      "path": "skills/action-item-extraction/SKILL.md",
+      "bytes": 892,
+      "sha256": "dbc4e0bb26b2fc6215c9ff9953eb690a9dc574e345e49135ee96ffef31784e8a"
+    },
+    {
+      "path": "skills/daily-digest/SKILL.md",
+      "bytes": 614,
+      "sha256": "e0d8101b569d22a19b9afe02419f5bbea8af762caa536cf5667e7a492e2f9f7b"
+    },
+    {
+      "path": "skills/deadline-normalization/SKILL.md",
+      "bytes": 797,
+      "sha256": "00aa3728fd06ea9afca46fccc341e3bba0d89880248e89cfe3be764907486ca4"
+    },
+    {
+      "path": "skills/event-ingestion/SKILL.md",
+      "bytes": 1232,
+      "sha256": "82e5a6e2eaab435ab7b9c8a681c4c801547dee4b5c3aa4db780c5037552e1986"
+    },
+    {
+      "path": "skills/message-triage/SKILL.md",
+      "bytes": 1132,
+      "sha256": "cf781cdbba00ce16c45a809ba3c2ebbb732e8f730f42fd5acc8074cada8d7915"
+    },
+    {
+      "path": "skills/reminder-management/SKILL.md",
+      "bytes": 573,
+      "sha256": "7ea0a43bc0b6263c420db635d531fa91d9bc861bfe5a49c885a7d1a6099c2353"
+    },
+    {
+      "path": "skills/reply-drafting/SKILL.md",
+      "bytes": 819,
+      "sha256": "cc8081d81c23060a8d7e4c1c3a1787bf803699342f1bb4a6beb113520a613573"
+    },
+    {
+      "path": "skills/research-evidence/SKILL.md",
+      "bytes": 522,
+      "sha256": "d5aa62923238ae8964b1f6689eb049aff56865f07b7927b641d017d9d46fde9b"
+    },
+    {
+      "path": "skills/thread-grouping/SKILL.md",
+      "bytes": 1105,
+      "sha256": "f33c3b2d908f2eeaa70716223f4ae94081c8f1c344a6d556c911c9649a5af148"
+    },
+    {
+      "path": "skills/user-preference-learning/SKILL.md",
+      "bytes": 815,
+      "sha256": "79cd68dbed4064401c5b55d2f2bc6befecee6685e45a086cd4880d4d9ab113ad"
+    },
+    {
+      "path": "tests/conftest.py",
+      "bytes": 1060,
+      "sha256": "350df476896fca41c1c8ed3369ecbf4299062d4c517660e0e6050a7ffa42793d"
+    },
+    {
+      "path": "tests/test_api.py",
+      "bytes": 11789,
+      "sha256": "ffab1afbad4cc413e1d829d26d3c46f387fa93e9cb7262eda0aa792e3d060764"
+    },
+    {
+      "path": "tests/test_chat_archives.py",
+      "bytes": 6683,
+      "sha256": "5feef54f95c721c3715e7b96ebaca41409f3932825ed00d802c34eaaf6a64ad9"
+    },
+    {
+      "path": "tests/test_gmail_legacy_cleanup.py",
+      "bytes": 2077,
+      "sha256": "76d724a34e8a83e9f9eaf6d51933c2c09f149890eeb362d4e9c800749302a0ad"
+    },
+    {
+      "path": "tests/test_new_capabilities.py",
+      "bytes": 12252,
+      "sha256": "c0c496cefe0f7d1d2b86d4ff2875403e41e3c4036bf8e605e66995eea362b177"
+    },
+    {
+      "path": "tests/test_pipeline.py",
+      "bytes": 8615,
+      "sha256": "5cf2723f2f7877b1dcc393e6c78fa0895d8b94973dcf8224750061bca80361f7"
+    },
+    {
+      "path": "tests/test_schema_fixtures.py",
+      "bytes": 1062,
+      "sha256": "d84604eb8c223b6d7d1673d939a676e3cdcc0c28123e377fc3267ce3475a8cd5"
+    },
+    {
+      "path": "tests/test_version_consistency.py",
+      "bytes": 659,
+      "sha256": "fad4905c998cdff45001ad5cdb512f6fdae46e97e73a8e981406f48a181c73d7"
+    }
+  ]
+}

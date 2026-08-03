@@ -1,0 +1,10 @@
+privacy:
+  raw_event_retention_days: 7
+  normalized_event_retention_days: 30
+  summary_retention_days: 180
+  encrypt_database: false
+  encrypt_credentials: true
+  log_raw_content: false
+  allow_external_model: false
+  allow_training_from_personal_data: false
+  require_export_confirmation: true

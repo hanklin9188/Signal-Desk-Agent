@@ -1,0 +1,45 @@
+scenario_id: line-burst-001
+events:
+  - schema_version: "1.0"
+    event_id: line-001
+    source: line_notification
+    source_app_id: LINE
+    account_id: windows
+    sender: 實驗室群組
+    conversation_id: null
+    title: 實驗室群組
+    content: 明天會議改到三點
+    content_completeness: notification_preview
+    received_at: "2026-08-02T18:00:00+08:00"
+    source_url: null
+    raw_notification_id: win-010
+    privacy_class: private
+    metadata: {}
+    checksum: null
+  - schema_version: "1.0"
+    event_id: line-002
+    source: line_notification
+    source_app_id: LINE
+    account_id: windows
+    sender: 實驗室群組
+    conversation_id: null
+    title: 實驗室群組
+    content: 教授也會參加，你可以嗎
+    content_completeness: notification_preview
+    received_at: "2026-08-02T18:00:10+08:00"
+    source_url: null
+    raw_notification_id: win-011
+    privacy_class: private
+    metadata: {}
+    checksum: null
+expected:
+  priority: high
+  requires_reply: yes
+  display_mode: surface_now
+  action_items:
+    - 回覆是否能參加會議
+  deadline_texts:
+    - 明天
+  must_include_limitations:
+    - incomplete_preview
+tags: [line, grouping, reply]

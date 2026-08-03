@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "event_id": "messenger_notif_001",
+  "source": "messenger_notification",
+  "source_app_id": "Microsoft Edge",
+  "account_id": "windows_user",
+  "sender": "王小明",
+  "conversation_id": null,
+  "title": "Messenger · 王小明",
+  "content": "傳送了一張相片",
+  "content_completeness": "notification_preview",
+  "received_at": "2026-08-02T18:40:00+08:00",
+  "source_url": null,
+  "raw_notification_id": "win_102",
+  "privacy_class": "private",
+  "metadata": {
+    "origin": "messenger.com"
+  },
+  "checksum": "sha256-example-messenger"
+}

@@ -1,0 +1,26 @@
+model:
+  id: Qwen/Qwen3.5-4B
+  revision: pin-before-release
+  mode: text_only
+  enable_thinking: false
+
+context:
+  total_tokens: 512
+  max_input_tokens: 384
+  max_output_tokens: 128
+
+generation:
+  do_sample: false
+  temperature: 0.0
+  top_p: 1.0
+  stop_on_valid_json: true
+
+runtime:
+  backend: transformers
+  residency: always_on
+  idle_unload_minutes: 30
+  queue_batch_window_seconds: 20
+  health_timeout_seconds: 10
+
+privacy:
+  external_inference: false

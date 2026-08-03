@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "summary": "實驗室群組通知明天下午三點開會，並詢問你是否能參加。",
+  "category": "meeting",
+  "priority": "high",
+  "requires_reply": "yes",
+  "action_items": [
+    {
+      "text": "回覆是否能參加明天下午三點的會議",
+      "owner": null,
+      "supporting_span": "你可以嗎？",
+      "source_event_ids": [
+        "line_notif_001"
+      ],
+      "deadline_ref": 0,
+      "status": "open"
+    }
+  ],
+  "deadlines": [
+    {
+      "original_text": "明天下午三點",
+      "normalized_at": "2026-08-03T15:00:00+08:00",
+      "precision": "exact",
+      "timezone": "Asia/Taipei",
+      "explicit": true,
+      "supporting_span": "明天下午三點"
+    }
+  ],
+  "suggested_actions": [
+    "open_source",
+    "create_reminder",
+    "needs_review"
+  ],
+  "supporting_spans": [
+    "明天會議改到下午三點",
+    "你可以嗎？"
+  ],
+  "uncertainty_flags": [
+    "incomplete_preview"
+  ]
+}

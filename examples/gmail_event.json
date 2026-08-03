@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "event_id": "gmail_msg_001",
+  "source": "gmail",
+  "source_app_id": "gmail",
+  "account_id": "acct_work",
+  "sender": "教授 <professor@example.edu>",
+  "conversation_id": "thread_abc",
+  "title": "實驗進度",
+  "content": "請在今晚前把目前的實驗結果與圖表寄給我，謝謝。",
+  "content_completeness": "full",
+  "received_at": "2026-08-02T18:30:00+08:00",
+  "source_url": "https://mail.google.com/mail/u/0/#inbox/thread_abc",
+  "raw_notification_id": null,
+  "privacy_class": "sensitive",
+  "metadata": {
+    "labels": [
+      "INBOX",
+      "IMPORTANT"
+    ]
+  },
+  "checksum": "sha256-example"
+}

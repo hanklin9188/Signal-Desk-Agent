@@ -1,0 +1,160 @@
+<Window
+    x:Class="SignalDesk.Shell.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls"
+    Title="SignalDesk">
+
+    <Grid Background="{ThemeResource SignalPageBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="68" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Padding="16,0,148,0"
+              Background="{ThemeResource SignalTopBarBrush}"
+              BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+              BorderThickness="0,0,0,1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Keep interactive controls outside this custom title-bar drag region. -->
+            <Grid x:Name="TitleBarDragRegion" Background="Transparent">
+                <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
+                    <Border Width="40" Height="40" CornerRadius="13">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#938AFF" Offset="0" />
+                                <GradientStop Color="#6476E9" Offset="0.58" />
+                                <GradientStop Color="#399ECC" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <TextBlock Text="S" Foreground="White" FontWeight="SemiBold" FontSize="16"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center" Spacing="1">
+                        <TextBlock Text="SignalDesk" FontWeight="SemiBold" FontSize="16" />
+                        <TextBlock Text="Local-first attention agent" FontSize="9"
+                                   Foreground="{ThemeResource SignalMutedBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+
+            <AutoSuggestBox x:Name="SearchBox" Grid.Column="1" Height="40" Margin="14,0,24,0"
+                            MaxWidth="620" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                            PlaceholderText="搜尋訊息、寄件者或待辦"
+                            QueryIcon="Find" TextChanged="SearchBox_TextChanged" />
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <ToggleButton x:Name="FocusToggle" Width="150" Height="46" Padding="9,5"
+                              CornerRadius="14" Click="FocusToggle_Click"
+                              ToolTipService.ToolTip="提高即時提醒門檻，重要訊息仍保留在收件匣">
+                    <Grid ColumnSpacing="9">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="32" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="30" Height="30" CornerRadius="10"
+                                Background="{StaticResource SignalAccentSoftBrush}">
+                            <FontIcon x:Name="FocusIcon" Glyph="&#xE708;" FontSize="14"
+                                      Foreground="{StaticResource SignalAccentBrush}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock x:Name="FocusLabel" Text="專注模式" FontWeight="SemiBold" FontSize="11" />
+                            <TextBlock x:Name="FocusHint" Text="一般提醒正常顯示" FontSize="9"
+                                       Foreground="{ThemeResource SignalMutedBrush}" />
+                        </StackPanel>
+                    </Grid>
+                </ToggleButton>
+
+                <Border Padding="11,6" CornerRadius="14"
+                        Background="{ThemeResource SignalCardBrush}"
+                        BorderBrush="{ThemeResource SignalCardStrokeBrush}" BorderThickness="1">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="30" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="30" Height="30" CornerRadius="10"
+                                Background="{StaticResource SignalGreenSoftBrush}">
+                            <FontIcon Glyph="&#xEA18;" FontSize="13"
+                                      Foreground="{StaticResource SignalGreenBrush}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
+                            <TextBlock x:Name="ServiceStateText" Text="本機規則引擎"
+                                       FontSize="10" FontWeight="SemiBold" />
+                            <TextBlock x:Name="ServiceStateHint" Text="可檢查 · 不連雲端" FontSize="9"
+                                       Foreground="{ThemeResource SignalMutedBrush}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <controls:NavigationView x:Name="RootNavigation" Grid.Row="1"
+                                 PaneDisplayMode="Left" IsPaneOpen="True"
+                                 OpenPaneLength="236" CompactPaneLength="56"
+                                 IsBackButtonVisible="Collapsed" IsSettingsVisible="False"
+                                 Background="{ThemeResource SignalPaneBrush}"
+                                 SelectionChanged="RootNavigation_SelectionChanged">
+            <controls:NavigationView.PaneHeader>
+                <TextBlock Text="工作區" Margin="6,14,0,8" FontSize="10" FontWeight="SemiBold"
+                           CharacterSpacing="120" Foreground="{ThemeResource SignalMutedBrush}" />
+            </controls:NavigationView.PaneHeader>
+            <controls:NavigationView.MenuItems>
+                <controls:NavigationViewItem x:Name="NowItem" Content="現在" Tag="now">
+                    <controls:NavigationViewItem.Icon><SymbolIcon Symbol="Mail" /></controls:NavigationViewItem.Icon>
+                    <controls:NavigationViewItem.InfoBadge><controls:InfoBadge x:Name="NowBadge" /></controls:NavigationViewItem.InfoBadge>
+                </controls:NavigationViewItem>
+                <controls:NavigationViewItem x:Name="TodayItem" Content="今天" Tag="today">
+                    <controls:NavigationViewItem.Icon><SymbolIcon Symbol="Calendar" /></controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+                <controls:NavigationViewItem x:Name="ReplyItem" Content="需要回覆" Tag="reply">
+                    <controls:NavigationViewItem.Icon><SymbolIcon Symbol="MailReply" /></controls:NavigationViewItem.Icon>
+                    <controls:NavigationViewItem.InfoBadge><controls:InfoBadge x:Name="ReplyBadge" /></controls:NavigationViewItem.InfoBadge>
+                </controls:NavigationViewItem>
+                <controls:NavigationViewItem x:Name="DigestItem" Content="每日摘要" Tag="digest">
+                    <controls:NavigationViewItem.Icon><FontIcon Glyph="&#xE735;" /></controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+                <controls:NavigationViewItem x:Name="DoneItem" Content="已完成" Tag="done">
+                    <controls:NavigationViewItem.Icon><SymbolIcon Symbol="Accept" /></controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+            </controls:NavigationView.MenuItems>
+            <controls:NavigationView.FooterMenuItems>
+                <controls:NavigationViewItem x:Name="SourcesItem" Content="訊息來源" Tag="sources">
+                    <controls:NavigationViewItem.Icon><SymbolIcon Symbol="AllApps" /></controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+                <controls:NavigationViewItem x:Name="RulesItem" Content="規則" Tag="rules">
+                    <controls:NavigationViewItem.Icon><SymbolIcon Symbol="Filter" /></controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+                <controls:NavigationViewItem x:Name="SettingsItem" Content="設定" Tag="settings">
+                    <controls:NavigationViewItem.Icon><SymbolIcon Symbol="Setting" /></controls:NavigationViewItem.Icon>
+                </controls:NavigationViewItem>
+                <controls:NavigationViewItem IsEnabled="False">
+                    <controls:NavigationViewItem.Content>
+                        <StackPanel Orientation="Horizontal" Spacing="7">
+                            <SymbolIcon Symbol="ProtectedDocument" Foreground="{StaticResource SignalGreenBrush}" />
+                            <TextBlock Text="資料留在這台裝置" FontSize="10" />
+                        </StackPanel>
+                    </controls:NavigationViewItem.Content>
+                </controls:NavigationViewItem>
+            </controls:NavigationView.FooterMenuItems>
+
+            <Grid Background="{ThemeResource SignalPageBrush}">
+                <ContentControl x:Name="ContentHost"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Stretch" />
+                <ProgressRing x:Name="LoadingRing" Width="32" Height="32" IsActive="False"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <InfoBar x:Name="AppInfoBar" IsOpen="False" IsClosable="True"
+                         HorizontalAlignment="Right" VerticalAlignment="Top" Margin="18"
+                         MaxWidth="500" Severity="Informational" />
+            </Grid>
+        </controls:NavigationView>
+    </Grid>
+</Window>

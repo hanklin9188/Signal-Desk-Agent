@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FeedbackEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "feedback_id",
+    "card_id",
+    "action",
+    "created_at"
+  ],
+  "properties": {
+    "feedback_id": {
+      "type": "string"
+    },
+    "card_id": {
+      "type": "string"
+    },
+    "action": {
+      "enum": [
+        "opened",
+        "dismissed",
+        "snoozed",
+        "marked_important",
+        "marked_not_important",
+        "reply_label_corrected",
+        "action_item_corrected",
+        "deadline_corrected",
+        "marked_done"
+      ]
+    },
+    "value": {},
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

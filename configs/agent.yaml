@@ -1,0 +1,21 @@
+agent:
+  policy_version: interruption-v1
+  schema_version: "1.0"
+  max_model_retries: 1
+  max_processing_attempts: 3
+  preview_requires_limitation: true
+  require_supporting_spans: true
+  auto_send_enabled: false
+
+grouping:
+  notification_window_seconds: 30
+  max_group_events: 12
+  gmail_use_provider_thread_id: true
+
+interruption:
+  surface_threshold: 0.82
+  review_threshold: 0.55
+  quiet_hours:
+    start: "23:00"
+    end: "08:00"
+  max_interruptions_per_hour: 4

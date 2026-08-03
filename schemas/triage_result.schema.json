@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TriageResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "summary",
+    "category",
+    "priority",
+    "requires_reply",
+    "action_items",
+    "deadlines",
+    "suggested_actions",
+    "supporting_spans",
+    "uncertainty_flags"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 320
+    },
+    "category": {
+      "enum": [
+        "work",
+        "research",
+        "meeting",
+        "social",
+        "security",
+        "transaction",
+        "system",
+        "promotion",
+        "other",
+        "unknown"
+      ]
+    },
+    "priority": {
+      "enum": [
+        "urgent",
+        "high",
+        "normal",
+        "low",
+        "noise",
+        "unknown"
+      ]
+    },
+    "requires_reply": {
+      "enum": [
+        "yes",
+        "no",
+        "unknown"
+      ]
+    },
+    "action_items": {
+      "type": "array",
+      "items": {
+        "$ref": "action_item.schema.json"
+      }
+    },
+    "deadlines": {
+      "type": "array",
+      "items": {
+        "$ref": "deadline.schema.json"
+      }
+    },
+    "suggested_actions": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "open_source",
+          "draft_reply",
+          "create_reminder",
+          "snooze",
+          "mark_done",
+          "needs_review"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "supporting_spans": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "uncertainty_flags": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "incomplete_preview",
+          "truncated_content",
+          "ambiguous_sender",
+          "ambiguous_deadline",
+          "missing_context",
+          "source_resolution_uncertain",
+          "conflicting_information"
+        ]
+      },
+      "uniqueItems": true
+    }
+  }
+}

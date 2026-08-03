@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#edf0f8">
+  <title>SignalDesk</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到主要內容</a>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" aria-label="主要導覽">
+      <div class="brand-row">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span></div>
+        <div>
+          <div class="brand-name">SignalDesk</div>
+          <div class="brand-subtitle">Your attention, protected.</div>
+        </div>
+      </div>
+
+      <nav class="primary-nav" id="primaryNav">
+        <div class="nav-label">工作區</div>
+        <button class="nav-item active" data-view="now">
+          <span data-icon="inbox"></span><span>現在</span><b id="navNowCount">0</b>
+        </button>
+        <button class="nav-item" data-view="today">
+          <span data-icon="calendar"></span><span>今天</span>
+        </button>
+        <button class="nav-item" data-view="reply">
+          <span data-icon="reply"></span><span>需要回覆</span><b id="navReplyCount">0</b>
+        </button>
+        <button class="nav-item" data-view="digest">
+          <span data-icon="sparkles"></span><span>每日摘要</span>
+        </button>
+        <button class="nav-item" data-view="done">
+          <span data-icon="check"></span><span>已完成</span>
+        </button>
+
+        <div class="nav-label nav-label-spaced">管理</div>
+        <button class="nav-item" data-view="sources">
+          <span data-icon="layers"></span><span>訊息來源</span>
+        </button>
+        <button class="nav-item" data-view="rules">
+          <span data-icon="sliders"></span><span>規則</span>
+        </button>
+        <button class="nav-item" data-view="settings">
+          <span data-icon="settings"></span><span>設定</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="privacy-pill"><span data-icon="shield"></span><span>資料留在這台裝置</span></div>
+        <div class="status-card">
+          <span class="status-dot"></span>
+          <div><strong>本機服務正常</strong><small id="modelStatus">Rule fallback</small></div>
+          <button class="icon-button subtle" aria-label="檢視來源" data-go="sources"><span data-icon="chevron"></span></button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main" id="main-content">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" id="mobileMenu" aria-label="開啟選單"><span data-icon="menu"></span></button>
+        <div class="search-wrap">
+          <span data-icon="search"></span>
+          <input id="globalSearch" type="search" placeholder="搜尋訊息、寄件者或待辦" aria-label="搜尋">
+          <kbd>Ctrl K</kbd>
+        </div>
+        <div class="top-actions">
+          <label class="focus-control" title="專注模式會提高即時打斷門檻">
+            <span data-icon="moon"></span><span>專注</span>
+            <input type="checkbox" id="focusToggle"><i></i>
+          </label>
+          <button class="icon-button" id="themeToggle" aria-label="切換深色模式"><span data-icon="sun"></span></button>
+          <button class="avatar-button" aria-label="本機使用者">H</button>
+        </div>
+      </header>
+
+      <section class="workspace" id="workspace">
+        <div class="list-pane" id="listPane">
+          <div class="pane-heading">
+            <div>
+              <p class="eyebrow" id="viewEyebrow">INBOX CENTER</p>
+              <h1 id="viewTitle">現在</h1>
+            </div>
+            <span class="count-chip" id="viewCount">0</span>
+          </div>
+          <div class="filter-row" id="filterRow">
+            <button class="filter-button active" data-priority="">全部</button>
+            <button class="filter-button" data-priority="urgent">緊急</button>
+            <button class="filter-button" data-priority="high">重要</button>
+            <select id="sourceFilter" aria-label="篩選來源">
+              <option value="">所有來源</option>
+              <option value="gmail">Gmail</option>
+              <option value="line_notification">LINE</option>
+              <option value="messenger_notification">Messenger</option>
+              <option value="windows_notification">Windows</option>
+            </select>
+          </div>
+          <div class="card-list" id="cardList" role="listbox" aria-label="訊息卡片"></div>
+        </div>
+
+        <article class="detail-pane" id="detailPane" tabindex="-1">
+          <div class="empty-detail" id="emptyDetail">
+            <div class="empty-orbit"><span data-icon="sparkles"></span></div>
+            <h2>選擇一則訊息</h2>
+            <p>查看摘要、原文證據、待辦與安全的下一步。</p>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <button class="orb" id="orb" aria-label="開啟 Glance Panel" aria-expanded="false">
+    <span class="orb-glow"></span><span class="orb-core">S</span><b id="orbCount">0</b>
+  </button>
+  <aside class="glance-panel" id="glancePanel" aria-label="重要訊息快速預覽" hidden>
+    <div class="glance-head">
+      <div><span class="pulse-dot"></span><strong>需要你留意</strong></div>
+      <button class="icon-button subtle" id="closeGlance" aria-label="關閉"><span data-icon="close"></span></button>
+    </div>
+    <div id="glanceCards"></div>
+    <button class="open-center" id="openCenter">開啟 Inbox Center <span data-icon="arrow"></span></button>
+  </aside>
+
+  <div class="onboarding-backdrop" id="onboarding" hidden>
+    <section class="onboarding-card" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
+      <div class="onboarding-visual">
+        <div class="mini-orb"><span>S</span><i></i><i></i><i></i></div>
+        <div class="visual-caption"><span data-icon="lock"></span> Local-first by design</div>
+      </div>
+      <div class="onboarding-copy">
+        <div class="step-dots"><i class="active"></i><i></i><i></i><i></i></div>
+        <p class="eyebrow">歡迎使用 SIGNALDESK</p>
+        <h2 id="onboardingTitle">少一點打斷，<br>多一點真正重要的事。</h2>
+        <p id="onboardingBody">SignalDesk 在本機整理 Gmail 與 Windows 通知預覽，只在值得你注意時出現。</p>
+        <div class="boundary-note"><span data-icon="shield"></span><div><strong>你永遠保有控制權</strong><small>系統不會自動傳送、刪除或回覆任何訊息。</small></div></div>
+        <div class="onboarding-actions">
+          <button class="button secondary" id="seedDemo">載入示範資料</button>
+          <button class="button primary" id="nextOnboarding">開始設定 <span data-icon="arrow"></span></button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head"><h2 id="modalTitle"></h2><button class="icon-button" id="modalClose" aria-label="關閉"><span data-icon="close"></span></button></div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </section>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+  <script type="module" src="/assets/app.js"></script>
+</body>
+</html>

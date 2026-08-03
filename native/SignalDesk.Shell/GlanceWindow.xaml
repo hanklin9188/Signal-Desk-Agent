@@ -1,0 +1,126 @@
+<Window
+    x:Class="SignalDesk.Shell.GlanceWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ui="using:SignalDesk.Shell.Controls"
+    xmlns:models="using:SignalDesk.Shell.Models"
+    Title="SignalDesk Glance">
+    <Border x:Name="RootBorder" Background="{ThemeResource SignalPageBrush}"
+            BorderBrush="{ThemeResource SignalCardStrokeBrush}" BorderThickness="1"
+            CornerRadius="24" Padding="20">
+        <Grid RowSpacing="14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <StackPanel Spacing="2">
+                    <TextBlock Text="GLANCE · LIVE" Style="{StaticResource SignalSectionLabelStyle}"
+                               Foreground="{StaticResource SignalAccentBrush}" />
+                    <TextBlock Text="剛剛發生的事" FontFamily="Segoe UI Variable Display"
+                               FontSize="25" FontWeight="SemiBold" />
+                    <TextBlock Text="每個來源、每位對話者分開整理"
+                               FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+                <Button Grid.Column="1" Style="{StaticResource SignalIconButtonStyle}"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Click="Close_Click" ToolTipService.ToolTip="關閉">
+                    <FontIcon Glyph="&#xE711;" FontSize="13" />
+                </Button>
+            </Grid>
+
+            <Grid Grid.Row="1">
+                <ListView x:Name="GlanceList" ItemsSource="{x:Bind Cards}" SelectionMode="None"
+                          HorizontalContentAlignment="Stretch"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Background" Value="Transparent" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:CardItem">
+                            <Border Padding="15" Margin="0,0,0,9" CornerRadius="17"
+                                    Background="{ThemeResource SignalCardBrush}"
+                                    BorderBrush="{ThemeResource SignalCardStrokeBrush}" BorderThickness="1">
+                                <Grid RowSpacing="8">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Border HorizontalAlignment="Left" CornerRadius="7" Padding="8,3"
+                                                Background="{StaticResource SignalAccentSoftBrush}">
+                                            <TextBlock Text="{x:Bind SourceLabel}" FontSize="10" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource SignalAccentBrush}" />
+                                        </Border>
+                                        <TextBlock Text="{x:Bind TimeLabel, Mode=OneWay}" HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center" FontSize="10" FontWeight="SemiBold"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </Grid>
+                                    <Grid Grid.Row="1" ColumnSpacing="10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="38" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <ui:SourceBadge Source="{x:Bind Source}" BadgeSize="36" />
+                                        <TextBlock Grid.Column="1" Text="{x:Bind SenderLabel}" FontSize="14"
+                                                   FontWeight="SemiBold" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="2" Text="{x:Bind PriorityLabel}" FontSize="10"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    </Grid>
+                                    <TextBlock Grid.Row="2" Text="{x:Bind Summary}" FontSize="12" LineHeight="18"
+                                               MaxLines="2" TextWrapping="WrapWholeWords"
+                                               TextTrimming="CharacterEllipsis"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="6">
+                                        <Button Content="查看詳情" Tag="{x:Bind CardId}" Click="Card_Click"
+                                                MinWidth="0" Padding="12,6" />
+                                        <Button Content="稍後" Tag="{x:Bind CardId}" Click="Snooze_Click"
+                                                MinWidth="0" Padding="12,6" />
+                                        <Button Content="回覆草稿" Tag="{x:Bind CardId}" Click="Draft_Click"
+                                                MinWidth="0" Padding="12,6"
+                                                Visibility="{x:Bind ReplyVisibility}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Spacing="8" Visibility="Collapsed">
+                    <Border Width="52" Height="52" CornerRadius="17" Background="{StaticResource SignalGreenSoftBrush}">
+                        <SymbolIcon Symbol="Accept" Foreground="{StaticResource SignalGreenBrush}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="目前沒有急迫事項" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    <TextBlock Text="可以放心專注在手邊的事情。" FontSize="11"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Grid.Row="2" Spacing="8">
+                <Grid>
+                    <TextBlock x:Name="ShowingText" HorizontalAlignment="Left" FontSize="10"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <TextBlock x:Name="RemainingText" HorizontalAlignment="Right" FontSize="10"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                </Grid>
+                <Button Content="開啟完整工作區" HorizontalAlignment="Stretch" Height="42"
+                        Style="{StaticResource AccentButtonStyle}"
+                        Click="Dashboard_Click" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

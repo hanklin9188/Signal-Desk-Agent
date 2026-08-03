@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NotificationCard",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "card_id",
+    "thread_id",
+    "source",
+    "summary",
+    "priority",
+    "requires_reply",
+    "actions",
+    "display_mode",
+    "created_at"
+  ],
+  "properties": {
+    "card_id": {
+      "type": "string"
+    },
+    "thread_id": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "sender": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string"
+    },
+    "requires_reply": {
+      "type": "string"
+    },
+    "deadline_text": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "display_mode": {
+      "enum": [
+        "surface_now",
+        "inbox",
+        "digest",
+        "review",
+        "hidden"
+      ]
+    },
+    "why_shown": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

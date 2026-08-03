@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "thread_id": "thread_line_group_001",
+  "source": "line_notification",
+  "conversation_id": null,
+  "sender": "實驗室群組",
+  "event_ids": [
+    "line_notif_001"
+  ],
+  "content_completeness": "notification_preview",
+  "messages": [
+    {
+      "event_id": "line_notif_001",
+      "received_at": "2026-08-02T18:35:00+08:00",
+      "sender": "實驗室群組",
+      "content": "明天會議改到下午三點，教授也會參加，你可以嗎？"
+    }
+  ],
+  "verified_memory": null,
+  "updated_at": "2026-08-02T18:35:05+08:00"
+}

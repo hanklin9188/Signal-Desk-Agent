@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgentDecision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "reason_codes",
+    "policy_version"
+  ],
+  "properties": {
+    "decision": {
+      "enum": [
+        "surface_now",
+        "store_in_inbox",
+        "include_in_digest",
+        "needs_review",
+        "ignore_as_noise",
+        "request_confirmation"
+      ]
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "policy_version": {
+      "type": "string"
+    },
+    "calibrated_score": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+}

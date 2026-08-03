@@ -1,0 +1,32 @@
+scenario_id: locked-messenger-052
+events:
+- schema_version: '1.0'
+  event_id: locked-messenger-52
+  source: messenger_notification
+  source_app_id: Microsoft Edge
+  account_id: windows
+  sender: Messenger user 52
+  conversation_id: null
+  title: Messenger user 52
+  content: 傳送了一張相片
+  content_completeness: notification_preview
+  received_at: '2026-08-02T18:00:00+08:00'
+  source_url: null
+  raw_notification_id: locked-win-messenger-52
+  privacy_class: private
+  metadata:
+    origin: messenger.com
+  checksum: null
+expected:
+  priority: unknown
+  requires_reply: unknown
+  display_mode: store_in_inbox
+  action_items: []
+  deadline_texts: []
+  must_include_limitations:
+  - incomplete_preview
+tags:
+- synthetic
+- messenger
+- preview
+- image_only

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Deadline",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "original_text",
+    "normalized_at",
+    "precision",
+    "explicit",
+    "supporting_span"
+  ],
+  "properties": {
+    "original_text": {
+      "type": "string"
+    },
+    "normalized_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "precision": {
+      "enum": [
+        "exact",
+        "minute",
+        "hour",
+        "day",
+        "day_part",
+        "week",
+        "unknown"
+      ]
+    },
+    "timezone": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "explicit": {
+      "type": "boolean"
+    },
+    "supporting_span": {
+      "type": "string"
+    }
+  }
+}

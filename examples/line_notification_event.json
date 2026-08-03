@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "event_id": "line_notif_001",
+  "source": "line_notification",
+  "source_app_id": "LINE",
+  "account_id": "windows_user",
+  "sender": "實驗室群組",
+  "conversation_id": null,
+  "title": "實驗室群組",
+  "content": "明天會議改到下午三點，教授也會參加，你可以嗎？",
+  "content_completeness": "notification_preview",
+  "received_at": "2026-08-02T18:35:00+08:00",
+  "source_url": null,
+  "raw_notification_id": "win_101",
+  "privacy_class": "private",
+  "metadata": {},
+  "checksum": "sha256-example-line"
+}

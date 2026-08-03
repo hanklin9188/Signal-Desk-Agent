@@ -1,0 +1,60 @@
+name: Validate SignalDesk
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install application and validators
+        run: pip install -e '.[dev]'
+
+      - name: Validate JSON and YAML
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import yaml
+          for p in Path(".").rglob("*.json"):
+              json.loads(p.read_text(encoding="utf-8"))
+              print("[json]", p)
+          for p in Path(".").rglob("*.yaml"):
+              yaml.safe_load(p.read_text(encoding="utf-8"))
+              print("[yaml]", p)
+          PY
+
+      - name: Reject common secret files
+        run: |
+          test ! -f credentials.json
+          test ! -f token.json
+          test ! -f .env
+
+      - name: Lint
+        run: ruff check signaldesk tests
+
+      - name: Test
+        run: pytest
+
+      - name: Locked scenario smoke benchmark
+        run: signaldesk-benchmark --output runs/ci
+
+  native-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build native WinUI shell
+        shell: pwsh
+        run: dotnet build native/SignalDesk.Shell/SignalDesk.Shell.csproj -c Release -p:Platform=x64

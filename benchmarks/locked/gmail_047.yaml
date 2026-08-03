@@ -1,0 +1,32 @@
+scenario_id: locked-gmail-047
+events:
+- schema_version: '1.0'
+  event_id: locked-gmail-47
+  source: gmail
+  source_app_id: gmail
+  account_id: work
+  sender: professor47@example.edu
+  conversation_id: locked-gmail-thread-47
+  title: 實驗進度
+  content: 請在今晚前把目前的實驗結果寄給我。
+  content_completeness: full
+  received_at: '2026-08-02T18:00:00+08:00'
+  source_url: null
+  raw_notification_id: null
+  privacy_class: sensitive
+  metadata: {}
+  checksum: null
+expected:
+  priority: high
+  requires_reply: 'yes'
+  display_mode: surface_now
+  action_items:
+  - 寄出實驗結果
+  deadline_texts:
+  - 今晚前
+  must_include_limitations: []
+tags:
+- synthetic
+- gmail
+- deadline
+- reply
