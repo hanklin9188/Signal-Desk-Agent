@@ -17,8 +17,14 @@ $stamp = (Get-Date).ToUniversalTime().ToString("yyyyMMdd-HHmmss")
 $backup = Join-Path $backupRoot $stamp
 $data = Join-Path $env:LOCALAPPDATA "SignalDesk"
 if (Test-Path $data) {
-    New-Item -ItemType Directory -Force -Path $backup | Out-Null
-    Copy-Item $data (Join-Path $backup "SignalDesk") -Recurse -Force
+    $backupData = Join-Path $backup "SignalDesk"
+    New-Item -ItemType Directory -Force -Path $backupData | Out-Null
+    $excludedCaches = @("models", "model-runtime", "diagnostics", "certificates")
+    Get-ChildItem -LiteralPath $data | Where-Object {
+        $_.Name -notin $excludedCaches
+    } | ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination $backupData -Recurse -Force
+    }
 }
 Write-Host "Current version: $($current.Version)"
 Write-Host "Recoverable data backup: $backup"

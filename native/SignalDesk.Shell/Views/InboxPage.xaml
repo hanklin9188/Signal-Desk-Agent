@@ -27,6 +27,8 @@
                                Foreground="{StaticResource SignalAccentBrush}" />
                     <TextBlock x:Name="ViewTitle" Text="現在" FontFamily="Segoe UI Variable Display"
                                FontSize="30" FontWeight="SemiBold" />
+                    <TextBlock x:Name="ViewDescription" FontSize="11"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
                 <Border HorizontalAlignment="Right" VerticalAlignment="Bottom"
                         Background="{StaticResource SignalAccentSoftBrush}" CornerRadius="10" Padding="11,6">
@@ -361,20 +363,31 @@
                                                 <ItemsControl ItemsSource="{x:Bind Media}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate x:DataType="models:MediaAssetData">
-                                                            <StackPanel Orientation="Horizontal" Spacing="8"
-                                                                        Margin="0,2,0,0">
+                                                            <Grid ColumnSpacing="8" Margin="0,2,0,0">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                </Grid.ColumnDefinitions>
                                                                 <Button Tag="{x:Bind AssetId}" Click="Media_Click"
-                                                                        IsEnabled="{x:Bind IsAvailable}">
+                                                                        IsEnabled="{x:Bind IsAvailable}"
+                                                                        HorizontalAlignment="Stretch"
+                                                                        HorizontalContentAlignment="Left">
                                                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                                                         <FontIcon Glyph="&#xEB9F;" FontSize="14" />
                                                                         <TextBlock Text="{x:Bind DisplayLabel}"
                                                                                    TextTrimming="CharacterEllipsis" />
                                                                     </StackPanel>
                                                                 </Button>
-                                                                <Button Tag="{x:Bind AssetId}" Click="AnalyzeMedia_Click"
-                                                                        IsEnabled="{x:Bind IsAvailable}"
-                                                                        Content="分析圖片" />
-                                                            </StackPanel>
+                                                                <Border Grid.Column="1" Style="{StaticResource SignalChipStyle}"
+                                                                        VerticalAlignment="Center"
+                                                                        Visibility="{x:Bind AnalysisVisibility}">
+                                                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                                                        <ProgressRing Width="12" Height="12" IsActive="True"
+                                                                                      Visibility="{x:Bind IsAnalysisQueued, Converter={StaticResource BoolVisibility}}" />
+                                                                        <TextBlock Text="{x:Bind AnalysisLabel}" FontSize="10" />
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </Grid>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>

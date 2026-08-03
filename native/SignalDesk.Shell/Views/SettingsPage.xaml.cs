@@ -28,6 +28,7 @@ public sealed partial class SettingsPage : UserControl, IAsyncPage
         QuietEndPicker.Time = ParseTime(prefs.QuietEnd, new TimeSpan(8, 0, 0));
         DigestTimePicker.Time = ParseTime(prefs.DigestTime, new TimeSpan(18, 0, 0));
         FocusDigestBox.Value = prefs.FocusDigestMinutes;
+        NowWindowBox.Value = prefs.NowWindowHours;
         RetentionDaysBox.Value = prefs.RawRetentionDays;
         AllowlistBox.Text = string.Join(", ", prefs.NotificationAllowlist);
         SelectByTag(ThemeCombo, prefs.Theme);
@@ -62,6 +63,7 @@ public sealed partial class SettingsPage : UserControl, IAsyncPage
                 quiet_end = FormatTime(QuietEndPicker.Time),
                 digest_time = FormatTime(DigestTimePicker.Time),
                 focus_digest_minutes = (int)FocusDigestBox.Value,
+                now_window_hours = (int)NowWindowBox.Value,
                 theme = SelectedTag(ThemeCombo, "system"),
                 model_residency = SelectedTag(ModelResidencyCombo, "on_demand"),
                 raw_retention_days = (int)RetentionDaysBox.Value,

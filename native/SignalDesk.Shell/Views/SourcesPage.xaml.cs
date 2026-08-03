@@ -19,7 +19,11 @@ public sealed partial class SourcesPage : UserControl, IAsyncPage
         InitializeComponent();
     }
 
-    public Task LoadAsync() => Task.CompletedTask;
+    public Task LoadAsync()
+    {
+        SourcesScroll.ChangeView(null, 0, null, true);
+        return Task.CompletedTask;
+    }
 
     private async void PersonalChatGuide_Click(object sender, RoutedEventArgs e)
     {

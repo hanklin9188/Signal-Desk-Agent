@@ -46,10 +46,10 @@ The production interface is a native WinUI 3 application, not a web wrapper.
 
 | Surface | Purpose |
 |---|---|
-| Inbox Center | Search, source filters, priority filters, batch actions, and evidence-rich message detail |
+| Inbox Center | “Now” is a configurable recent window (6 hours by default); “Today” starts at local midnight, with search, filters, actions, and evidence-rich detail |
 | Glance | Always-on-top view of the latest useful items; refreshes every 30 seconds |
 | Focus mode | Raises the real-time interruption threshold while keeping messages available in the inbox |
-| Daily Digest | Groups urgent items, deadlines, replies, and lower-priority information |
+| Daily Digest | Uses validated Qwen semantics to separate urgent, important, reply, and informational items |
 | Source Center | Gmail OAuth health, Windows notification permission, and local chat archive imports |
 | Attention Policy | Explainable VIP, priority, and mute rules that can be removed at any time |
 | Privacy Controls | Local export, retention settings, preference reset, and confirmed private-data deletion |
@@ -89,9 +89,9 @@ flowchart TB
         Pipeline[Agent pipeline]
         Rules[Rules + validator + policy]
         Store[(SQLite WAL)]
-        Model[Optional local Qwen endpoint]
+        Model[Disposable local Qwen worker]
         Media[Safe media store]
-        OCR[On-demand PaddleOCR-VL]
+        OCR[Automatic PaddleOCR-VL]
     end
 
     Gmail[Gmail API] --> API
@@ -101,11 +101,11 @@ flowchart TB
     Vault --> Shell
     API --> Pipeline --> Rules --> Store
     API --> Media --> OCR
-    OCR -. evidence .-> Pipeline
-    Model -. optional .-> Pipeline
+    OCR -->|worker exits + localized evidence| Model
+    Model -->|worker exits + semantic summary| Pipeline
 ```
 
-The native shell launches the packaged Python service on `127.0.0.1`, retrieves a random bearer token from Windows Credential Manager, and communicates only through the authenticated loopback API. See [architecture details](ARCHITECTURE.md) and the [code ownership map](docs/PROJECT_STRUCTURE.md).
+The native shell launches the packaged Python service on `127.0.0.1`, retrieves a random bearer token from Windows Credential Manager, and communicates only through the authenticated loopback API. CUDA inference runs in disposable local child processes so the long-lived desktop service does not retain an idle GPU context. See [architecture details](ARCHITECTURE.md) and the [code ownership map](docs/PROJECT_STRUCTURE.md).
 
 The image/OCR/Qwen delivery contract, supported-source limits and acceptance gates are documented in
 [Multimodal Image Design](MULTIMODAL_DESIGN.md). A notification saying "sent a photo" is not treated
@@ -146,7 +146,7 @@ SIGNALDESK_DEMO=1 .venv/bin/signaldesk
 
 Current local verification:
 
-- 70 automated tests passing.
+- 72 automated tests passing.
 - 300 synthetic locked scenarios / 1,800 checks passing.
 - RTX 4080 SUPER image smoke: Qwen3.5-4B BF16/NF4/INT8 and PaddleOCR-VL-1.6 BF16 all loaded
   locally and found the fictional visible deadline; see [raw metrics](benchmarks/results/README.md).
@@ -157,11 +157,18 @@ Current local verification:
 The optional Windows GPU runtime is reproducible with
 `scripts/setup-windows-model-runtime.ps1`. It pins Qwen3.5-4B and PaddleOCR-VL-1.6 revisions,
 keeps inference local, and performs model work after the deterministic card is already visible.
-Qwen uses NF4 4-bit weights by default. Thumbnails require no model; after the user selects
-“分析圖片”, PaddleOCR extracts evidence and releases before Qwen interprets the photo or document.
-Neither model remains resident on the GPU. A
+Qwen uses NF4 4-bit weights by default. Thumbnails require no model; when real image bytes arrive,
+the background worker automatically runs PaddleOCR, releases it, then asks Qwen to inspect both the
+pixels and verified OCR context. Neither model remains resident on the GPU. A
 fictional end-to-end RTX 4080 SUPER run measured 3.277 GiB peak allocated VRAM and 0.008 GiB after
 Qwen release.
+
+The current privacy-safe calibration set contains 24 diverse triage cases. Qwen plus explicit,
+observable constraints reached 100% priority/reply/category accuracy on that calibration set; the
+raw Qwen-only pass was lower, so the result is not presented as general model accuracy. PaddleOCR
+reached 100% token recall on six synthetic text images and correctly handled one genuine no-text
+image. The sequential two-image OCR → Qwen workflow passed 2/2 in 29.1 seconds. See
+[Local Model Validation](docs/LOCAL_MODEL_VALIDATION.md) for methodology and limitations.
 
 Qwen summaries use a strict zh-TW contract: conclusion first, then the supported actor, event,
 next step and deadline. One in-memory repair pass corrects malformed/truncated JSON without loading
@@ -191,7 +198,8 @@ For module-by-module responsibilities, start with [Project Structure & Code Owne
 - The API binds to loopback and requires an unguessable token.
 - OAuth tokens live in the OS credential store, not SQLite or Git.
 - Source URLs must match connector-specific HTTPS allowlists.
-- Notification previews remain labeled incomplete; image/sticker content is never guessed.
+- Notification previews remain labeled incomplete; an image is analyzed only when a connector
+  supplied validated bytes, never from a “sent a photo” placeholder.
 - Media paths never cross the API; supported bytes use content-addressed local storage and are
   removed by confirmed private-data deletion.
 - There is no endpoint for automatic sending, source deletion, or arbitrary shell execution.
@@ -203,8 +211,8 @@ Security design: [SECURITY_PRIVACY.md](SECURITY_PRIVACY.md) · Responsible discl
 - Expand anonymized, human-labeled evaluation beyond synthetic scenarios.
 - Complete 7–14 day Shadow Mode calibration studies.
 - Add production publisher signing and a stable Windows release channel.
-- Audit optional local Qwen inference against the deterministic baseline before considering training.
-- Human-review the prepared 300-item multimodal audit and complete real PaddleOCR/Qwen quality runs.
+- Human-review the prepared 300-item multimodal audit and real-source samples before considering
+  QLoRA/SFT; the current synthetic calibration does not justify training by itself.
 
 ## License
 

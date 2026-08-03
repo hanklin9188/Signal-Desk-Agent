@@ -46,12 +46,13 @@ class Settings:
     summary_retention_days: int
     max_request_bytes: int = 1_000_000
     vision_backend: str = "disabled"
-    vision_auto_analyze: bool = False
+    vision_auto_analyze: bool = True
     ocr_model_id: str = "PaddlePaddle/PaddleOCR-VL-1.6"
     ocr_model_revision: str | None = "66317acc4c9fc17bd154591ce650735cd2855f3e"
     ocr_max_new_tokens: int = 384
     model_revision: str | None = "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a"
     model_quantization: str = "none"
+    model_isolation: bool = True
 
     @property
     def data_dir(self) -> Path:
@@ -94,7 +95,9 @@ def load_settings() -> Settings:
         normalized_retention_days=int(privacy_config.get("normalized_event_retention_days", 30)),
         summary_retention_days=int(privacy_config.get("summary_retention_days", 180)),
         vision_backend=os.getenv("SIGNALDESK_VISION_BACKEND", "disabled").lower(),
-        vision_auto_analyze=_truthy(os.getenv("SIGNALDESK_VISION_AUTO_ANALYZE")),
+        vision_auto_analyze=_truthy(
+            os.getenv("SIGNALDESK_VISION_AUTO_ANALYZE"), default=True
+        ),
         ocr_model_id=os.getenv(
             "SIGNALDESK_OCR_MODEL_ID", "PaddlePaddle/PaddleOCR-VL-1.6"
         ),
@@ -112,4 +115,5 @@ def load_settings() -> Settings:
         )
         or None,
         model_quantization=os.getenv("SIGNALDESK_MODEL_QUANTIZATION", "none").lower(),
+        model_isolation=_truthy(os.getenv("SIGNALDESK_MODEL_ISOLATION"), default=True),
     )

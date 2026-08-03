@@ -24,15 +24,35 @@ NOISE_PATTERNS = [
     r"\bOTP\b|驗證碼|verification code|登入代碼",
     r"unsubscribe|取消訂閱|限時優惠|折扣碼|promotion|廣告",
     r"build (?:succeeded|passed)|部署成功|CI passed",
+    r"新(?:的)?徽章|new badge|熱門動態|trending (?:feed|post)|engagement notice",
 ]
-SECURITY_PATTERNS = [r"異常登入|可疑登入|security alert|密碼已變更|new sign-in"]
-MEETING_PATTERNS = [r"會議|meeting|appointment|議程|standup|sync"]
-RESEARCH_PATTERNS = [r"實驗|論文|研究|dataset|benchmark|reviewer"]
+SECURITY_PATTERNS = [
+    r"異常登入|可疑登入|陌生裝置.*登入|不是你.*保護帳戶|security alert|密碼已變更|"
+    r"new sign-in"
+]
+MEETING_PATTERNS = [r"會議|meeting|appointment|議程|standup|sync|client call|\bcall at\b"]
+RESEARCH_PATTERNS = [
+    r"實驗|論文|研究|受試者|實驗室|指導教授|dataset|benchmark|reviewer|manuscript|"
+    r"journal|thesis|reading list|lab material"
+]
 TRANSACTION_PATTERNS = [r"付款|發票|收據|payment|invoice|訂單"]
+WORK_PATTERNS = [
+    r"專案|客戶|辦公室|production|customer|client|project|upload|shared file|office"
+]
+SOCIAL_PATTERNS = [r"我已(?:經)?到|你慢慢來|有空再|一起去|週末愉快"]
 URGENT_PATTERNS = [r"緊急|立即|asap|urgent|馬上"]
 REQUEST_PATTERNS = [r"請(?:你|協助|幫忙|在|於|把|提供|回覆)?", r"麻煩", r"could you", r"please"]
+LOW_PRIORITY_PATTERNS = [
+    r"有空(?:再|時)|不急|沒有期限|無期限|週末愉快|optional|whenever you have time|"
+    r"no deadline"
+]
+NO_REPLY_PATTERNS = [
+    r"不用回覆|無需回覆|不必回覆|僅供通知|僅供參考|"
+    r"no (?:response|reply) is (?:needed|required)"
+]
 IMAGE_ONLY_PATTERNS = [
-    r"^(?:傳送|sent)(?:了| you)?(?:一張| an?)?(?:相片|照片|圖片|photo|image|sticker|貼圖)$"
+    r"^(?:.*?)(?:傳送了?|sent)(?:\s+you)?\s*(?:\d+|一|one|an?)?\s*(?:張|個)?\s*"
+    r"(?:相片|照片|圖片|photo|image|sticker|貼圖)[。.!]?$"
 ]
 
 
@@ -70,6 +90,14 @@ def _action_span(content: str, reply: str) -> tuple[str, str] | None:
             return f"寄出{mailed_object.group(1).strip()}", span
         task = re.sub(r"^(?:請|麻煩|please|could you)\s*", "", span, flags=re.I)
         return task.rstrip("。！？!?"), span
+    imperative = re.search(
+        r"^(?:submit|upload|send|review|complete|confirm|reply)\s+[^.!?\n]{2,100}",
+        content,
+        re.I,
+    )
+    if imperative:
+        span = imperative.group(0).strip()
+        return span.rstrip("。！？!?"), span
     if reply == "yes":
         return "回覆此訊息", content[-min(len(content), 60) :]
     return None
@@ -104,10 +132,18 @@ class RuleEngine:
             signal.requires_reply = "unknown"
             signal.reason_codes.extend(["content_missing", "preview_only"])
             return signal
+        if not content.strip() and str(thread.content_completeness) == "metadata_only":
+            signal.category = "unknown"
+            signal.priority = "unknown"
+            signal.requires_reply = "unknown"
+            signal.reason_codes.extend(["content_missing", "metadata_only"])
+            return signal
 
         if _match_any(NOISE_PATTERNS, content):
             signal.category = (
-                "promotion" if re.search(r"優惠|折扣|promotion", content, re.I) else "system"
+                "promotion"
+                if re.search(r"優惠|折扣|promotion|徽章|badge|熱門動態|trending", content, re.I)
+                else "system"
             )
             signal.priority = "noise"
             signal.requires_reply = "no"
@@ -118,22 +154,36 @@ class RuleEngine:
             signal.category = "security"
             signal.priority = "urgent"
             signal.reason_codes.extend(["security_alert", "explicit_risk"])
-        elif _match_any(MEETING_PATTERNS, content):
-            signal.category = "meeting"
-        elif _match_any(RESEARCH_PATTERNS, content):
-            signal.category = "research"
-        elif _match_any(TRANSACTION_PATTERNS, content):
-            signal.category = "transaction"
-        elif thread.source in {"line_notification", "messenger_notification"}:
-            signal.category = "social"
-        elif thread.source == "gmail":
-            signal.category = "work"
+        if signal.category != "security":
+            category_context = f"{thread.sender or ''}\n{content}"
+            if _match_any(RESEARCH_PATTERNS, category_context):
+                signal.category = "research"
+                signal.reason_codes.append("research_topic")
+            elif _match_any(SOCIAL_PATTERNS, content):
+                signal.category = "social"
+                signal.reason_codes.append("social_topic")
+            elif _match_any(MEETING_PATTERNS, category_context):
+                signal.category = "meeting"
+                signal.reason_codes.append("meeting_topic")
+            elif _match_any(TRANSACTION_PATTERNS, content):
+                signal.category = "transaction"
+                signal.reason_codes.append("transaction_topic")
+            elif _match_any(WORK_PATTERNS, category_context):
+                signal.category = "work"
+                signal.reason_codes.append("work_topic")
+            elif thread.source in {"line_notification", "messenger_notification"}:
+                signal.category = "social"
+            elif thread.source == "gmail":
+                signal.category = "work"
 
         question = bool(re.search(r"[?？]|可以嗎|能否|請回覆|回覆我|let me know", content, re.I))
         request = _match_any(REQUEST_PATTERNS, content)
         if question or request:
             signal.requires_reply = "yes"
             signal.reason_codes.append("direct_question" if question else "explicit_request")
+        if _match_any(NO_REPLY_PATTERNS, content):
+            signal.requires_reply = "no"
+            signal.reason_codes.append("explicit_no_reply")
         if signal.category == "security" and not question:
             # Security alerts often ask the user to act, but a no-reply sender does not
             # expect a reply.
@@ -143,11 +193,17 @@ class RuleEngine:
             signal.reason_codes.append("explicit_urgency")
         elif signal.requires_reply == "yes" or signal.is_vip:
             signal.priority = "high"
+        elif _match_any(LOW_PRIORITY_PATTERNS, content):
+            signal.priority = "low"
+            signal.reason_codes.append("explicitly_optional")
 
         deadlines = extract_deadlines(content, thread.updated_at, self.timezone)
         if deadlines:
             signal.reason_codes.append("explicit_deadline")
-            if signal.priority in {"normal", "low"}:
+            if (
+                signal.priority in {"normal", "low"}
+                and "explicit_no_reply" not in signal.reason_codes
+            ):
                 signal.priority = "high"
         if signal.muted:
             signal.priority = "low"

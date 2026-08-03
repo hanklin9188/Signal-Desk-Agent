@@ -54,11 +54,13 @@ def test_model_content_uses_endpoint_and_transformers_image_contracts(tmp_path):
     )
 
     assert isinstance(endpoint, list)
-    assert endpoint[1]["type"] == "image_url"
-    assert endpoint[1]["image_url"]["url"].startswith("data:image/png;base64,")
+    assert endpoint[0]["type"] == "image_url"
+    assert endpoint[0]["image_url"]["url"].startswith("data:image/png;base64,")
+    assert endpoint[1] == {"type": "text", "text": "prompt"}
     assert isinstance(transformers, list)
-    assert transformers[1]["type"] == "image"
-    assert transformers[1]["url"].startswith("data:image/png;base64,")
+    assert transformers[0]["type"] == "image"
+    assert transformers[0]["url"].startswith("data:image/png;base64,")
+    assert transformers[1] == {"type": "text", "text": "prompt"}
 
 
 def test_model_prompt_supplies_allowed_source_event_ids(tmp_path):

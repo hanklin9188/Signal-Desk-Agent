@@ -18,7 +18,6 @@ public sealed partial class InboxPage : UserControl, IAsyncPage
     private readonly string _view;
     private string _search = "";
     private string? _loadingDetailCardId;
-    private readonly HashSet<string> _analyzingAssets = [];
     private bool _loaded;
 
     public InboxPage(AppState state, string view)
@@ -33,6 +32,14 @@ public sealed partial class InboxPage : UserControl, IAsyncPage
             "reply" => ("WAITING ON YOU", "需要回覆"),
             "done" => ("ARCHIVE", "已完成"),
             _ => ("INBOX CENTER", "現在")
+        };
+        ViewDescription.Text = view switch
+        {
+            "now" => $"最近 {_state.Preferences.NowWindowHours} 小時收到的訊息 · 最新在上",
+            "today" => "今天 00:00 起收到，或期限落在今天的訊息",
+            "reply" => "所有仍等待你回覆的訊息",
+            "done" => "你已完成或歸檔的訊息",
+            _ => "依最新時間排序"
         };
     }
 
@@ -69,6 +76,8 @@ public sealed partial class InboxPage : UserControl, IAsyncPage
 
     private async Task ApplyFilterAsync()
     {
+        if (_view == "now")
+            ViewDescription.Text = $"最近 {_state.Preferences.NowWindowHours} 小時收到的訊息 · 最新在上";
         var priority = (PriorityFilter.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
         var source = (SourceFilter.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
         var date = (DateFilter.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "";
@@ -234,44 +243,6 @@ public sealed partial class InboxPage : UserControl, IAsyncPage
         catch (Exception error)
         {
             ShowMessage("圖片無法開啟", error.Message, InfoBarSeverity.Error);
-        }
-    }
-
-    private async void AnalyzeMedia_Click(object sender, RoutedEventArgs e)
-    {
-        if (Detail is null || sender is not Button { Tag: string assetId } button ||
-            !_analyzingAssets.Add(assetId)) return;
-        var cardId = Detail.CardId;
-        button.IsEnabled = false;
-        ShowMessage(
-            "正在分析圖片",
-            "PaddleOCR 先擷取文字並釋放 GPU，接著由 Qwen 理解照片或文件語意。",
-            InfoBarSeverity.Informational);
-        try
-        {
-            var result = await _state.Api.AnalyzeMediaAsync(assetId);
-            var semantic = result.TryGetProperty("semantic_status", out var value)
-                ? value.GetString() : null;
-            if (semantic != "completed")
-                throw new InvalidOperationException("圖片語意模型沒有成功完成，已保留原圖可供查看。");
-            var ocr = result.TryGetProperty("status", out var ocrValue)
-                ? ocrValue.GetString() : null;
-            ShowMessage(
-                "圖片分析完成",
-                ocr == "completed"
-                    ? "已擷取可驗證文字並更新語意摘要；模型已釋放 GPU。"
-                    : "圖片沒有可擷取文字，已完成照片語意摘要；模型已釋放 GPU。");
-            var card = Cards.FirstOrDefault(item => item.CardId == cardId);
-            if (card is not null) await ShowCardDetailAsync(card);
-        }
-        catch (Exception error)
-        {
-            ShowMessage("圖片分析失敗", error.Message, InfoBarSeverity.Error);
-        }
-        finally
-        {
-            _analyzingAssets.Remove(assetId);
-            button.IsEnabled = true;
         }
     }
 

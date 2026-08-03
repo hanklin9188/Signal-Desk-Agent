@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last verified: 2026-08-03 · Desktop build: `0.1.0.47`
+Last verified: 2026-08-04 · Desktop build: `0.1.0.51`
 
 ## Honest completion estimate
 
@@ -8,11 +8,11 @@ These percentages measure different scopes and must not be added together:
 
 | Scope | Baseline | Current estimate | Meaning |
 |---|---:|---:|---|
-| Desktop App and core messaging | 80% | 86% | Inbox/Glance thumbnails, connectors, grouping, actions and image detail are implemented |
-| Original complete technical plan | 65% | 75% | OCR/evidence/audit/release tooling exists; real observation and provider QA remain |
-| Public v1.0 release | 55% | 62% | Signing is gated and automated; certificate, human audit and field validation remain |
-| Qwen and dataset/training | 20% | 52% | Pinned Windows GPU runtime and deferred inference are deployed; human labels decide whether training is needed |
-| Multimodal image capability | — | 74% | Thumbnail/OCR/evidence/runtime and unavailable-image states exist; real-source and human quality gates remain |
+| Desktop App and core messaging | 80% | 88% | Inbox/Glance thumbnails, connectors, grouping, actions, explicit Now/Today views and image detail are implemented |
+| Original complete technical plan | 65% | 78% | Automatic OCR/Qwen, evidence, audit and release tooling exist; real observation and provider QA remain |
+| Public v1.0 release | 55% | 64% | Signing is gated and automated; certificate, human audit and field validation remain |
+| Qwen and dataset/training | 20% | 60% | Pinned NF4 runtime, measured semantic calibration and fallback policy are deployed; human labels decide whether training is needed |
+| Multimodal image capability | — | 82% | Automatic thumbnail/OCR/Qwen/evidence flow is measured; real-source and human quality gates remain |
 
 The percentages are planning estimates, not test coverage. A feature is never marked complete solely
 because it has a design document.
@@ -33,28 +33,28 @@ because it has a design document.
 | Attention policy | Complete | Focus, quiet hours, VIP/mute, uncertainty penalty, preference score, interruption budget, Shadow Mode |
 | Actions | Complete | Open source, snooze, done, local reminder, editable draft; no auto-send route |
 | Privacy controls | Complete | Retention worker, safe export, preference reset, confirmed private-data deletion |
-| Validation | Passing | 70 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; local validation passes for 0.1.0.47 |
+| Validation | Passing | 72 tests, Ruff clean, 300 locked text scenarios / 1,800 checks; local validation passes for 0.1.0.51 |
 | Media presentation | Implemented, packaged verification in progress | Safe decode + thumbnail endpoint, Inbox and Glance previews, detail full image, and an explicit unavailable state when a Windows toast contains no image bytes |
-| OCR evidence | Deployed, model audit pending | Pinned PaddleOCR-VL-1.6 Windows CUDA runtime, hash-bound blocks/regions, authenticated analysis API, deterministic evidence rejection |
+| OCR evidence | Deployed and calibrated | Pinned PaddleOCR-VL-1.6, automatic queue, hash-bound blocks/regions, deterministic evidence extraction/rejection; 6 text images at 100% token recall plus 1/1 no-text image |
 | Multimodal audit | Queue ready, 0/300 human-reviewed | 300 fictional local images with SHA-256 manifest and review/lock tool; no review is falsely claimed |
 | Shadow/release | Tooling ready, time gates pending | Content-free 7–14 day report, readiness verifier, production signing and recoverable rollback scripts |
 | RTX 4080 SUPER smoke | Passing | Full NF4 agent 3.277 GiB and 0.008 GiB after release; Paddle BF16 1.811 GiB/7.092 s and 0.008 GiB after release; earlier BF16/INT8/NF4 comparison retained in benchmark results |
-| Live model scheduling | Implemented | Rule card/thumbnail appears without a model; “分析圖片” runs OCR then Qwen sequentially; important full text may wake Qwen directly; both release afterward |
-| Agent model contract | Passing on RTX 4080 SUPER | NF4 fictional end-to-end smoke produces a clear zh-TW summary and valid evidence-bound JSON at 3.277 GiB peak and 0.008 GiB allocated after release; one bounded format-repair pass reduces fallback without adding model weights |
+| Live model scheduling | Implemented | Every eligible text is queued for semantic triage; every available image automatically runs OCR then Qwen sequentially in disposable Windows workers, so CUDA context exits after each batch and failures cannot stop the desktop service |
+| Agent model contract | Calibrated on RTX 4080 SUPER | 24-case accepted calibration: 100% priority/reply/category after high-precision constraints; raw model performance is reported separately; two-image OCR → Qwen flow passed 2/2 in 29.1 s |
 
 ## Deliberate product boundaries
 
 - Personal LINE and Messenger do not offer a supported full private-chat sync API. SignalDesk uses official archives for history and Windows-visible notification previews for new inbound messages.
 - Notification previews may omit context, images, stickers, muted chats, and messages dismissed before Windows exposes them. The UI preserves this uncertainty instead of inventing content.
 - Qwen and PaddleOCR do not acquire images. Gmail attachments work because the connector supplies bytes; direct personal LINE/Messenger images require a separate opt-in acquisition companion.
-- Images are never scanned merely because SignalDesk is open. The user explicitly starts OCR from message detail; the 384-token cap prevents noisy images from growing an unbounded KV cache.
-- The default engine is deterministic and local. Optional Qwen integration remains opt-in until it passes a human-labeled audit.
+- Available image bytes are analyzed automatically in the background; a metadata-only “sent a photo” notice cannot trigger fabricated image understanding.
+- Qwen produces short semantic summaries/labels. Exact action, deadline and OCR-region evidence remains deterministic, validated and local.
 - Development MSIX signing is implemented; a public release still requires a production publisher certificate and release channel.
 
 ## Remaining release gates
 
 - Human-label 300+ anonymized events and run a 7–14 day Shadow Mode evaluation.
-- Measure optional local-model quality against the deterministic baseline; VRAM residency behavior now passes the target-machine smoke.
+- Expand the current synthetic calibration into a human-labeled, real-source quality report; VRAM residency behavior already passes the target-machine smoke.
 - Complete production signing, installer distribution, upgrade/rollback testing, and release notes.
 - Run provider review and deploy public HTTPS endpoints only if LINE Official Account or Messenger Page webhooks are enabled.
 

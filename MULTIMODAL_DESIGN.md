@@ -1,7 +1,7 @@
 # Multimodal Image Design
 
 Status: thumbnail, OCR/evidence, local model and audit tooling implemented in development build
-`0.1.0.47`; real human review, field observation and production signing remain release gates.
+`0.1.0.51`; real human review, field observation and production signing remain release gates.
 
 ## 1. Product outcome
 
@@ -16,7 +16,7 @@ Displaying, reading and understanding are separate capabilities:
 |---|---|---|
 | Display | Safe local storage, thumbnail, detail viewer | No |
 | Exact text extraction | PaddleOCR-VL text and layout regions from real bytes | Yes, OCR |
-| Semantic understanding | Qwen summary, category, reply/action/deadline candidates | Yes, VLM |
+| Semantic understanding | Qwen short summary, category, priority and reply judgment | Yes, VLM |
 | Decision | Evidence validation and attention policy | Deterministic code |
 
 Neither model is a connector. They cannot log in, recover a dismissed notification, or reconstruct
@@ -31,9 +31,12 @@ pixels from the phrase “sent a photo”. Acquisition must happen before displa
 
 The primary route is local and non-thinking. External inference remains disabled. Qwen runs on the
 RTX 4080 SUPER in NF4 4-bit mode; WinUI composition can remain on the AMD integrated GPU. Thumbnails
-do not wake a model. After the user selects “分析圖片”, PaddleOCR runs first and releases; Qwen then
-interprets the real image even when OCR found no text.
-Both use bounded output, never coexist on the GPU, and are released afterward.
+do not wake a model. Once a connector supplies validated image bytes, the background worker
+automatically runs PaddleOCR and releases it; Qwen then inspects the real pixels even when OCR found
+no text.
+Both use bounded output and never coexist on the GPU. On Windows each bounded batch runs in a
+disposable child process; process exit releases CUDA context instead of leaving several GiB idle
+inside the long-lived desktop service.
 
 ## 3. Source capability matrix
 
@@ -65,8 +68,9 @@ flowchart LR
     E -->|Photo, sticker, chart| G[Qwen3.5-4B]
     F --> H[OCR text + layout evidence]
     H --> G
-    G --> I[Structured candidates]
-    I --> J[Evidence validator]
+    G --> I[Short semantic summary + labels]
+    H --> J[Deterministic task/deadline evidence]
+    I --> J
     J --> K[Card, deadline, action or needs review]
 ```
 
@@ -140,8 +144,9 @@ The OCR service returns immutable analysis tied to `asset_id` and `sha256`:
 }
 ```
 
-Qwen receives the image, the latest bounded message context and completed OCR blocks. A visual
-action or deadline is accepted only when its `evidence_asset_id` belongs to the thread and its
+Qwen receives the image, the latest bounded message context and completed OCR blocks, but emits
+only a short semantic summary and labels. Deterministic code extracts action/deadline candidates
+from localized OCR blocks. A visual action or deadline is accepted only when its `evidence_asset_id` belongs to the thread and its
 `evidence_block_ids` resolve to localized OCR blocks tied to the same asset hash. Whole-image text
 without coordinates cannot prove an exact deadline.
 Object-only claims without OCR evidence may be summarized but cannot create an exact deadline. Low

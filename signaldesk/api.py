@@ -7,6 +7,7 @@ import hmac
 import json
 import os
 import secrets
+import sys
 import time
 import uuid
 from collections import defaultdict, deque
@@ -38,6 +39,7 @@ from .models import (
     RuleCreate,
     UnifiedEvent,
     UserSettingsPatch,
+    VisualAnalysis,
     WindowsNotificationPayload,
 )
 from .normalizer import is_browser_background_notice
@@ -57,6 +59,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "notification_allowlist": ["LINE", "Messenger", "Google Chrome", "Microsoft Edge"],
     "digest_time": "18:00",
     "focus_digest_minutes": 60,
+    "now_window_hours": 6,
 }
 
 
@@ -175,6 +178,8 @@ def create_app(config: Settings | None = None, database: Database | None = None)
     )
     preferences = PreferenceRanker(database)
     pipeline = Pipeline(database, config, gateway, bus, preferences)
+    if config.model_backend in {"endpoint", "transformers"}:
+        database.queue_recent_cards_for_model()
     for thread_id in repaired_line_threads:
         pipeline.analyze_thread(thread_id)
     if repaired_messenger_cards:
@@ -257,38 +262,93 @@ def create_app(config: Settings | None = None, database: Database | None = None)
         ["receive_webhook"],
     )
 
+    isolate_local_models = (
+        os.name == "nt"
+        and config.model_backend == "transformers"
+        and config.model_isolation
+    )
+
+    async def run_isolated_model_worker(kind: str, *identifiers: str) -> bool:
+        """Run CUDA inference in a disposable process so Windows reclaims its context."""
+        process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-m",
+            "signaldesk.local_model_worker",
+            kind,
+            *identifiers,
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        try:
+            return await asyncio.wait_for(process.wait(), timeout=900) == 0
+        except TimeoutError:
+            process.kill()
+            await process.wait()
+            return False
+
     async def background_worker() -> None:
-        ticks = 0
         last_daily_digest: str | None = None
         last_focus_digest = time.monotonic()
+        last_reminder_check = 0.0
+        last_gmail_sync = 0.0
+        last_digest_check = 0.0
+        last_cleanup = 0.0
+        first_cycle = True
         while True:
-            if ticks:
-                await asyncio.sleep(30)
-            for reminder in database.fire_due_reminders():
-                bus.publish("reminder_due", reminder)
-            ticks += 1
+            if not first_cycle:
+                await asyncio.sleep(2)
+            first_cycle = False
+            monotonic_now = time.monotonic()
+            if monotonic_now - last_reminder_check >= 30:
+                for reminder in database.fire_due_reminders():
+                    bus.publish("reminder_due", reminder)
+                last_reminder_check = monotonic_now
             # Keep GPU work in a small sequential batch. The original event/card is
             # already safely persisted, so OCR failure can never lose a notification.
             processed_vision = False
             if config.vision_backend != "disabled" and config.vision_auto_analyze:
-                # One image per cycle bounds both foreground latency and KV-cache
-                # growth; the model is released before the next 30-second cycle.
+                # Poll every two seconds so a newly persisted image starts automatically.
+                # One image per cycle bounds foreground latency and KV-cache growth.
                 media_batch = database.unanalyzed_media(limit=1)
-                if media_batch:
+                if media_batch and not isolate_local_models:
                     # Never let the general VLM and OCR model coexist on a 16 GB GPU.
                     await asyncio.to_thread(gateway.release)
-                for media in media_batch:
-                    processed_vision = True
-                    analysis = await asyncio.to_thread(vision.analyze, media)
-                    database.save_visual_analysis(analysis)
-                    if analysis.status == "completed":
+                try:
+                    for media in media_batch:
+                        processed_vision = True
+                        try:
+                            if isolate_local_models:
+                                completed = await run_isolated_model_worker(
+                                    "vision", media.asset_id
+                                )
+                                analysis = database.visual_analysis(media.asset_id)
+                                if not completed or analysis is None:
+                                    raise RuntimeError("isolated vision worker failed")
+                            else:
+                                analysis = await asyncio.to_thread(vision.analyze, media)
+                        except Exception as error:
+                            # A failed model load must not kill the lifelong desktop worker.
+                            # Persist only the exception class; never persist private image text.
+                            analysis = VisualAnalysis(
+                                asset_id=media.asset_id,
+                                asset_sha256=media.sha256,
+                                status="failed",
+                                ocr_model_id=config.ocr_model_id,
+                                ocr_model_revision=config.ocr_model_revision,
+                                error_code=type(error).__name__.lower(),
+                                started_at=datetime.now(UTC),
+                                completed_at=datetime.now(UTC),
+                            )
+                        database.save_visual_analysis(analysis)
                         for thread_id in database.thread_ids_for_media(media.asset_id):
                             await asyncio.to_thread(pipeline.analyze_thread, thread_id)
+                finally:
+                    if processed_vision and not isolate_local_models:
+                        await asyncio.to_thread(vision.release)
             # Qwen runs after the deterministic card is already visible. This keeps
             # notification ingestion and app startup responsive even when the model
             # is cold-loading, while still replacing the baseline after validation.
-                if processed_vision:
-                    await asyncio.to_thread(vision.release)
             # OCR and Qwen never occupy VRAM together. Process a small Qwen batch only
             # on a cycle without OCR work, then return its weights and KV cache.
             model_residency = str(
@@ -299,21 +359,29 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                 and model_residency != "paused"
                 and config.model_backend in {"endpoint", "transformers"}
             ):
-                model_batch = database.pending_model_thread_ids(limit=3)
-                try:
+                model_batch = database.pending_model_thread_ids(limit=8)
+                if isolate_local_models and model_batch:
+                    completed = await run_isolated_model_worker("triage", *model_batch)
+                    if not completed:
+                        database.mark_model_worker_failed(model_batch)
+                    if completed:
+                        for thread_id in model_batch:
+                            card_id = "card_" + hashlib.sha256(thread_id.encode()).hexdigest()[:20]
+                            bus.publish(
+                                "card_updated",
+                                {"card_id": card_id, "thread_id": thread_id},
+                            )
+                else:
                     for thread_id in model_batch:
                         await asyncio.to_thread(
                             lambda value=thread_id: pipeline.analyze_thread(
                                 value, use_model=True
                             )
                         )
-                finally:
                     if model_batch and model_residency != "always_on":
                         await asyncio.to_thread(gateway.release)
-            # Restore connected OAuth sessions immediately after launch, then poll
-            # every 60 seconds. This prevents a healthy account from looking
-            # disconnected during the first minute of every desktop session.
-            if ticks % 2 == 1:
+            # Restore connected OAuth sessions immediately after launch, then poll every minute.
+            if monotonic_now - last_gmail_sync >= 60:
                 records = {
                     item["account_id"]: item for item in database.connector_accounts("gmail")
                 }
@@ -335,25 +403,31 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                             f"Sync failed: {type(error).__name__}",
                             gmail.health().capabilities,
                         )
+                last_gmail_sync = time.monotonic()
 
             current = database.settings()
             local_now = datetime.now(ZoneInfo(config.timezone))
-            digest_at = str(current.get("digest_time", "18:00"))
-            if (
-                local_now.strftime("%H:%M") >= digest_at
-                and last_daily_digest != local_now.date().isoformat()
-            ):
-                digest_payload = database.digest()
-                bus.publish("digest_ready", {"kind": "daily", **digest_payload})
-                last_daily_digest = local_now.date().isoformat()
+            if monotonic_now - last_digest_check >= 30:
+                digest_at = str(current.get("digest_time", "18:00"))
+                if (
+                    local_now.strftime("%H:%M") >= digest_at
+                    and last_daily_digest != local_now.date().isoformat()
+                ):
+                    digest_payload = database.digest()
+                    if digest_payload["analysis"]["pending"] == 0:
+                        bus.publish("digest_ready", {"kind": "daily", **digest_payload})
+                        last_daily_digest = local_now.date().isoformat()
+                last_digest_check = monotonic_now
             focus_minutes = int(current.get("focus_digest_minutes", 60))
             if bool(current.get("focus_mode")):
                 if time.monotonic() - last_focus_digest >= focus_minutes * 60:
-                    bus.publish("digest_ready", {"kind": "focus", **database.digest()})
-                    last_focus_digest = time.monotonic()
+                    digest_payload = database.digest()
+                    if digest_payload["analysis"]["pending"] == 0:
+                        bus.publish("digest_ready", {"kind": "focus", **digest_payload})
+                        last_focus_digest = time.monotonic()
             else:
                 last_focus_digest = time.monotonic()
-            if ticks % 120 == 0:
+            if monotonic_now - last_cleanup >= 60 * 60:
                 database.cleanup_retention(
                     int(current.get("raw_retention_days", config.raw_retention_days)),
                     config.normalized_retention_days,
@@ -361,6 +435,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                 )
                 for media in database.delete_orphan_media():
                     media_store.delete(media)
+                last_cleanup = monotonic_now
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -450,7 +525,9 @@ def create_app(config: Settings | None = None, database: Database | None = None)
 
     @app.get("/metrics")
     def metrics() -> Response:
-        counts = database.counts()
+        counts = database.counts(
+            now_window_hours=int(database.settings().get("now_window_hours", 6))
+        )
         body = "\n".join(
             [
                 "# HELP signaldesk_cards Local card counts without message content",
@@ -555,10 +632,13 @@ def create_app(config: Settings | None = None, database: Database | None = None)
 
     @router.get("/bootstrap")
     def bootstrap() -> dict[str, Any]:
+        now_window_hours = int(database.settings().get("now_window_hours", 6))
         return {
             "version": __version__,
-            "cards": database.list_cards(limit=100),
-            "counts": database.counts(),
+            "cards": database.list_cards(
+                view="now", now_window_hours=now_window_hours, limit=100
+            ),
+            "counts": database.counts(now_window_hours=now_window_hours),
             "settings": database.settings(),
             "connectors": database.connectors(),
             "model": {
@@ -566,6 +646,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                 "id": config.model_id,
                 "revision": config.model_revision,
                 "quantization": config.model_quantization,
+                "process_isolation": isolate_local_models,
                 "ocr_max_new_tokens": config.ocr_max_new_tokens,
                 "external_inference": False,
                 "status": "available" if config.model_backend != "rule" else "rule_fallback",
@@ -582,13 +663,14 @@ def create_app(config: Settings | None = None, database: Database | None = None)
 
     @router.get("/cards")
     def cards(
-        view: str = "now",
+        view: str = "all",
         search: str = "",
         source: str | None = None,
         priority: str | None = None,
         date: str | None = Query(default=None, pattern=r"^(today|7d|30d)?$"),
         limit: int = Query(default=100, ge=1, le=500),
     ) -> dict[str, Any]:
+        now_window_hours = int(database.settings().get("now_window_hours", 6))
         return {
             "items": database.list_cards(
                 view=view,
@@ -597,9 +679,10 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                 priority=priority,
                 date_filter=date,
                 timezone=config.timezone,
+                now_window_hours=now_window_hours,
                 limit=limit,
             ),
-            "counts": database.counts(),
+            "counts": database.counts(now_window_hours=now_window_hours),
         }
 
     @router.get("/cards/{card_id}")
@@ -655,30 +738,49 @@ def create_app(config: Settings | None = None, database: Database | None = None)
             raise HTTPException(status_code=404, detail="media not found")
         if config.vision_backend == "disabled":
             raise HTTPException(status_code=503, detail="vision analysis is disabled")
-        try:
-            analysis = await asyncio.to_thread(vision.analyze, media)
-            database.save_visual_analysis(analysis)
-        finally:
-            await asyncio.to_thread(vision.release)
+        if isolate_local_models:
+            completed = await run_isolated_model_worker("vision", asset_id)
+            analysis = database.visual_analysis(asset_id)
+            if not completed or analysis is None:
+                raise HTTPException(status_code=503, detail="vision worker failed")
+        else:
+            try:
+                analysis = await asyncio.to_thread(vision.analyze, media)
+                database.save_visual_analysis(analysis)
+            finally:
+                await asyncio.to_thread(vision.release)
         # This is an explicit user request, so Qwen may inspect the real image even
         # when OCR found no text. OCR is released first to keep both models disjoint.
         semantic_status = "disabled"
         if config.model_backend in {"endpoint", "transformers"}:
             semantic_status = "rule_fallback"
-            try:
-                for thread_id in database.thread_ids_for_media(asset_id):
-                    result = await asyncio.to_thread(
-                        lambda value=thread_id: pipeline.analyze_thread(
-                            value, use_model=True
+            thread_ids = database.thread_ids_for_media(asset_id)
+            if isolate_local_models:
+                completed = await run_isolated_model_worker("triage", *thread_ids)
+                if not completed:
+                    database.mark_model_worker_failed(thread_ids)
+                if completed:
+                    for thread_id in thread_ids:
+                        card_id = "card_" + hashlib.sha256(thread_id.encode()).hexdigest()[:20]
+                        bus.publish(
+                            "card_updated", {"card_id": card_id, "thread_id": thread_id}
                         )
-                    )
-                    if result.card_id:
-                        detail = database.card_detail(result.card_id)
-                        backend = str(detail.get("model_backend", "")) if detail else ""
-                        if backend.startswith("qwen") and "fallback" not in backend:
-                            semantic_status = "completed"
-            finally:
-                await asyncio.to_thread(gateway.release)
+            else:
+                try:
+                    for thread_id in thread_ids:
+                        await asyncio.to_thread(
+                            lambda value=thread_id: pipeline.analyze_thread(
+                                value, use_model=True
+                            )
+                        )
+                finally:
+                    await asyncio.to_thread(gateway.release)
+            for thread_id in thread_ids:
+                card_id = "card_" + hashlib.sha256(thread_id.encode()).hexdigest()[:20]
+                detail = database.card_detail(card_id)
+                backend = str(detail.get("model_backend", "")) if detail else ""
+                if backend.startswith("qwen") and "fallback" not in backend:
+                    semantic_status = "completed"
         payload = analysis.model_dump(mode="json")
         payload["semantic_status"] = semantic_status
         return payload

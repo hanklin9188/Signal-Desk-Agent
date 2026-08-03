@@ -4,10 +4,12 @@ This document maps product responsibilities to concrete files so reviewers can n
 
 ## Runtime split
 
-SignalDesk has two cooperating processes:
+SignalDesk has two long-lived cooperating processes and one bounded optional worker:
 
 1. `SignalDesk.Shell.exe` — native WinUI 3 desktop interface and Windows integration.
 2. `signaldesk.exe` — packaged Python/FastAPI agent service bound to authenticated loopback.
+3. `python -m signaldesk.local_model_worker` — disposable OCR/Qwen CUDA process; it exits after
+   each bounded batch so idle VRAM returns to Windows.
 
 The split keeps Windows-only UI/notification code isolated from portable, heavily tested agent logic.
 
@@ -41,15 +43,17 @@ The split keeps Windows-only UI/notification code isolated from portable, heavil
 | `signaldesk/normalizer.py` | Unicode/text cleanup, source classification, LINE/Messenger visible identity parsing |
 | `signaldesk/grouping.py` | Stable Gmail threads and per-conversation chat grouping |
 | `signaldesk/database.py` | SQLite schema, migrations, persistence, search, repairs and replay cleanup |
-| `signaldesk/pipeline.py` | End-to-end agent orchestration and trace lifecycle |
+| `signaldesk/pipeline.py` | End-to-end orchestration, Qwen/rule calibration and deterministic OCR evidence enrichment |
 | `signaldesk/rules.py` | Deterministic priority, reply, task and evidence extraction baseline |
 | `signaldesk/deadlines.py` | Evidence-backed deadline normalization in the configured timezone |
 | `signaldesk/validator.py` | Schema, action allowlist, evidence and preview-boundary validation |
 | `signaldesk/policy.py` | Focus, quiet hours, Shadow Mode and interruption-budget decisions |
 | `signaldesk/actions.py` | Bounded user actions; draft/reminder confirmation and no auto-send guarantee |
 | `signaldesk/preference.py` | Privacy-minimized local ranking feedback |
-| `signaldesk/model_gateway.py` | Optional Qwen/OpenAI-compatible inference with deterministic fallback |
+| `signaldesk/model_gateway.py` | Local Qwen multimodal inference, compact semantic contract and deterministic fallback |
+| `signaldesk/local_model_worker.py` | Isolated PaddleOCR/Qwen batch entry point that releases CUDA context through process exit |
 | `signaldesk/media_store.py` | Signature-validated content-addressed local image storage and model data URLs |
+| `signaldesk/vision.py` | Automatic PaddleOCR-VL analysis, localized OCR parsing and bounded GPU release |
 | `signaldesk/connectors/gmail.py` | Gmail OAuth, MIME parsing, full/incremental synchronization and draft creation |
 | `signaldesk/connectors/chat_archive.py` | LINE TXT and Messenger JSON/ZIP archive parsers |
 | `signaldesk/benchmark.py` | Reproducible locked-scenario safety and quality gate |
@@ -67,6 +71,7 @@ The split keeps Windows-only UI/notification code isolated from portable, heavil
 | `tests/test_gmail_legacy_cleanup.py` | Account migration and duplicate Gmail cleanup |
 | `tests/test_schema_fixtures.py` | Machine-readable contract conformance |
 | `tests/test_media.py` | Media signature, persistence, authenticated read and privacy deletion tests |
+| `tests/test_vision.py` | OCR regions, image evidence binding and deterministic visual deadline/action tests |
 
 ## Scripts
 
@@ -80,6 +85,11 @@ The split keeps Windows-only UI/notification code isolated from portable, heavil
 | `scripts/capture-signaldesk-window.ps1` | Capture an actual native window for UI review without browser tooling |
 | `scripts/cleanup_gmail_legacy.py` | Explicit migration utility for stale local Gmail aliases |
 | `scripts/generate_locked_scenarios.py` | Rebuild fictional benchmark scenarios deterministically |
+| `scripts/run-windows-calibration.ps1` | Reproduce Qwen, OCR and sequential image-pipeline checks on the Windows GPU runtime |
+| `scripts/benchmark-triage-model.py` | Privacy-safe semantic label calibration without storing messages or summaries |
+| `scripts/benchmark-ocr-model.py` | OCR token-recall and genuine no-text checks |
+| `scripts/benchmark-image-pipeline.py` | End-to-end OCR release → Qwen visual-summary verification |
+| `scripts/rescore-triage-report.py` | Reapply explicit deterministic constraints to an existing privacy-safe Qwen label report |
 | `scripts/verify.sh` | Run lint, tests, schema checks and benchmark verification |
 | `scripts/dev.sh` / `dev.ps1` | Start the service in local development/demo mode |
 

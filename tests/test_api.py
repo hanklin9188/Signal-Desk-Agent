@@ -313,6 +313,60 @@ def test_today_filter_converts_utc_card_time_to_local_date(test_config, database
         assert [item["card_id"] for item in items] == [card_id]
 
 
+def test_now_is_recent_window_while_today_starts_at_local_midnight(
+    test_config, database
+):
+    local_now = datetime.now(ZoneInfo(test_config.timezone))
+    recent = local_now - timedelta(minutes=1)
+    historical = local_now - timedelta(hours=7)
+
+    with TestClient(create_app(test_config, database)) as client:
+        client.get("/")
+        recent_result = client.post(
+            "/api/v1/connectors/windows/notifications",
+            json={
+                "notification_id": "recent-now-window",
+                "app_id": "LINE",
+                "app_name": "LINE",
+                "title": "近期訊息",
+                "body": "兩小時內的訊息",
+                "received_at": recent.isoformat(),
+            },
+        ).json()
+        historical_result = client.post(
+            "/api/v1/connectors/windows/notifications",
+            json={
+                "notification_id": "older-today-window",
+                "app_id": "Messenger",
+                "app_name": "Messenger",
+                "title": "今日稍早訊息",
+                "body": "今天但超過六小時的訊息",
+                "received_at": historical.isoformat(),
+            },
+        ).json()
+
+        now_ids = {
+            item["card_id"]
+            for item in client.get("/api/v1/cards", params={"view": "now"}).json()[
+                "items"
+            ]
+        }
+        today_ids = {
+            item["card_id"]
+            for item in client.get("/api/v1/cards", params={"view": "today"}).json()[
+                "items"
+            ]
+        }
+
+    assert recent_result["card_id"] in now_ids
+    assert historical_result["card_id"] not in now_ids
+    assert recent_result["card_id"] in today_ids
+    if historical.date() == local_now.date():
+        assert historical_result["card_id"] in today_ids
+    else:
+        assert historical_result["card_id"] not in today_ids
+
+
 def test_reconciled_and_live_line_snapshots_are_deduplicated(
     test_config, database
 ):

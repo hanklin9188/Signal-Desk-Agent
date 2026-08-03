@@ -53,6 +53,7 @@ public class CardItem : INotifyPropertyChanged
     public string? DeadlineAt { get; set; }
     public List<string> Actions { get; set; } = [];
     public string DisplayMode { get; set; } = "inbox";
+    public string? ModelBackend { get; set; }
     public List<string> WhyShown { get; set; } = [];
     public string ContentCompleteness { get; set; } = "full";
     public List<string> UncertaintyFlags { get; set; } = [];
@@ -164,7 +165,6 @@ public sealed class CardDetail : CardItem
     public TriageData? Triage { get; set; }
     public ValidationData? Validation { get; set; }
     public DecisionData? Decision { get; set; }
-    public string? ModelBackend { get; set; }
     public string SummaryEngineLabel => ModelBackend switch
     {
         string backend when backend.StartsWith("qwen", StringComparison.OrdinalIgnoreCase)
@@ -218,6 +218,7 @@ public sealed class MediaAssetData
     public int? Height { get; set; }
     public string Availability { get; set; } = "metadata_only";
     public string? AltText { get; set; }
+    public string AnalysisStatus { get; set; } = "queued";
     public bool IsAvailable => Availability == "available";
     public string DisplayLabel => IsAvailable
         ? $"查看圖片 · {OriginalName ?? "圖片"}"
@@ -227,6 +228,17 @@ public sealed class MediaAssetData
             "missing" => "找不到匯入的圖片",
             _ => "來源只提供圖片通知，沒有圖片內容"
         };
+    public string AnalysisLabel => AnalysisStatus switch
+    {
+        "completed" => "圖片文字擷取完成",
+        "failed" => "OCR 無法讀取 · Qwen 仍會理解圖片",
+        "queued" => "正在自動分析",
+        _ => "來源未提供圖片"
+    };
+    public bool IsAnalysisQueued => AnalysisStatus == "queued";
+    public Visibility AnalysisVisibility => IsAvailable
+        ? Visibility.Visible
+        : Visibility.Collapsed;
 }
 
 public sealed class TriageData
@@ -419,20 +431,36 @@ public sealed class RuleItem
 public sealed class DigestResponse
 {
     public List<CardItem> Urgent { get; set; } = [];
+    public List<CardItem> Important { get; set; } = [];
     public List<CardItem> DueToday { get; set; } = [];
     public List<CardItem> NeedsReply { get; set; } = [];
     public List<CardItem> ForInformation { get; set; } = [];
     public List<ConnectorItem> ConnectorIssues { get; set; } = [];
     public DigestCounts Counts { get; set; } = new();
+    public DigestAnalysis Analysis { get; set; } = new();
     public string GeneratedAt { get; set; } = "";
+    public string AnalysisLabel => Analysis.Pending > 0
+        ? $"Qwen 正在分析 {Analysis.Pending} 則 · 已完成 {Analysis.Qwen}/{Analysis.Total} 則"
+        : Analysis.Total == 0
+            ? "今天還沒有可分析的訊息"
+            : $"Qwen 已完成 {Analysis.Qwen}/{Analysis.Total} 則語意分類";
 }
 
 public sealed class DigestCounts
 {
     public int Urgent { get; set; }
+    public int Important { get; set; }
     public int DueToday { get; set; }
     public int NeedsReply { get; set; }
     public int ForInformation { get; set; }
+}
+
+public sealed class DigestAnalysis
+{
+    public int Qwen { get; set; }
+    public int Pending { get; set; }
+    public int Fallback { get; set; }
+    public int Total { get; set; }
 }
 
 public sealed class UserPreferences
@@ -447,6 +475,7 @@ public sealed class UserPreferences
     public int RawRetentionDays { get; set; } = 7;
     public string DigestTime { get; set; } = "18:00";
     public int FocusDigestMinutes { get; set; } = 60;
+    public int NowWindowHours { get; set; } = 6;
     public List<string> NotificationAllowlist { get; set; } = [];
 
     public static UserPreferences From(Dictionary<string, JsonElement> values) => new()
@@ -461,6 +490,7 @@ public sealed class UserPreferences
         RawRetentionDays = Number(values, "raw_retention_days", 7),
         DigestTime = Text(values, "digest_time", "18:00"),
         FocusDigestMinutes = Number(values, "focus_digest_minutes", 60),
+        NowWindowHours = Number(values, "now_window_hours", 6),
         NotificationAllowlist = TextList(values, "notification_allowlist")
     };
 

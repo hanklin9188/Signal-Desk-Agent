@@ -28,6 +28,11 @@ if ($LASTEXITCODE -ne 0) { throw "CUDA PyTorch installation failed." }
 $installTarget = "$projectRoot[model,vision,quantization,gmail]"
 & $python -m pip install --upgrade $installTarget
 if ($LASTEXITCODE -ne 0) { throw "SignalDesk model dependencies installation failed." }
+# Always replace the application package itself, even when the semantic version is
+# unchanged during a local repair build. This also removes reliance on an old editable
+# checkout while preserving the much larger dependency and model caches.
+& $python -m pip install --force-reinstall --no-deps $projectRoot
+if ($LASTEXITCODE -ne 0) { throw "SignalDesk model runtime application refresh failed." }
 
 $env:HF_HOME = $hfHome
 $env:HF_HUB_DISABLE_TELEMETRY = "1"
@@ -44,8 +49,9 @@ $runtimeConfig = [ordered]@{
     SIGNALDESK_MODEL_ID = $qwenModel
     SIGNALDESK_MODEL_REVISION = $qwenRevision
     SIGNALDESK_MODEL_QUANTIZATION = "nf4"
+    SIGNALDESK_MODEL_ISOLATION = "1"
     SIGNALDESK_VISION_BACKEND = "paddleocr-vl"
-    SIGNALDESK_VISION_AUTO_ANALYZE = "0"
+    SIGNALDESK_VISION_AUTO_ANALYZE = "1"
     SIGNALDESK_OCR_MODEL_ID = $ocrModel
     SIGNALDESK_OCR_MODEL_REVISION = $ocrRevision
     SIGNALDESK_OCR_MAX_NEW_TOKENS = "384"

@@ -291,9 +291,11 @@ def test_qwen_text_summary_uses_deterministic_evidence_fields(database, test_con
             return ModelResult(
                 triage=TriageResult(
                     summary="教授要求今晚前寄出目前的實驗結果。",
-                    category="research",
-                    priority="high",
-                    requires_reply="yes",
+                    # Deliberately weak raw labels: high-precision observable rules must
+                    # survive when the semantic model under-rates an explicit request.
+                    category="other",
+                    priority="normal",
+                    requires_reply="no",
                     action_items=[
                         ActionItem(
                             text="模型改寫過的待辦",
@@ -319,11 +321,32 @@ def test_qwen_text_summary_uses_deterministic_evidence_fields(database, test_con
     detail = database.card_detail(result.card_id)
 
     assert detail["summary"] == "教授要求今晚前寄出目前的實驗結果。"
+    assert detail["category"] == "research"
+    assert detail["priority"] == "high"
+    assert detail["requires_reply"] == "yes"
     assert detail["action_items"][0]["supporting_span"] in detail["events"][0]["content"]
-    assert detail["model_backend"] == "qwen-transformers"
+    assert detail["model_backend"] == "qwen-transformers+calibrated-v1"
+
+    # A calibrated result is stable across launches. Older Qwen rows are queued once
+    # so an installed database receives the revised classifier without data deletion.
+    assert database.queue_recent_cards_for_model() == 0
+    with database.transaction() as connection:
+        connection.execute(
+            "UPDATE triage_results SET model_backend='qwen-transformers' WHERE thread_id=?",
+            (result.thread_id,),
+        )
+    assert database.queue_recent_cards_for_model() == 1
+    assert result.thread_id in database.pending_model_thread_ids(limit=10)
+    assert database.mark_model_worker_failed([result.thread_id]) == 1
+    assert database.pending_model_thread_ids(limit=10) == []
+    assert "isolated-worker+rule-fallback" in database.card_detail(result.card_id)[
+        "model_backend"
+    ]
 
 
-def test_incomplete_chat_preview_does_not_wake_qwen(database, test_config):
+def test_image_only_preview_without_retrievable_media_stays_on_safe_rules(
+    database, test_config
+):
     class RecordingGateway:
         backend_name = "qwen-transformers"
 
@@ -363,7 +386,7 @@ def test_incomplete_chat_preview_does_not_wake_qwen(database, test_config):
     assert database.pending_model_thread_ids(limit=10) == []
 
 
-def test_image_wakes_qwen_only_after_user_triggered_ocr(database, test_config):
+def test_available_image_automatically_queues_ocr_and_qwen(database, test_config):
     gateway = type(
         "RecordingGateway",
         (),
@@ -396,7 +419,9 @@ def test_image_wakes_qwen_only_after_user_triggered_ocr(database, test_config):
         )
     )
 
-    assert database.pending_model_thread_ids(limit=10) == []
+    # The user does not need to press an Analyze button. Qwen is queued immediately;
+    # the worker drains OCR first so the later Qwen pass receives verified OCR evidence.
+    assert database.pending_model_thread_ids(limit=10) == [result.thread_id]
 
     now = datetime.now(ZONE)
     database.save_visual_analysis(

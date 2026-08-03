@@ -7,7 +7,8 @@ import pytest
 
 from signaldesk.media_store import MediaStore
 from signaldesk.models import GroupedThread, TriageResult, VisualAnalysis
-from signaldesk.rules import RuleSignals
+from signaldesk.pipeline import enrich_visual_evidence
+from signaldesk.rules import RuleEngine, RuleSignals
 from signaldesk.validator import TriageValidator
 from signaldesk.vision import PaddleOcrVlAnalyzer, parse_spotting_output
 
@@ -136,6 +137,44 @@ def test_ocr_deadline_requires_asset_block_and_localized_region(tmp_path):
     assert len(accepted.deadlines) == 1
     assert rejected_report.valid is False
     assert rejected.deadlines == []
+
+
+def test_localized_ocr_deterministically_supplies_action_and_deadline(tmp_path):
+    media = MediaStore(tmp_path).import_bytes(PNG_1X1, declared_mime="image/png")
+    thread = _thread(media)
+    now = datetime(2026, 8, 3, 9, 0, tzinfo=UTC)
+    blocks = parse_spotting_output(
+        '[{"text":"Submit review by Aug 9, 2026","bbox":[0,0,1,1]}]',
+        asset_id=media.asset_id,
+        width=1,
+        height=1,
+    )
+    analysis = VisualAnalysis(
+        asset_id=media.asset_id,
+        asset_sha256=media.sha256,
+        status="completed",
+        ocr_model_id="PaddlePaddle/PaddleOCR-VL-1.6",
+        blocks=blocks,
+        raw_text=blocks[0].text,
+        started_at=now,
+        completed_at=now,
+    )
+    rules = RuleEngine("Asia/Taipei")
+    baseline = rules.triage(thread, rules.signals(thread, []))
+
+    enriched = enrich_visual_evidence(baseline, thread, [analysis], rules)
+    accepted, report = TriageValidator().validate(
+        enriched, thread, rules.signals(thread, []), [analysis]
+    )
+
+    assert report.valid is True
+    visual_action = next(
+        item for item in accepted.action_items if item.evidence_asset_id == media.asset_id
+    )
+    assert visual_action.text.startswith("Submit review")
+    assert accepted.deadlines[0].original_text == "by Aug 9, 2026"
+    assert accepted.deadlines[0].normalized_at is not None
+    assert accepted.deadlines[0].evidence_block_ids == [blocks[0].block_id]
 
 
 def test_database_rejects_analysis_for_a_different_asset_hash(database, pipeline, tmp_path):

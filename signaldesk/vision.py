@@ -212,8 +212,8 @@ class PaddleOcrVlAnalyzer:
             blocks = parse_spotting_output(
                 raw, asset_id=media.asset_id, width=width, height=height
             )
-            if not blocks:
-                raise RuntimeError("OCR output did not contain localized text blocks")
+            # A real photo or sticker may legitimately contain no text. That is a successful
+            # zero-block OCR result; Qwen still receives the image for semantic summarization.
             return VisualAnalysis(
                 asset_id=media.asset_id,
                 asset_sha256=media.sha256,

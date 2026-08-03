@@ -327,3 +327,4 @@ class UserSettingsPatch(StrictModel):
     notification_allowlist: list[str] | None = None
     digest_time: str | None = Field(default=None, pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$")
     focus_digest_minutes: int | None = Field(default=None, ge=15, le=240)
+    now_window_hours: int | None = Field(default=None, ge=1, le=24)

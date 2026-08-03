@@ -519,7 +519,7 @@ class Database:
                 FROM thread_events te
                 JOIN event_media em ON em.event_id=te.event_id
                 JOIN visual_analyses va ON va.asset_id=em.asset_id
-                WHERE te.thread_id=? AND va.status='completed'
+                WHERE te.thread_id=?
                 ORDER BY va.updated_at DESC
                 """,
                 (thread_id,),
@@ -904,12 +904,13 @@ class Database:
     def list_cards(
         self,
         *,
-        view: str = "now",
+        view: str = "all",
         search: str = "",
         source: str | None = None,
         priority: str | None = None,
         date_filter: str | None = None,
         timezone: str = "Asia/Taipei",
+        now_window_hours: int = 6,
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         conditions: list[str] = ["c.display_mode!='hidden'"]
@@ -938,10 +939,16 @@ class Database:
                 ]
             )
             parameters.extend([day_start, day_end, day_start, day_end])
+        elif view in {"all", "latest"}:
+            conditions.append("c.status='open'")
         else:
             conditions.append("c.status='open'")
             conditions.append("(c.snoozed_until IS NULL OR c.snoozed_until<=?)")
             parameters.append(now)
+            conditions.append("julianday(c.updated_at)>=julianday(?)")
+            parameters.append(
+                (utc_now() - timedelta(hours=max(1, min(24, now_window_hours)))).isoformat()
+            )
         if search:
             conditions.append(
                 "(c.summary LIKE ? OR c.sender LIKE ? OR c.title LIKE ? OR EXISTS ("
@@ -971,7 +978,7 @@ class Database:
         parameters.append(min(limit, 500))
         order_by = (
             "c.updated_at DESC"
-            if view == "latest"
+            if view in {"latest", "now", "today"}
             else """CASE c.priority
                     WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2
                     WHEN 'unknown' THEN 3 WHEN 'low' THEN 4 ELSE 5 END,
@@ -980,11 +987,12 @@ class Database:
         with self.connect() as connection:
             rows = connection.execute(
                 f"""
-                SELECT c.*, d.normalized_at AS deadline_at,
+                SELECT c.*, d.normalized_at AS deadline_at, tr.model_backend,
                     (SELECT COUNT(*) FROM action_items ai WHERE ai.thread_id=c.thread_id
                         AND ai.status='open') AS action_count
                 FROM notification_cards c
                 LEFT JOIN deadlines d ON d.thread_id=c.thread_id AND d.deadline_index=0
+                LEFT JOIN triage_results tr ON tr.thread_id=c.thread_id
                 WHERE {where}
                 ORDER BY {order_by}
                 LIMIT ?
@@ -1006,6 +1014,8 @@ class Database:
         if "deadline_at" in row.keys():
             card["deadline_at"] = row["deadline_at"]
             card["action_count"] = row["action_count"]
+        if "model_backend" in row.keys():
+            card["model_backend"] = row["model_backend"]
         return card
 
     def card_detail(self, card_id: str) -> dict[str, Any] | None:
@@ -1045,8 +1055,29 @@ class Database:
                 "SELECT * FROM traces WHERE thread_id=? ORDER BY created_at DESC LIMIT 30",
                 (thread_id,),
             ).fetchall()
+            visual_rows = connection.execute(
+                """
+                SELECT DISTINCT va.asset_id, va.status
+                FROM visual_analyses va
+                JOIN event_media em ON em.asset_id=va.asset_id
+                JOIN thread_events te ON te.event_id=em.event_id
+                WHERE te.thread_id=?
+                """,
+                (thread_id,),
+            ).fetchall()
         result = self._card_row(card)
         result["events"] = [json.loads(row["data_json"]) for row in events]
+        visual_status = {row["asset_id"]: dict(row) for row in visual_rows}
+        for source_event in result["events"]:
+            for media in source_event.get("media", []):
+                analysis = visual_status.get(media.get("asset_id"))
+                media["analysis_status"] = (
+                    analysis["status"]
+                    if analysis
+                    else "queued"
+                    if media.get("availability") == "available"
+                    else "unavailable"
+                )
         result["triage"] = json.loads(triage["result_json"]) if triage else None
         result["validation"] = json.loads(triage["validation_json"]) if triage else None
         result["decision"] = json.loads(triage["decision_json"]) if triage else None
@@ -1582,12 +1613,20 @@ class Database:
             "cards": int(plan["card_count"]),
         }
 
-    def counts(self) -> dict[str, int]:
+    def counts(self, *, now_window_hours: int | None = None) -> dict[str, int]:
+        recent_clause = ""
+        parameters: tuple[str, ...] = ()
+        if now_window_hours is not None:
+            recent_clause = " AND julianday(updated_at)>=julianday(?)"
+            parameters = (
+                (utc_now() - timedelta(hours=max(1, min(24, now_window_hours)))).isoformat(),
+            )
         with self.connect() as connection:
             row = connection.execute(
-                """
+                f"""
                 SELECT
-                  SUM(CASE WHEN status='open' AND display_mode!='hidden' THEN 1 ELSE 0 END) AS open,
+                  SUM(CASE WHEN status='open' AND display_mode!='hidden'{recent_clause}
+                    THEN 1 ELSE 0 END) AS open,
                   SUM(CASE WHEN status='open' AND display_mode!='hidden'
                     AND priority IN ('urgent','high') THEN 1 ELSE 0 END)
                     AS important,
@@ -1596,7 +1635,8 @@ class Database:
                     AS reply,
                   SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) AS done
                 FROM notification_cards
-                """
+                """,
+                parameters,
             ).fetchone()
         return {key: int(row[key] or 0) for key in ("open", "important", "reply", "done")}
 
@@ -2003,11 +2043,48 @@ class Database:
                 """
                 SELECT thread_id FROM triage_results
                 WHERE model_backend LIKE '%model-pending%'
-                ORDER BY updated_at ASC LIMIT ?
+                ORDER BY updated_at DESC LIMIT ?
                 """,
                 (max(1, limit),),
             ).fetchall()
         return [row["thread_id"] for row in rows]
+
+    def mark_model_worker_failed(self, thread_ids: list[str]) -> int:
+        """Keep the accepted baseline and stop retry storms after a worker crash."""
+        if not thread_ids:
+            return 0
+        placeholders = ",".join("?" for _ in thread_ids)
+        with self.transaction() as connection:
+            result = connection.execute(
+                f"""
+                UPDATE triage_results
+                SET model_backend='qwen-transformers+isolated-worker+rule-fallback',
+                    updated_at=?
+                WHERE thread_id IN ({placeholders})
+                  AND model_backend LIKE '%model-pending%'
+                """,
+                (_iso(), *thread_ids),
+            )
+        return result.rowcount
+
+    def queue_recent_cards_for_model(self, *, hours: int = 24 * 2) -> int:
+        """Queue recent visible cards that predate semantic classification."""
+        cutoff = (utc_now() - timedelta(hours=max(1, hours))).isoformat()
+        with self.transaction() as connection:
+            result = connection.execute(
+                """
+                UPDATE triage_results SET model_backend='rule+model-pending'
+                WHERE (model_backend NOT LIKE '%calibrated-v1%'
+                       OR model_backend LIKE '%fallback%')
+                  AND thread_id IN (
+                    SELECT thread_id FROM notification_cards
+                    WHERE status='open' AND display_mode!='hidden'
+                      AND julianday(updated_at)>=julianday(?)
+                  )
+                """,
+                (cutoff,),
+            )
+        return result.rowcount
 
     @staticmethod
     def _remove_replay_cluster(
@@ -2027,7 +2104,7 @@ class Database:
         return len(cluster) - 1
 
     def digest(self) -> dict[str, Any]:
-        cards = self.list_cards(view="now", limit=300)
+        cards = self.list_cards(view="today", limit=300)
         now = utc_now()
         due_today = [
             card
@@ -2037,7 +2114,8 @@ class Database:
             == now.astimezone().date()
         ]
         return {
-            "urgent": [c for c in cards if c["priority"] in {"urgent", "high"}][:5],
+            "urgent": [c for c in cards if c["priority"] == "urgent"][:5],
+            "important": [c for c in cards if c["priority"] == "high"][:8],
             "due_today": due_today[:5],
             "needs_reply": [c for c in cards if c["requires_reply"] == "yes"][:8],
             "for_information": [
@@ -2045,10 +2123,25 @@ class Database:
             ][:8],
             "connector_issues": [c for c in self.connectors() if c["status"] != "healthy"],
             "counts": {
-                "urgent": sum(c["priority"] in {"urgent", "high"} for c in cards),
+                "urgent": sum(c["priority"] == "urgent" for c in cards),
+                "important": sum(c["priority"] == "high" for c in cards),
                 "due_today": len(due_today),
                 "needs_reply": sum(c["requires_reply"] == "yes" for c in cards),
                 "for_information": sum(c["priority"] in {"normal", "low"} for c in cards),
+            },
+            "analysis": {
+                "qwen": sum(
+                    str(c.get("model_backend", "")).startswith("qwen-")
+                    and "fallback" not in str(c.get("model_backend", ""))
+                    for c in cards
+                ),
+                "pending": sum(
+                    "pending" in str(c.get("model_backend", "")) for c in cards
+                ),
+                "fallback": sum(
+                    "fallback" in str(c.get("model_backend", "")) for c in cards
+                ),
+                "total": len(cards),
             },
             "generated_at": _iso(),
         }

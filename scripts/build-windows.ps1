@@ -24,9 +24,24 @@ if (-not (Test-Path ".venv\Scripts\python.exe")) {
 }
 & .\.venv\Scripts\python.exe -m pip install --upgrade pip
 if ($LASTEXITCODE -ne 0) { throw "pip upgrade failed with exit code $LASTEXITCODE." }
-& .\.venv\Scripts\python.exe -m pip install -e ".[gmail]" "pyinstaller>=6.11,<7"
+$sitePackages = Join-Path $projectRoot ".venv\Lib\site-packages"
+# Old editable builds on a WSL UNC checkout can leave orphaned metadata that makes pip
+# report the wrong installed version. This directory is a disposable build environment.
+Get-ChildItem -LiteralPath $sitePackages -Filter "signaldesk_agent-*.dist-info" `
+    -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
+Get-ChildItem -LiteralPath $sitePackages -Filter "*signaldesk*.pth" `
+    -ErrorAction SilentlyContinue | Remove-Item -Force
+$installedPackage = Join-Path $sitePackages "signaldesk"
+if (Test-Path $installedPackage) {
+    Remove-Item -LiteralPath $installedPackage -Recurse -Force
+}
+& .\.venv\Scripts\python.exe -m pip install --upgrade ".[gmail]" "pyinstaller>=6.11,<7"
 if ($LASTEXITCODE -ne 0) {
     throw "Python dependency installation failed with exit code $LASTEXITCODE."
+}
+& .\.venv\Scripts\python.exe -m pip install --force-reinstall --no-deps .
+if ($LASTEXITCODE -ne 0) {
+    throw "SignalDesk service package refresh failed with exit code $LASTEXITCODE."
 }
 
 if (Test-Path $serviceOutput) {

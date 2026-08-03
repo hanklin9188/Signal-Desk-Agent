@@ -16,6 +16,123 @@ from .preference import PreferenceRanker
 from .rules import RuleEngine
 from .validator import TriageValidator
 
+SEMANTIC_CALIBRATION_VERSION = "calibrated-v1"
+
+
+def calibrate_model_triage(candidate, baseline, signals):
+    """Combine semantic model output with only high-precision observable constraints."""
+    updates = {}
+    if signals.image_only or signals.is_noise:
+        updates.update(
+            priority=baseline.priority,
+            requires_reply=baseline.requires_reply,
+            category=baseline.category,
+        )
+    else:
+        if signals.priority == "urgent":
+            updates["priority"] = "urgent"
+        elif signals.priority == "high" and candidate.priority in {
+            "normal",
+            "low",
+            "unknown",
+        }:
+            updates["priority"] = "high"
+        elif signals.priority == "low" and candidate.priority == "normal":
+            updates["priority"] = "low"
+        elif (
+            "explicit_no_reply" in signals.reason_codes
+            and signals.priority == "normal"
+            and candidate.priority == "high"
+        ):
+            updates["priority"] = "normal"
+        if signals.requires_reply == "yes":
+            updates["requires_reply"] = "yes"
+        elif signals.category == "security" and baseline.requires_reply == "no":
+            updates["requires_reply"] = "no"
+        topic_reasons = {
+            "research": "research_topic",
+            "meeting": "meeting_topic",
+            "transaction": "transaction_topic",
+            "work": "work_topic",
+            "social": "social_topic",
+        }
+        topic_reason = topic_reasons.get(signals.category)
+        if topic_reason and topic_reason in signals.reason_codes:
+            updates["category"] = signals.category
+    return candidate.model_copy(update=updates) if updates else candidate
+
+
+def enrich_visual_evidence(baseline, thread, analyses, rules):
+    """Extract auditable tasks/deadlines from localized OCR without model-generated spans."""
+    action_items = list(baseline.action_items)
+    deadlines = list(baseline.deadlines)
+    actions = list(baseline.suggested_actions)
+    source_event_id = thread.event_ids[-1]
+    for analysis in analyses:
+        if analysis.status != "completed":
+            continue
+        for block in analysis.blocks:
+            if block.region is None or not block.text.strip():
+                continue
+            visual_thread = thread.model_copy(
+                update={
+                    "event_ids": [source_event_id],
+                    "messages": [
+                        thread.messages[-1].model_copy(
+                            update={
+                                "event_id": source_event_id,
+                                "received_at": thread.updated_at,
+                                "sender": thread.sender,
+                                "content": block.text,
+                                "media": [],
+                            }
+                        )
+                    ],
+                }
+            )
+            visual_triage = rules.triage(
+                visual_thread, rules.signals(visual_thread, [])
+            )
+            action_items.extend(
+                item.model_copy(
+                    update={
+                        "source_event_ids": [source_event_id],
+                        "evidence_asset_id": analysis.asset_id,
+                        "evidence_block_ids": [block.block_id],
+                    }
+                )
+                for item in visual_triage.action_items
+            )
+            deadlines.extend(
+                deadline.model_copy(
+                    update={
+                        "evidence_asset_id": analysis.asset_id,
+                        "evidence_block_ids": [block.block_id],
+                    }
+                )
+                for deadline in visual_triage.deadlines
+            )
+            actions.extend(visual_triage.suggested_actions)
+    unique_items = {
+        (item.text, item.evidence_asset_id, tuple(item.evidence_block_ids)): item
+        for item in action_items
+    }
+    unique_deadlines = {
+        (
+            deadline.original_text,
+            deadline.evidence_asset_id,
+            tuple(deadline.evidence_block_ids),
+        ): deadline
+        for deadline in deadlines
+    }
+    return baseline.model_copy(
+        update={
+            "action_items": list(unique_items.values())[:20],
+            "deadlines": list(unique_deadlines.values())[:10],
+            "suggested_actions": list(dict.fromkeys(actions)),
+        }
+    )
+
 
 class Pipeline:
     def __init__(
@@ -194,37 +311,39 @@ class Pipeline:
             baseline.uncertainty_flags.append("truncated_content")
         self.bus.publish("triage_started", {"thread_id": thread_id})
         visual_analyses = self.database.visual_analyses_for_thread(thread_id)
+        baseline = enrich_visual_evidence(baseline, thread, visual_analyses, self.rules)
         has_available_media = any(
             str(media.availability) == "available"
             for message in thread.messages
             for media in message.media
         )
-        has_verified_visual = any(
-            analysis.status == "completed" for analysis in visual_analyses
-        )
-        # A partial LINE/Messenger toast cannot gain missing context from a language
-        # model. Reserve Qwen for user-verified OCR context or complete, actionable messages.
-        model_eligible = has_verified_visual or (
-            str(thread.content_completeness) == "full"
-            and (
-                signals.priority in {"urgent", "high"}
-                or signals.requires_reply == "yes"
-            )
+        has_failed_visual = any(analysis.status == "failed" for analysis in visual_analyses)
+        has_meaningful_text = any(message.content.strip() for message in thread.messages)
+        # Qwen classifies every meaningful visible message, including partial notification
+        # previews. Only high-precision noise, metadata-only events, and unavailable image-only
+        # notices stay on the deterministic path. This gives Daily Digest semantic labels without
+        # asking the model to invent context that Windows never supplied.
+        model_eligible = has_available_media or (
+            has_meaningful_text
+            and not signals.is_noise
+            and not signals.image_only
+            and str(thread.content_completeness) != "metadata_only"
         )
         model_result = (
             self.gateway.analyze(thread, signals, visual_analyses)
-            if use_model
+            if use_model and model_eligible
             else ModelResult(
                 triage=None,
                 backend="rule+model-pending" if self.defer_model and model_eligible else "rule",
             )
         )
         candidate = model_result.triage or baseline
-        if model_result.triage is not None and not has_verified_visual:
-            # For ordinary text, Qwen owns language understanding while the deterministic
-            # engine owns exact-span evidence. This prevents a good summary from being lost
-            # merely because the model paraphrased an action or deadline supporting span.
-            candidate = model_result.triage.model_copy(
+        if model_result.triage is not None:
+            candidate = calibrate_model_triage(candidate, baseline, signals)
+        if model_result.triage is not None:
+            # Qwen owns language understanding. Exact message/OCR spans and coordinates
+            # remain deterministic so a short, reliable model response is sufficient.
+            candidate = candidate.model_copy(
                 update={
                     "action_items": baseline.action_items,
                     "deadlines": baseline.deadlines,
@@ -235,12 +354,16 @@ class Pipeline:
         if has_available_media and model_result.triage is None:
             if "visual_evidence_unverified" not in candidate.uncertainty_flags:
                 candidate.uncertainty_flags.append("visual_evidence_unverified")
+        if has_failed_visual and "image_analysis_failed" not in candidate.uncertainty_flags:
+            candidate.uncertainty_flags.append("image_analysis_failed")
         validated, report = self.validator.validate(
             candidate, thread, signals, visual_analyses
         )
 
         # An unsafe model output falls back to the deterministic baseline and is audited.
         model_backend = model_result.backend
+        if model_result.triage is not None:
+            model_backend += f"+{SEMANTIC_CALIBRATION_VERSION}"
         if model_result.triage is not None and not report.valid:
             validated, baseline_report = self.validator.validate(
                 baseline, thread, signals, visual_analyses
@@ -283,7 +406,8 @@ class Pipeline:
             )
         card_id = "card_" + hashlib.sha256(thread_id.encode()).hexdigest()[:20]
         first_event = self.database.event(thread.event_ids[0])
-        card_time = thread.updated_at if archive_import else now
+        # A background Qwen/OCR refresh must never make an old message look newly received.
+        card_time = thread.updated_at
         card_sender = (
             first_event.title
             if archive_import and first_event and first_event.title
