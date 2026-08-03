@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from .models import (
     AgentDecision,
@@ -713,11 +714,18 @@ class Database:
         source: str | None = None,
         priority: str | None = None,
         date_filter: str | None = None,
+        timezone: str = "Asia/Taipei",
         limit: int = 100,
     ) -> list[dict[str, Any]]:
         conditions: list[str] = ["c.display_mode!='hidden'"]
         parameters: list[Any] = []
         now = _iso()
+        local_start = datetime.now(ZoneInfo(timezone)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        local_end = local_start + timedelta(days=1)
+        day_start = local_start.astimezone(UTC).isoformat()
+        day_end = local_end.astimezone(UTC).isoformat()
         if view == "done":
             conditions.append("c.status='done'")
         elif view == "reply":
@@ -728,10 +736,13 @@ class Database:
             conditions.extend(
                 [
                     "c.status='open'",
-                    "(date(d.normalized_at,'localtime')=date('now','localtime') "
-                    "OR date(c.updated_at,'localtime')=date('now','localtime'))",
+                    "((julianday(d.normalized_at)>=julianday(?) "
+                    "AND julianday(d.normalized_at)<julianday(?)) "
+                    "OR (julianday(c.updated_at)>=julianday(?) "
+                    "AND julianday(c.updated_at)<julianday(?)))",
                 ]
             )
+            parameters.extend([day_start, day_end, day_start, day_end])
         else:
             conditions.append("c.status='open'")
             conditions.append("(c.snoozed_until IS NULL OR c.snoozed_until<=?)")
@@ -752,7 +763,11 @@ class Database:
             conditions.append("c.priority=?")
             parameters.append(priority)
         if date_filter == "today":
-            conditions.append("date(c.updated_at,'localtime')=date('now','localtime')")
+            conditions.append(
+                "julianday(c.updated_at)>=julianday(?) "
+                "AND julianday(c.updated_at)<julianday(?)"
+            )
+            parameters.extend([day_start, day_end])
         elif date_filter in {"7d", "30d"}:
             days = 7 if date_filter == "7d" else 30
             conditions.append("c.updated_at>=datetime('now', ?)")

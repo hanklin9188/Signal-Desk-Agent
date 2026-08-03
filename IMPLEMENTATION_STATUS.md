@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last verified: 2026-08-03 · Desktop build: `0.1.0.37`
+Last verified: 2026-08-03 · Desktop build: `0.1.0.38`
 
 ## Implemented and verified
 

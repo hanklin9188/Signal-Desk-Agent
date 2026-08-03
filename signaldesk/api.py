@@ -512,6 +512,7 @@ def create_app(config: Settings | None = None, database: Database | None = None)
                 source=source,
                 priority=priority,
                 date_filter=date,
+                timezone=config.timezone,
                 limit=limit,
             ),
             "counts": database.counts(),

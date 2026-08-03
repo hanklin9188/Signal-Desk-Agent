@@ -88,7 +88,7 @@
     {
       "path": "IMPLEMENTATION_STATUS.md",
       "bytes": 3449,
-      "sha256": "a798a1328c03ea0b826b2e75a550d959ba64f34ec807df253aa4750040703dd4"
+      "sha256": "3fb58fa75f59687efbbb76b371bd05ac212b595615356aadaf9b26438341be08"
     },
     {
       "path": "LICENSE",
@@ -1838,7 +1838,7 @@
     {
       "path": "native/SignalDesk.Shell/Package.appxmanifest",
       "bytes": 2198,
-      "sha256": "8e84ffbf7a03a38f1b92498959e156af7e583369968e3a794d287d97536a69b2"
+      "sha256": "2b15c8e75d92ad04b8402aedc2c849ec314c0eb83e35d2384d7a77ff77cc5da8"
     },
     {
       "path": "native/SignalDesk.Shell/Services/AppState.cs",
@@ -1943,7 +1943,7 @@
     {
       "path": "pyproject.toml",
       "bytes": 1127,
-      "sha256": "93c8570f1f58a642c79041013e9ece8e02ff0f2e9b89ea634af1484dffadc614"
+      "sha256": "ed5aebb89299e2362016b198a6e9bdb00cae06eff261bb2673bd0f551223bd36"
     },
     {
       "path": "schemas/action_item.schema.json",
@@ -2058,7 +2058,7 @@
     {
       "path": "signaldesk/__init__.py",
       "bytes": 79,
-      "sha256": "0fb64655f23e4df19106e39a7cb8aecac1fdba6a781f2cd20e698a7362a7c92a"
+      "sha256": "0447233ff2b099c2ac0ac0c217d71f37c7e9884833ad5d1f0a5265a1913e6654"
     },
     {
       "path": "signaldesk/actions.py",
@@ -2067,8 +2067,8 @@
     },
     {
       "path": "signaldesk/api.py",
-      "bytes": 39508,
-      "sha256": "57d67d9e04a94a9ccbfb812951c821ded9c85b3c399f1f2c99e6c023fb1311f6"
+      "bytes": 39550,
+      "sha256": "1703fafe1289dcd7a2fb294891f81b67c1cdd1e24872ae17fa2752553e96c109"
     },
     {
       "path": "signaldesk/benchmark.py",
@@ -2107,8 +2107,8 @@
     },
     {
       "path": "signaldesk/database.py",
-      "bytes": 80833,
-      "sha256": "8ae19d63de30b01454c30b610599cd670e3529dc394bc6109920b4d5fbdc0d33"
+      "bytes": 81496,
+      "sha256": "ec999df42a0b3aee4bca0aaf26685c6eb2098db0c443b4277483633f5effc124"
     },
     {
       "path": "signaldesk/deadlines.py",
@@ -2257,8 +2257,8 @@
     },
     {
       "path": "tests/test_api.py",
-      "bytes": 11789,
-      "sha256": "ffab1afbad4cc413e1d829d26d3c46f387fa93e9cb7262eda0aa792e3d060764"
+      "bytes": 12156,
+      "sha256": "83403aff074a7910f2d1b95f2b71ef13686c52297c92511506a1bc0534bcff80"
     },
     {
       "path": "tests/test_chat_archives.py",

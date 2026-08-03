@@ -1,3 +1,3 @@
 """SignalDesk local-first message triage service."""
 
-__version__ = "0.1.0.37"
+__version__ = "0.1.0.38"

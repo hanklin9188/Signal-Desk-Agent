@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import time
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
 
@@ -190,6 +192,13 @@ def test_browser_messenger_notification_uses_title_and_preview_sender(
 
 
 def test_today_filter_converts_utc_card_time_to_local_date(test_config, database):
+    local_start = datetime.now(ZoneInfo(test_config.timezone)).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    local_card_time = local_start + timedelta(hours=1)
+    utc_card_time = local_card_time.astimezone(UTC)
+    assert utc_card_time.date() < local_card_time.date()
+
     with TestClient(create_app(test_config, database)) as client:
         client.get("/")
         response = client.post(
@@ -200,14 +209,14 @@ def test_today_filter_converts_utc_card_time_to_local_date(test_config, database
                 "app_name": "LINE",
                 "title": "朋友",
                 "body": "早安",
-                "received_at": "2026-08-03T07:41:00+08:00",
+                "received_at": local_card_time.isoformat(),
             },
         )
         card_id = response.json()["card_id"]
         with database.transaction() as connection:
             connection.execute(
                 "UPDATE notification_cards SET updated_at=? WHERE card_id=?",
-                ("2026-08-02T23:41:00+00:00", card_id),
+                (utc_card_time.isoformat(), card_id),
             )
 
         items = client.get(
