@@ -52,6 +52,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Push-Location $shellRoot
+$localPackageOutput = $null
 try {
     dotnet restore
     if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed with exit code $LASTEXITCODE." }
@@ -65,6 +66,15 @@ try {
         "-p:AppxBundle=Always",
         "-p:AppxBundlePlatforms=x64"
     )
+    if ($shellRoot.StartsWith("\\")) {
+        # SignTool cannot reliably reopen a just-created package through a WSL UNC
+        # path. Keep compilation in place but emit/sign the package on a local
+        # Windows volume, then copy the completed artifacts back to the workspace.
+        $localPackageOutput = Join-Path ([IO.Path]::GetTempPath()) `
+            ("SignalDesk-AppPackages-" + [guid]::NewGuid().ToString("N"))
+        New-Item -ItemType Directory -Force -Path $localPackageOutput | Out-Null
+        $publishArgs += "-p:AppxPackageDir=$localPackageOutput\"
+    }
     if ($CertificateThumbprint) {
         $publishArgs += "-p:AppxPackageSigningEnabled=true"
         $publishArgs += "-p:PackageCertificateThumbprint=$CertificateThumbprint"
@@ -81,8 +91,17 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet publish/MSIX packaging failed with exit code $LASTEXITCODE."
     }
+    if ($localPackageOutput) {
+        $workspacePackages = Join-Path $shellRoot "AppPackages"
+        New-Item -ItemType Directory -Force -Path $workspacePackages | Out-Null
+        Copy-Item -Path (Join-Path $localPackageOutput "*") `
+            -Destination $workspacePackages -Recurse -Force
+    }
 } finally {
     Pop-Location
+    if ($localPackageOutput -and (Test-Path $localPackageOutput)) {
+        Remove-Item -Recurse -Force $localPackageOutput
+    }
 }
 
 Write-Host "SignalDesk Windows package build completed."

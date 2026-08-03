@@ -55,14 +55,37 @@ public partial class App : Application
             ShowDashboard();
 
             _notificationBridge = new NotificationBridge(api);
-            await _notificationBridge.StartAsync();
+            try
+            {
+                await _notificationBridge.StartAsync();
+            }
+            catch (Exception error)
+            {
+                // Notification access is an optional connector. A denied or temporarily
+                // unavailable listener must not make the whole desktop app look broken.
+                System.Diagnostics.Debug.WriteLine($"Notification bridge startup: {error}");
+                ShowMessage(
+                    "通知同步暫時無法啟動",
+                    "SignalDesk 仍可正常使用 Gmail、匯入資料與既有訊息。請到「訊息來源」重新檢查 Windows 通知權限。",
+                    InfoBarSeverity.Warning);
+            }
             _state.StartWatcher();
             await _state.RefreshAsync();
         }
         catch (Exception error)
         {
             System.Diagnostics.Debug.WriteLine(error);
-            ShowStartupError(error.Message);
+            if (_mainWindow is not null)
+            {
+                ShowMessage(
+                    "部分功能啟動失敗",
+                    $"SignalDesk 主視窗仍可使用。錯誤：{error.Message}",
+                    InfoBarSeverity.Error);
+            }
+            else
+            {
+                ShowStartupError(error.Message);
+            }
         }
     }
 
