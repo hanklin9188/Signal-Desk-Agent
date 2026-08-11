@@ -2,13 +2,13 @@
 
 # SignalDesk
 
-### A local-first Windows agent that turns message overload into a calm, actionable inbox.
+### A local-first Windows agent that turns message overload into an explainable, actionable inbox.
 
 <p>
+  <a href="https://github.com/hanklin9188/Signal-Desk-Agent/actions/workflows/spec-validation.yml"><img alt="CI" src="https://github.com/hanklin9188/Signal-Desk-Agent/actions/workflows/spec-validation.yml/badge.svg"></a>
   <a href="https://www.microsoft.com/windows/windows-11"><img alt="Windows 11" src="https://img.shields.io/badge/Windows-11-0078D4?logo=windows11&amp;logoColor=white"></a>
   <a href="https://learn.microsoft.com/windows/apps/winui/winui3/"><img alt="WinUI 3" src="https://img.shields.io/badge/UI-WinUI%203-5B5FC7"></a>
   <a href="https://www.python.org/"><img alt="Python 3.12" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&amp;logoColor=white"></a>
-  <a href="https://github.com/hanklin9188/signaldesk-agent/actions/workflows/spec-validation.yml"><img alt="CI status" src="https://github.com/hanklin9188/signaldesk-agent/actions/workflows/spec-validation.yml/badge.svg"></a>
   <a href="SECURITY_PRIVACY.md"><img alt="Local-first privacy" src="https://img.shields.io/badge/privacy-local--first-25B889"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-7770F2"></a>
 </p>
@@ -16,13 +16,14 @@
 <img src="docs/screenshots/signaldesk-hero.png" alt="SignalDesk Inbox Center and Glance window on Windows 11" width="100%">
 
 <p>
-  SignalDesk brings Gmail and visible Windows notification previews from LINE and Messenger into one native desktop workspace. It groups conversations, removes notification replays, finds reply needs and deadlines, then decides what deserves your attention — without sending private message text to a cloud model.
+  SignalDesk brings Gmail and Windows-visible notification previews from LINE and Messenger into one native workspace. It groups conversations, identifies reply needs and deadlines, explains why an item matters, and keeps every action under explicit user control.
 </p>
 
 <p>
   <a href="#quick-start"><strong>Quick start</strong></a> ·
-  <a href="#what-makes-it-an-agent"><strong>How the agent works</strong></a> ·
+  <a href="PORTFOLIO.md"><strong>Engineering portfolio</strong></a> ·
   <a href="#architecture"><strong>Architecture</strong></a> ·
+  <a href="EVALUATION.md"><strong>Evaluation</strong></a> ·
   <a href="IMPLEMENTATION_STATUS.md"><strong>Implementation status</strong></a>
 </p>
 
@@ -30,129 +31,138 @@
 
 ---
 
-## Why SignalDesk?
+## Thirty-second product tour
 
-Most inboxes optimize for arrival. SignalDesk optimizes for attention: what needs a reply, what has a deadline, what can wait, and why.
+1. Connect Gmail, import official LINE/Messenger archives, or allow Windows notification access.
+2. SignalDesk normalizes, deduplicates, and groups incoming events into conversation cards.
+3. Evidence-backed rules—and optionally a local Qwen model—extract priority, reply needs, actions, and deadlines.
+4. Focus mode, quiet hours, VIP/mute rules, uncertainty penalties, and an interruption budget determine what may surface.
+5. The user can open, snooze, mark done, create a local reminder, or prepare an editable draft. There is **no automatic-send path**.
+
+## Why SignalDesk
 
 <table>
   <tr>
     <td width="33%" valign="top">
       <h3>One calm inbox</h3>
-      <p>Gmail, LINE, Messenger, and Windows notification previews become consistent conversation cards instead of separate streams.</p>
+      <p>Multiple sources become consistent conversation cards instead of separate notification streams.</p>
     </td>
     <td width="33%" valign="top">
-      <h3>Explainable priorities</h3>
-      <p>Every action and deadline keeps its supporting evidence. Uncertainty is shown instead of hidden or guessed away.</p>
+      <h3>Evidence before inference</h3>
+      <p>Actions and deadlines retain the source spans that support them; incomplete previews remain visibly incomplete.</p>
     </td>
     <td width="33%" valign="top">
-      <h3>Private by design</h3>
-      <p>Processing and preference learning stay local. The optional Qwen model runs on-device and always has a deterministic fallback.</p>
+      <h3>Private and bounded</h3>
+      <p>Processing stays local, model output must validate, and deterministic rules remain available when inference fails.</p>
     </td>
   </tr>
 </table>
 
-> [!NOTE]
-> Personal LINE and Messenger accounts do not provide a supported API for complete private-chat synchronization. SignalDesk uses official archives for history and only the notification previews Windows makes visible for new messages. It never scrapes the UI, reverse-engineers chat databases, or steals sessions.
+> [!IMPORTANT]
+> Personal LINE and Messenger accounts do not provide a supported API for complete private-chat synchronization. SignalDesk uses official exports for history and only the previews that Windows exposes for new inbound notifications. It does not scrape UI state, reverse-engineer private databases, steal sessions, or invent missing context.
+
+## Current evidence
+
+SignalDesk separates **engineering regression evidence** from **real-world product validation**.
+
+### Engineering regression evidence
+
+| Gate | Current repository evidence |
+| :--- | :--- |
+| Automated tests | **41 passing** in the last recorded verification |
+| Locked benchmark | **300 fictional scenarios / 1,800 policy checks** |
+| Unauthorized actions | **0** in the locked benchmark |
+| Auto-send paths | **0 by design** |
+| Native WinUI build | **0 compile errors** in the last recorded verification |
+| Development packaging | MSIX installed and exercised on Windows 11 |
+
+These results protect implementation and policy invariants. The 300 scenarios are deliberately fictional regression fixtures; they are not presented as a representative human-message accuracy study.
+
+### Product validation not yet claimed
+
+The repository does not yet claim production-level triage accuracy or user benefit. Remaining release evidence includes:
+
+- 300+ anonymized, human-reviewed real-world events;
+- a 7–14 day Shadow Mode study with correction and interruption metrics;
+- optional local-model comparison against the deterministic baseline;
+- clean-machine install, upgrade, rollback, and production publisher signing.
+
+Read [`EVALUATION.md`](EVALUATION.md) for the measurement plan and [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) for the release gate.
 
 ## What makes it an agent
 
-SignalDesk does more than collect notifications. Every incoming event moves through a **bounded, auditable decision loop** that observes, understands, decides, and assists — then learns only from explicit local feedback.
+Every event moves through a bounded, auditable loop:
 
 ![SignalDesk bounded agent decision loop](docs/assets/agent-loop.svg)
 
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <h3>Evidence before inference</h3>
-      <p>Extracted actions and deadlines retain the source spans that support them, so the interface can show why an item was prioritized.</p>
-    </td>
-    <td width="50%" valign="top">
-      <h3>Safe when models fail</h3>
-      <p>Malformed, uncertain, or unavailable model output is rejected. Local rules provide a deterministic baseline instead.</p>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <h3>Attention is a policy</h3>
-      <p>Quiet hours, Focus mode, VIP and mute rules, uncertainty penalties, and an interruption budget determine what may surface.</p>
-    </td>
-    <td width="50%" valign="top">
-      <h3>The user stays in control</h3>
-      <p>SignalDesk can open, snooze, mark done, create a reminder, or prepare an editable draft. There is no automatic-send path.</p>
-    </td>
-  </tr>
-</table>
+```text
+observe → normalize → group → triage → validate → apply attention policy → assist
+```
+
+- **Evidence-bound extraction:** actionable claims retain supporting source spans.
+- **Validated model output:** malformed, unsupported, or unavailable local-model output is rejected.
+- **Deterministic fallback:** safe rules provide a baseline rather than silently dropping events.
+- **Explicit action boundary:** drafts remain editable and sending is outside the product's v1 authority.
+- **Local feedback only:** preference changes come from explicit local user actions.
+
+The global agent contract is documented in [`AGENT.md`](AGENT.md).
 
 ## Desktop experience
 
-The production interface is a native **WinUI 3** application — not a web wrapper.
+The primary interface is a native **WinUI 3** application, not a web wrapper.
 
-| Surface | What it helps you do |
+| Surface | Purpose |
 | :--- | :--- |
-| **Inbox Center** | Search, filter by source or priority, take batch actions, and inspect evidence-rich message details. |
-| **Glance** | Keep the latest useful items in a compact always-on-top window that refreshes every 30 seconds. |
-| **Focus mode** | Raise the real-time interruption threshold without hiding anything from the inbox. |
-| **Daily Digest** | Review urgent items, deadlines, reply needs, and lower-priority information in clear groups. |
-| **Source Center** | Check Gmail OAuth health, Windows notification access, and local chat-archive imports. |
-| **Attention Policy** | Create and remove explainable VIP, priority, and mute rules. |
-| **Privacy Controls** | Export local data, set retention, reset preferences, and confirm private-data deletion. |
+| **Inbox Center** | Search, filter, batch-manage, and inspect evidence-rich message details. |
+| **Glance** | Keep recent useful items in a compact always-on-top window. |
+| **Focus mode** | Raise the interruption threshold without hiding cards from the inbox. |
+| **Daily Digest** | Review urgent items, deadlines, reply needs, and lower-priority information. |
+| **Source Center** | Inspect Gmail OAuth, Windows notification access, and archive-import health. |
+| **Attention Policy** | Manage explainable VIP, priority, and mute rules. |
+| **Privacy Controls** | Export local data, configure retention, reset preferences, and confirm deletion. |
 
 ## Connector coverage
 
-SignalDesk labels the completeness of every source instead of implying access it does not have.
-
-| Source | Integration | Content available |
+| Source | Integration | Honest content boundary |
 | :--- | :--- | :--- |
-| **Gmail** | Official OAuth, initial sync, 60-second incremental sync, multiple accounts | Full message and thread content under the granted scope |
-| **LINE personal** | Official text-archive import + Windows notification listener | Archive history; notification preview for new inbound messages |
-| **Messenger personal** | Accounts Center JSON/ZIP import + Windows/browser notification listener | Archive history; notification preview for new inbound messages |
-| **LINE Official Account** | Signed webhook connector | Full webhook payload for the configured official account |
-| **Messenger Page** | Signed Meta webhook connector | Full webhook payload for the configured Page |
+| **Gmail** | Official OAuth, initial/incremental sync, multiple accounts | Full message/thread content under the granted scope |
+| **LINE personal** | Official text export + Windows notification listener | Export history; preview-only content for new visible notifications |
+| **Messenger personal** | Accounts Center JSON/ZIP + Windows/browser notification listener | Export history; preview-only content for new visible notifications |
+| **LINE Official Account** | Signed webhook connector | Full payload for the configured official account |
+| **Messenger Page** | Signed Meta webhook connector | Full payload for the configured Page |
 
-When Windows exposes only a preview, the UI marks it as incomplete. Missing images, stickers, or conversation context are never invented.
+When only a preview is available, the UI preserves that limitation. Missing images, stickers, dismissed notifications, or thread context are never inferred as known facts.
 
 ## Architecture
 
-SignalDesk separates the native interface from the local decision service. They communicate through an authenticated loopback API; credentials stay in Windows Credential Manager and private data stays in the local SQLite store.
+SignalDesk separates the native Windows boundary from the local decision service. Communication uses an authenticated loopback API; OAuth tokens stay in Windows Credential Manager and private event state stays in local SQLite storage.
 
 ![SignalDesk local-first system architecture](docs/assets/architecture.svg)
 
-<table>
-  <tr>
-    <td width="33%" valign="top">
-      <h3>Native Windows boundary</h3>
-      <p>The WinUI shell owns the inbox, Glance, tray, Focus controls, OAuth launch, and <code>UserNotificationListener</code>.</p>
-    </td>
-    <td width="33%" valign="top">
-      <h3>Authenticated loopback</h3>
-      <p>The shell launches the packaged Python service on <code>127.0.0.1</code> and authenticates with a random bearer token.</p>
-    </td>
-    <td width="33%" valign="top">
-      <h3>Optional local inference</h3>
-      <p>Qwen can assist the pipeline on-device. Its JSON must validate; otherwise deterministic rules take over.</p>
-    </td>
-  </tr>
-</table>
+| Boundary | Responsibility |
+| :--- | :--- |
+| **WinUI shell** | Inbox, Glance, tray, Focus controls, OAuth launch, file pickers, and `UserNotificationListener` |
+| **Local agent service** | Connectors, normalization, grouping, evidence validation, attention policy, persistence, and trace |
+| **Optional local inference** | On-device Qwen JSON assistance with schema validation and deterministic fallback |
 
-For deeper technical context, read the [architecture details](ARCHITECTURE.md) and [code ownership map](docs/PROJECT_STRUCTURE.md).
+The service binds to `127.0.0.1`, authenticates clients with an unguessable token, and exposes no arbitrary shell or auto-send endpoint. Read [`ARCHITECTURE.md`](ARCHITECTURE.md), [`SECURITY_PRIVACY.md`](SECURITY_PRIVACY.md), and the [code ownership map](docs/PROJECT_STRUCTURE.md).
 
 ## Quick start
 
-### Windows desktop build
+### Native Windows build
 
 **Prerequisites:** Windows 11, Python 3.12, .NET 8 SDK, and Visual Studio 2022 with the .NET desktop / Windows App SDK workload.
 
 ```powershell
-git clone https://github.com/hanklin9188/signaldesk-agent.git
-cd signaldesk-agent
+git clone https://github.com/hanklin9188/Signal-Desk-Agent.git
+cd Signal-Desk-Agent
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-windows-prerequisites.ps1 -Install
 .\scripts\build-windows.ps1 -Configuration Release
 ```
 
-The signed-development MSIX workflow and Gmail OAuth setup are documented in [WINDOWS_GMAIL_SETUP.md](WINDOWS_GMAIL_SETUP.md). Development certificates and OAuth credentials are intentionally excluded from the repository.
+Gmail OAuth and development-signed packaging are documented in [`WINDOWS_GMAIL_SETUP.md`](WINDOWS_GMAIL_SETUP.md). Credentials, certificates, private databases, and real message captures are intentionally excluded.
 
-<details>
-<summary><strong>Service-only development</strong></summary>
+### Service-only fictional demo
 
 ```bash
 python3.12 -m venv .venv
@@ -160,72 +170,62 @@ python3.12 -m venv .venv
 SIGNALDESK_DEMO=1 .venv/bin/signaldesk
 ```
 
-`SIGNALDESK_DEMO=1` seeds only fictional data into an empty development database. The browser surface at `http://127.0.0.1:8765` is a diagnostic fallback; the portfolio product is the native desktop app.
+`SIGNALDESK_DEMO=1` seeds only fictional content into an empty development database. The browser surface on `127.0.0.1:8765` is a diagnostic fallback; the portfolio product is the native desktop app.
 
-</details>
-
-## Quality and safety
-
-Current local verification:
-
-| Gate | Result |
-| :--- | :--- |
-| Automated tests | **41 passing** |
-| Locked benchmark | **300 scenarios / 1,800 checks passing** |
-| Unauthorized actions | **0** |
-| Auto-send paths | **0** |
-| Native WinUI build | **0 compile errors** |
-| Windows packaging | MSIX installed and exercised on Windows 11 |
-
-Run the same core checks locally:
+## Verify locally
 
 ```bash
 .venv/bin/ruff check signaldesk tests
-.venv/bin/pytest
+.venv/bin/python -m pytest
 .venv/bin/signaldesk-benchmark --output runs/verification
 ```
 
-The safety invariants are deliberately narrow:
+Public CI validates JSON/YAML, rejects common credential files, lints Python, runs tests and the fictional locked benchmark, and builds the WinUI shell on a Windows runner.
 
-- Private message text is untrusted data, never a tool instruction.
-- The API binds to loopback and requires an unguessable token.
-- OAuth tokens live in the OS credential store, not SQLite or Git.
+## Safety invariants
+
+- Message text is untrusted data, never a tool instruction.
+- OAuth tokens are not stored in SQLite or Git.
 - Source URLs must match connector-specific HTTPS allowlists.
-- Notification previews stay labeled incomplete; missing media is never guessed.
-- There is no endpoint for automatic sending, source deletion, or arbitrary shell execution.
-
-Read the full [privacy and security design](SECURITY_PRIVACY.md) or [report a vulnerability](SECURITY.md).
+- Notification previews remain labelled incomplete.
+- Draft creation requires explicit confirmation.
+- There is no source-delete, automatic-send, or arbitrary-shell API route.
+- Model failure must not discard the original event.
 
 ## Repository map
 
 ```text
-native/SignalDesk.Shell/   Native WinUI 3 desktop application
-signaldesk/                Local agent service and decision pipeline
+native/SignalDesk.Shell/   native WinUI 3 application
+signaldesk/                local agent service and decision pipeline
 signaldesk/connectors/     Gmail, webhook, notification, and archive connectors
-schemas/                   Versioned event and agent-output contracts
+schemas/                   versioned event and agent-output contracts
 tests/                     API, pipeline, archive, privacy, and safety tests
-benchmarks/                Locked fictional evaluation scenarios
-scripts/                   Setup, build, verification, and packaging tools
-docs/                      Architecture, UX, and code-ownership documentation
+benchmarks/                locked fictional regression scenarios
+scripts/                   setup, build, validation, and packaging tools
+docs/                      architecture, UX, screenshots, and ownership maps
 ```
 
-### Project documentation
+## Reviewer path
 
-| Start here | Reference |
+For a five-minute technical review:
+
+1. Read [`PORTFOLIO.md`](PORTFOLIO.md).
+2. Inspect the architecture and agent-loop diagrams.
+3. Run the three verification commands above.
+4. Read [`EVALUATION.md`](EVALUATION.md) to distinguish regression evidence from product evidence.
+5. Inspect [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) and [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md).
+
+## Documentation
+
+| Document | Purpose |
 | :--- | :--- |
-| [Implementation status](IMPLEMENTATION_STATUS.md) | Verified features, deliberate boundaries, and remaining release gates |
-| [Project structure](docs/PROJECT_STRUCTURE.md) | Module-by-module responsibilities and ownership |
-| [Connector guide](CONNECTORS.md) | Supported sources, setup, and completeness limits |
-| [Design specification](DESIGN.md) | Product behavior and system design |
-| [Validation](VALIDATION.md) | Test strategy, benchmarks, and quality gates |
-| [Contributing](CONTRIBUTING.md) | Development workflow and contribution guidance |
-
-## Roadmap
-
-- Expand anonymized, human-labeled evaluation beyond synthetic scenarios.
-- Complete a 7–14 day Shadow Mode calibration study.
-- Add production publisher signing and a stable Windows release channel.
-- Audit optional local Qwen inference against the deterministic baseline before enabling it by default.
+| [`PORTFOLIO.md`](PORTFOLIO.md) | Interview-oriented engineering narrative and demo path |
+| [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md) | Verified features, deliberate boundaries, and remaining gates |
+| [`EVALUATION.md`](EVALUATION.md) | Regression evidence, human-evaluation plan, and metric definitions |
+| [`RELEASE_CHECKLIST.md`](RELEASE_CHECKLIST.md) | Preview and production release requirements |
+| [`CONNECTORS.md`](CONNECTORS.md) | Integration setup and source-completeness boundaries |
+| [`VALIDATION.md`](VALIDATION.md) | Test strategy, benchmark contracts, and safety validation |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Development workflow and privacy-safe contribution rules |
 
 ## License
 
